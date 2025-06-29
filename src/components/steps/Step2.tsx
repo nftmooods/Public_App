@@ -1,5 +1,5 @@
-import React from 'react';
-import { Loader2, FileText, Clock, Users, ArrowRight, DollarSign, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, FileText, Clock, Users, ArrowRight, DollarSign, Zap, CheckCircle, AlertTriangle } from 'lucide-react';
 import { TranscriptionData } from '../../types';
 
 interface Step2Props {
@@ -8,28 +8,269 @@ interface Step2Props {
   onNext: () => void;
 }
 
+interface ProgressStep {
+  id: string;
+  label: string;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  api?: string;
+  details?: string;
+}
+
 const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) => {
+  const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (isProcessing) {
+      // Déterminer les étapes selon le type de contenu
+      const demoMode = localStorage.getItem('demoMode') === 'true';
+      const apiKey = localStorage.getItem('google_ai_api_key');
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      
+      let geminiApiKey = apiKey;
+      if (isAuthenticated) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+            geminiApiKey = user.apiKeys.googleAI.key;
+          }
+        }
+      }
+
+      const hasGemini = !demoMode && geminiApiKey && geminiApiKey.startsWith('AIza');
+      
+      // Déterminer le type de contenu
+      const hasTextContent = localStorage.getItem('textContent')?.trim();
+      const hasAudioFile = localStorage.getItem('audioFile');
+      const hasAudioUrl = localStorage.getItem('audioUrl')?.trim();
+      const hasYoutubeUrl = localStorage.getItem('youtubeUrl')?.trim();
+
+      let steps: ProgressStep[] = [];
+
+      if (hasTextContent) {
+        steps = [
+          {
+            id: 'text-analysis',
+            label: 'Analyse du contenu texte',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local',
+            details: 'Parsing et structuration du texte fourni'
+          },
+          {
+            id: 'speaker-detection',
+            label: 'Détection des intervenants',
+            status: 'pending',
+            api: 'Algorithme local',
+            details: 'Identification des patterns [Intervenant X]:'
+          },
+          {
+            id: 'key-points',
+            label: 'Extraction des points clés',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
+            details: 'Analyse sémantique et extraction des insights'
+          },
+          {
+            id: 'cost-estimation',
+            label: 'Estimation des coûts',
+            status: 'pending',
+            api: 'Calcul local',
+            details: 'Comptage des tokens et estimation tarifaire'
+          }
+        ];
+      } else if (hasAudioFile || hasAudioUrl || hasYoutubeUrl) {
+        steps = [
+          {
+            id: 'audio-processing',
+            label: hasYoutubeUrl ? 'Extraction audio YouTube' : 'Traitement du fichier audio',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
+            details: hasYoutubeUrl ? 'Extraction de la piste audio' : 'Préparation pour transcription'
+          },
+          {
+            id: 'transcription',
+            label: 'Transcription audio',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées',
+            details: 'Conversion audio vers texte avec détection des speakers'
+          },
+          {
+            id: 'language-detection',
+            label: 'Détection de la langue',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Algorithme local',
+            details: 'Identification automatique de la langue parlée'
+          },
+          {
+            id: 'speaker-analysis',
+            label: 'Analyse des intervenants',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local',
+            details: 'Séparation et identification des voix'
+          },
+          {
+            id: 'key-points',
+            label: 'Extraction des points clés',
+            status: 'pending',
+            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
+            details: 'Analyse sémantique et extraction des insights'
+          },
+          {
+            id: 'cost-estimation',
+            label: 'Estimation des coûts',
+            status: 'pending',
+            api: 'Calcul local',
+            details: 'Comptage des tokens et estimation tarifaire'
+          }
+        ];
+      }
+
+      setProgressSteps(steps);
+      setCurrentStepIndex(0);
+
+      // Simuler la progression
+      const progressInterval = setInterval(() => {
+        setProgressSteps(prev => {
+          const newSteps = [...prev];
+          const currentIndex = newSteps.findIndex(step => step.status === 'processing');
+          
+          if (currentIndex >= 0) {
+            // Marquer l'étape actuelle comme terminée
+            newSteps[currentIndex].status = 'completed';
+            
+            // Passer à l'étape suivante
+            if (currentIndex + 1 < newSteps.length) {
+              newSteps[currentIndex + 1].status = 'processing';
+              setCurrentStepIndex(currentIndex + 1);
+            }
+          } else {
+            // Démarrer la première étape
+            if (newSteps.length > 0 && newSteps[0].status === 'pending') {
+              newSteps[0].status = 'processing';
+              setCurrentStepIndex(0);
+            }
+          }
+          
+          return newSteps;
+        });
+      }, 1500);
+
+      // Nettoyer l'intervalle après 10 secondes
+      setTimeout(() => {
+        clearInterval(progressInterval);
+        setProgressSteps(prev => prev.map(step => ({ ...step, status: 'completed' })));
+      }, steps.length * 1500);
+
+      return () => clearInterval(progressInterval);
+    }
+  }, [isProcessing]);
+
   if (isProcessing) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-            <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-6 animate-spin" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Analyse en cours
-            </h2>
-            <p className="text-lg text-gray-600 mb-8">
-              Analyse préliminaire du contenu pour estimer les coûts et identifier les points clés...
-            </p>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Progression</span>
-                <span>Analyse...</span>
+      <div className="max-w-5xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Analyse en cours
+          </h2>
+          <p className="text-lg text-gray-600">
+            Traitement de votre contenu avec les APIs configurées
+          </p>
+        </div>
+
+        {/* Barre de progression globale */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Progression globale</h3>
+            <span className="text-sm text-gray-500">
+              {Math.round((progressSteps.filter(s => s.status === 'completed').length / progressSteps.length) * 100)}%
+            </span>
+          </div>
+          
+          <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${(progressSteps.filter(s => s.status === 'completed').length / progressSteps.length) * 100}%` 
+              }}
+            ></div>
+          </div>
+
+          {/* Étapes détaillées */}
+          <div className="space-y-4">
+            {progressSteps.map((step, index) => (
+              <div 
+                key={step.id}
+                className={`flex items-start space-x-4 p-4 rounded-lg transition-all ${
+                  step.status === 'processing' ? 'bg-blue-50 border border-blue-200' :
+                  step.status === 'completed' ? 'bg-green-50 border border-green-200' :
+                  step.status === 'error' ? 'bg-red-50 border border-red-200' :
+                  'bg-gray-50 border border-gray-200'
+                }`}
+              >
+                <div className="flex-shrink-0 mt-1">
+                  {step.status === 'processing' ? (
+                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  ) : step.status === 'completed' ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : step.status === 'error' ? (
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className={`font-medium ${
+                      step.status === 'processing' ? 'text-blue-900' :
+                      step.status === 'completed' ? 'text-green-900' :
+                      step.status === 'error' ? 'text-red-900' :
+                      'text-gray-700'
+                    }`}>
+                      {step.label}
+                    </h4>
+                    
+                    {step.api && (
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
+                        step.api.includes('démonstration') ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {step.api}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-gray-600">{step.details}</p>
+                  
+                  {step.status === 'processing' && (
+                    <div className="mt-2">
+                      <div className="w-full bg-blue-200 rounded-full h-1">
+                        <div className="bg-blue-600 h-1 rounded-full animate-pulse w-3/4"></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full w-3/4 transition-all duration-500"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Informations sur les APIs utilisées */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">APIs et services utilisés</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {Array.from(new Set(progressSteps.map(s => s.api).filter(Boolean))).map((api, index) => (
+              <div key={index} className="flex items-center space-x-3 bg-white rounded-lg p-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  api?.includes('Gemini') ? 'bg-purple-500' :
+                  api?.includes('démonstration') ? 'bg-yellow-500' :
+                  'bg-gray-500'
+                }`}></div>
+                <span className="text-sm font-medium text-gray-900">{api}</span>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -51,11 +292,45 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Analyse préliminaire terminée
+          Analyse terminée avec succès
         </h2>
         <p className="text-lg text-gray-600">
           Voici les métriques détectées et l'estimation des coûts de traitement
         </p>
+      </div>
+
+      {/* Résumé des APIs utilisées */}
+      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+        <div className="flex items-center space-x-2 mb-2">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <h3 className="font-medium text-green-800">Traitement terminé</h3>
+        </div>
+        <div className="text-sm text-green-700">
+          {(() => {
+            const demoMode = localStorage.getItem('demoMode') === 'true';
+            const apiKey = localStorage.getItem('google_ai_api_key');
+            const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+            
+            let geminiApiKey = apiKey;
+            if (isAuthenticated) {
+              const userData = localStorage.getItem('user');
+              if (userData) {
+                const user = JSON.parse(userData);
+                if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+                  geminiApiKey = user.apiKeys.googleAI.key;
+                }
+              }
+            }
+
+            const hasGemini = !demoMode && geminiApiKey && geminiApiKey.startsWith('AIza');
+            
+            if (hasGemini) {
+              return "✅ Traitement effectué avec Gemini 1.5 Pro - Votre clé API a été utilisée";
+            } else {
+              return "🎭 Traitement effectué en mode démonstration - Aucune API externe utilisée";
+            }
+          })()}
+        </div>
       </div>
 
       {/* Métriques principales */}

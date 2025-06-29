@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon } from 'lucide-react';
+import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
 
@@ -9,6 +9,13 @@ interface Step4Props {
   onUpdateTranscription: (transcription: TranscriptionData) => void;
   onUpdateKeyPoints: (keyPoints: KeyPoint[]) => void;
   onNext: () => void;
+}
+
+interface ExtractionProgress {
+  status: 'idle' | 'extracting' | 'completed' | 'error';
+  currentStep: string;
+  progress: number;
+  api: string;
 }
 
 const Step4: React.FC<Step4Props> = ({ 
@@ -24,6 +31,12 @@ const Step4: React.FC<Step4Props> = ({
   const [isCompleting, setIsCompleting] = useState(false);
   const [addingLinkTo, setAddingLinkTo] = useState<string | null>(null);
   const [newLink, setNewLink] = useState('');
+  const [extractionProgress, setExtractionProgress] = useState<ExtractionProgress>({
+    status: 'idle',
+    currentStep: '',
+    progress: 0,
+    api: ''
+  });
 
   // Auto-extraction des points clés si aucun n'existe et que Gemini est disponible
   useEffect(() => {
@@ -48,10 +61,29 @@ const Step4: React.FC<Step4Props> = ({
         if (!demoMode && geminiApiKey && geminiApiKey.startsWith('AIza')) {
           try {
             console.log('🎯 Auto-extraction des points clés avec Gemini...');
-            setIsCompleting(true);
+            
+            setExtractionProgress({
+              status: 'extracting',
+              currentStep: 'Analyse sémantique du contenu...',
+              progress: 25,
+              api: 'Gemini 1.5 Pro'
+            });
             
             const geminiService = GeminiServiceFactory.create(geminiApiKey);
+            
+            setExtractionProgress(prev => ({
+              ...prev,
+              currentStep: 'Extraction des insights principaux...',
+              progress: 50
+            }));
+            
             const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+            
+            setExtractionProgress(prev => ({
+              ...prev,
+              currentStep: 'Structuration des points clés...',
+              progress: 75
+            }));
             
             if (extractedKeyPoints.length > 0) {
               const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
@@ -64,14 +96,56 @@ const Step4: React.FC<Step4Props> = ({
                 webLinks: []
               }));
               
-              onUpdateKeyPoints(formattedKeyPoints);
-              console.log('✅ Points clés auto-extraits:', extractedKeyPoints.length);
+              setExtractionProgress(prev => ({
+                ...prev,
+                currentStep: 'Finalisation...',
+                progress: 100
+              }));
+              
+              setTimeout(() => {
+                onUpdateKeyPoints(formattedKeyPoints);
+                setExtractionProgress({
+                  status: 'completed',
+                  currentStep: `${extractedKeyPoints.length} points clés extraits avec succès`,
+                  progress: 100,
+                  api: 'Gemini 1.5 Pro'
+                });
+                console.log('✅ Points clés auto-extraits:', extractedKeyPoints.length);
+              }, 500);
+            } else {
+              setExtractionProgress({
+                status: 'error',
+                currentStep: 'Aucun point clé trouvé',
+                progress: 0,
+                api: 'Gemini 1.5 Pro'
+              });
             }
           } catch (error) {
             console.error('❌ Erreur lors de l\'auto-extraction:', error);
-          } finally {
-            setIsCompleting(false);
+            setExtractionProgress({
+              status: 'error',
+              currentStep: `Erreur: ${(error as Error).message}`,
+              progress: 0,
+              api: 'Gemini 1.5 Pro'
+            });
           }
+        } else {
+          // Mode démonstration
+          setExtractionProgress({
+            status: 'extracting',
+            currentStep: 'Simulation de l\'extraction...',
+            progress: 50,
+            api: 'Mode démonstration'
+          });
+          
+          setTimeout(() => {
+            setExtractionProgress({
+              status: 'completed',
+              currentStep: 'Données de démonstration chargées',
+              progress: 100,
+              api: 'Mode démonstration'
+            });
+          }, 2000);
         }
       }
     };
@@ -279,6 +353,75 @@ ${keyPoints.map((kp, index) =>
     return colonIndex > 0 ? text.substring(colonIndex + 1).trim() : text;
   };
 
+  // Affichage de l'extraction en cours
+  if (extractionProgress.status === 'extracting' && keyPoints.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Extraction des points clés
+          </h2>
+          <p className="text-lg text-gray-600">
+            Analyse intelligente de votre contenu en cours
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="text-center mb-6">
+            <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Extraction en cours
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {extractionProgress.currentStep}
+            </p>
+            
+            {/* Barre de progression */}
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+              <div 
+                className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${extractionProgress.progress}%` }}
+              ></div>
+            </div>
+            
+            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+              <span>{extractionProgress.progress}%</span>
+              <span>•</span>
+              <span className="flex items-center space-x-1">
+                <span className={`w-2 h-2 rounded-full ${
+                  extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
+                }`}></span>
+                <span>{extractionProgress.api}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-800 mb-2">Processus d'extraction</h4>
+            <div className="space-y-2 text-sm text-blue-700">
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 25 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <span>Analyse sémantique du contenu</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 50 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <span>Extraction des insights principaux</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 75 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <span>Structuration des points clés</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 100 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <span>Finalisation</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
@@ -289,6 +432,35 @@ ${keyPoints.map((kp, index) =>
           Éditez les points clés, gérez les intervenants et enrichissez avec des liens de référence
         </p>
       </div>
+
+      {/* Statut de l'extraction */}
+      {extractionProgress.status === 'completed' && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center space-x-2">
+            <Check className="w-5 h-5 text-green-600" />
+            <span className="font-medium text-green-800">
+              {extractionProgress.currentStep}
+            </span>
+            <span className="text-sm text-green-600">
+              • {extractionProgress.api}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {extractionProgress.status === 'error' && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <span className="font-medium text-red-800">
+              {extractionProgress.currentStep}
+            </span>
+            <span className="text-sm text-red-600">
+              • {extractionProgress.api}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Panneau de contrôle */}
@@ -400,6 +572,19 @@ ${keyPoints.map((kp, index) =>
                 Télécharger
               </button>
             </div>
+            
+            {/* Indicateur API */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <div className="text-xs text-gray-600 mb-1">API utilisée :</div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
+                }`}></div>
+                <span className="text-sm font-medium text-gray-700">
+                  {extractionProgress.api || 'Non définie'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -409,21 +594,13 @@ ${keyPoints.map((kp, index) =>
             <h3 className="text-lg font-semibold text-gray-900">Points clés ({keyPoints.length})</h3>
           </div>
 
-          {keyPoints.length === 0 && !isCompleting ? (
+          {keyPoints.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <div className="text-gray-400 mb-4">
                 <Sparkles className="w-12 h-12 mx-auto" />
               </div>
               <h4 className="text-lg font-medium text-gray-900 mb-2">Extraction en cours...</h4>
               <p className="text-gray-600 mb-6">Les points clés sont en cours d'extraction automatique avec l'IA.</p>
-            </div>
-          ) : isCompleting ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-blue-600 mb-4">
-                <RefreshCw className="w-12 h-12 mx-auto animate-spin" />
-              </div>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Analyse en cours...</h4>
-              <p className="text-gray-600">Extraction et analyse des points clés avec l'IA...</p>
             </div>
           ) : (
             <div className="space-y-4">
