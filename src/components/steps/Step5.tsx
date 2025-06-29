@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Lightbulb, Eye, EyeOff, Edit3, Check, X } from 'lucide-react';
+import { ArrowRight, Lightbulb, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, Calendar, Gift, ExternalLink, FileText, List, Hash, MessageSquare } from 'lucide-react';
 import { ContentSettings, KeyPoint } from '../../types';
 
 interface Step5Props {
@@ -7,6 +7,39 @@ interface Step5Props {
   contentSettings: ContentSettings;
   onUpdateSettings: (settings: ContentSettings) => void;
   onNext: () => void;
+}
+
+interface ArticleSection {
+  id: string;
+  title: string;
+  content: string;
+  keyPoints: string[];
+  links: string[];
+  order: number;
+}
+
+interface ImportantDate {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+}
+
+interface GiveawayInfo {
+  id: string;
+  title: string;
+  description: string;
+  endDate: string;
+  requirements: string[];
+}
+
+interface CallToAction {
+  id: string;
+  type: 'subscribe' | 'follow' | 'share' | 'visit' | 'download' | 'custom';
+  title: string;
+  description: string;
+  url?: string;
+  buttonText: string;
 }
 
 const Step5: React.FC<Step5Props> = ({ 
@@ -18,6 +51,21 @@ const Step5: React.FC<Step5Props> = ({
   const [localSettings, setLocalSettings] = useState<ContentSettings>(contentSettings);
   const [showPreview, setShowPreview] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
+  
+  // Nouveaux états pour la structure complète
+  const [introduction, setIntroduction] = useState('');
+  const [tldrPoints, setTldrPoints] = useState<string[]>([]);
+  const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
+  const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
+  const [giveaways, setGiveaways] = useState<GiveawayInfo[]>([]);
+  const [callToActions, setCallToActions] = useState<CallToAction[]>([]);
+  
+  // États pour l'ajout d'éléments
+  const [newTldrPoint, setNewTldrPoint] = useState('');
+  const [newSection, setNewSection] = useState({ title: '', content: '', keyPoints: [''], links: [''] });
+  const [newDate, setNewDate] = useState({ date: '', title: '', description: '' });
+  const [newGiveaway, setNewGiveaway] = useState({ title: '', description: '', endDate: '', requirements: [''] });
+  const [newCTA, setNewCTA] = useState({ type: 'subscribe' as const, title: '', description: '', url: '', buttonText: '' });
 
   const handleChange = (field: keyof ContentSettings, value: string) => {
     const updated = { ...localSettings, [field]: value };
@@ -25,7 +73,7 @@ const Step5: React.FC<Step5Props> = ({
     onUpdateSettings(updated);
   };
 
-  // Générer automatiquement le contenu basé sur les points clés
+  // Initialisation automatique basée sur les points clés
   useEffect(() => {
     if (keyPoints.length > 0 && !localSettings.title) {
       const themes = keyPoints.filter(kp => kp.category === 'theme');
@@ -40,259 +88,679 @@ const Step5: React.FC<Step5Props> = ({
       }
     }
 
-    if (keyPoints.length > 0 && !localSettings.summary) {
+    // Générer l'introduction automatiquement
+    if (keyPoints.length > 0 && !introduction) {
       const keyThemes = keyPoints.slice(0, 3).map(kp => {
         const title = kp.text.split(':')[0];
         return title.length > 80 ? title.substring(0, 80) + '...' : title;
       }).join(', ');
-      const summary = `Cette analyse explore ${keyThemes} et d'autres aspects essentiels de la discussion.`;
-      handleChange('summary', summary);
+      
+      const autoIntroduction = `Cette analyse approfondie explore ${keyThemes} et d'autres aspects essentiels abordés lors de cette discussion. Nous examinerons les tendances émergentes, les innovations techniques et les perspectives d'avenir qui façonnent le paysage actuel.`;
+      setIntroduction(autoIntroduction);
     }
-  }, [keyPoints]);
 
-  const suggestedTitles = [
-    "Points clés de la discussion : Analyse approfondie",
-    "Synthèse des insights principaux",
-    "Résumé exécutif de la conversation",
-    "Les moments forts de l'échange",
-    "Analyse détaillée des thèmes abordés"
-  ];
-
-  const suggestedSubtitles = [
-    "Une synthèse complète des points essentiels",
-    "Analyse des thèmes et insights principaux", 
-    "Résumé structuré pour une compréhension rapide",
-    "Guide des éléments clés de la discussion",
-    "Distillation des moments les plus importants"
-  ];
-
-  const getKeyPointTitle = (text: string) => {
-    const colonIndex = text.indexOf(':');
-    return colonIndex > 0 ? text.substring(0, colonIndex) : text.substring(0, 60) + '...';
-  };
-
-  const getKeyPointDescription = (text: string) => {
-    const colonIndex = text.indexOf(':');
-    const description = colonIndex > 0 ? text.substring(colonIndex + 1).trim() : text;
-    return description.length > 150 ? description.substring(0, 150) + '...' : description;
-  };
-
-  const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
-    if (!acc[kp.category]) {
-      acc[kp.category] = [];
+    // Générer les points TL;DR automatiquement
+    if (keyPoints.length > 0 && tldrPoints.length === 0) {
+      const autoTldr = keyPoints.slice(0, 5).map(kp => {
+        const title = kp.text.split(':')[0];
+        return title.length > 100 ? title.substring(0, 100) + '...' : title;
+      });
+      setTldrPoints(autoTldr);
     }
-    acc[kp.category].push(kp);
-    return acc;
-  }, {} as Record<string, KeyPoint[]>);
 
-  const categoryLabels = {
-    theme: 'Thèmes principaux',
-    insight: 'Insights clés',
-    quote: 'Citations importantes',
-    question: 'Questions soulevées'
+    // Générer les sections automatiquement
+    if (keyPoints.length > 0 && articleSections.length === 0) {
+      const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
+        if (!acc[kp.category]) {
+          acc[kp.category] = [];
+        }
+        acc[kp.category].push(kp);
+        return acc;
+      }, {} as Record<string, KeyPoint[]>);
+
+      const autoSections: ArticleSection[] = Object.entries(groupedKeyPoints).map(([category, points], index) => {
+        const categoryTitles = {
+          theme: 'Thèmes principaux',
+          insight: 'Insights et analyses',
+          quote: 'Citations importantes',
+          question: 'Questions soulevées'
+        };
+
+        return {
+          id: `section_${index}`,
+          title: categoryTitles[category as keyof typeof categoryTitles] || category,
+          content: `Cette section développe les aspects liés à ${category} abordés lors de la discussion.`,
+          keyPoints: points.map(p => p.text.split(':')[0] || p.text.substring(0, 100)),
+          links: points.flatMap(p => p.webLinks || []),
+          order: index
+        };
+      });
+
+      setArticleSections(autoSections);
+    }
+  }, [keyPoints, localSettings.title, introduction, tldrPoints.length, articleSections.length]);
+
+  // Fonctions pour gérer les TL;DR points
+  const addTldrPoint = () => {
+    if (newTldrPoint.trim()) {
+      setTldrPoints([...tldrPoints, newTldrPoint.trim()]);
+      setNewTldrPoint('');
+    }
   };
 
-  const categoryColors = {
-    theme: 'bg-blue-50 border-blue-200 text-blue-800',
-    insight: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    quote: 'bg-green-50 border-green-200 text-green-800',
-    question: 'bg-purple-50 border-purple-200 text-purple-800'
+  const removeTldrPoint = (index: number) => {
+    setTldrPoints(tldrPoints.filter((_, i) => i !== index));
+  };
+
+  const updateTldrPoint = (index: number, value: string) => {
+    const updated = [...tldrPoints];
+    updated[index] = value;
+    setTldrPoints(updated);
+  };
+
+  // Fonctions pour gérer les sections
+  const addSection = () => {
+    if (newSection.title.trim()) {
+      const section: ArticleSection = {
+        id: `section_${Date.now()}`,
+        title: newSection.title,
+        content: newSection.content,
+        keyPoints: newSection.keyPoints.filter(kp => kp.trim()),
+        links: newSection.links.filter(link => link.trim()),
+        order: articleSections.length
+      };
+      setArticleSections([...articleSections, section]);
+      setNewSection({ title: '', content: '', keyPoints: [''], links: [''] });
+    }
+  };
+
+  const removeSection = (id: string) => {
+    setArticleSections(articleSections.filter(section => section.id !== id));
+  };
+
+  // Fonctions pour gérer les dates importantes
+  const addImportantDate = () => {
+    if (newDate.title.trim() && newDate.date) {
+      const date: ImportantDate = {
+        id: `date_${Date.now()}`,
+        date: newDate.date,
+        title: newDate.title,
+        description: newDate.description
+      };
+      setImportantDates([...importantDates, date]);
+      setNewDate({ date: '', title: '', description: '' });
+    }
+  };
+
+  const removeImportantDate = (id: string) => {
+    setImportantDates(importantDates.filter(date => date.id !== id));
+  };
+
+  // Fonctions pour gérer les giveaways
+  const addGiveaway = () => {
+    if (newGiveaway.title.trim()) {
+      const giveaway: GiveawayInfo = {
+        id: `giveaway_${Date.now()}`,
+        title: newGiveaway.title,
+        description: newGiveaway.description,
+        endDate: newGiveaway.endDate,
+        requirements: newGiveaway.requirements.filter(req => req.trim())
+      };
+      setGiveaways([...giveaways, giveaway]);
+      setNewGiveaway({ title: '', description: '', endDate: '', requirements: [''] });
+    }
+  };
+
+  const removeGiveaway = (id: string) => {
+    setGiveaways(giveaways.filter(giveaway => giveaway.id !== id));
+  };
+
+  // Fonctions pour gérer les call-to-actions
+  const addCallToAction = () => {
+    if (newCTA.title.trim()) {
+      const cta: CallToAction = {
+        id: `cta_${Date.now()}`,
+        type: newCTA.type,
+        title: newCTA.title,
+        description: newCTA.description,
+        url: newCTA.url,
+        buttonText: newCTA.buttonText
+      };
+      setCallToActions([...callToActions, cta]);
+      setNewCTA({ type: 'subscribe', title: '', description: '', url: '', buttonText: '' });
+    }
+  };
+
+  const removeCallToAction = (id: string) => {
+    setCallToActions(callToActions.filter(cta => cta.id !== id));
+  };
+
+  const formatPreview = () => {
+    const formatIcons = {
+      article: FileText,
+      bullets: List,
+      thread: MessageSquare,
+      faq: Hash
+    };
+
+    const Icon = formatIcons[localSettings.format as keyof typeof formatIcons] || FileText;
+
+    return (
+      <div className="prose prose-sm max-w-none">
+        {/* En-tête */}
+        <div className="mb-6 pb-4 border-b border-gray-200">
+          <div className="flex items-center space-x-2 mb-2">
+            <Icon className="w-5 h-5 text-blue-600" />
+            <span className="text-sm text-blue-600 font-medium">
+              {localSettings.format.charAt(0).toUpperCase() + localSettings.format.slice(1)} • {localSettings.tone}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            {localSettings.title || 'Votre titre apparaîtra ici'}
+          </h1>
+          {localSettings.subtitle && (
+            <h2 className="text-lg text-gray-600 font-normal mb-3">
+              {localSettings.subtitle}
+            </h2>
+          )}
+        </div>
+
+        {/* Introduction */}
+        {introduction && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Introduction</h3>
+            <p className="text-gray-700 leading-relaxed">{introduction}</p>
+          </div>
+        )}
+
+        {/* TL;DR */}
+        {tldrPoints.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+            <h3 className="text-lg font-semibold text-blue-900 mb-3">TL;DR - Points clés</h3>
+            <ul className="space-y-2">
+              {tldrPoints.map((point, index) => (
+                <li key={index} className="flex items-start space-x-2 text-blue-800">
+                  <span className="text-blue-600 mt-1">•</span>
+                  <span className="text-sm">{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Sections de l'article */}
+        {articleSections.map((section, index) => (
+          <div key={section.id} className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
+            <p className="text-gray-700 leading-relaxed mb-3">{section.content}</p>
+            
+            {section.keyPoints.length > 0 && (
+              <div className="mb-3">
+                <h4 className="font-medium text-gray-800 mb-2">Points abordés :</h4>
+                <ul className="space-y-1">
+                  {section.keyPoints.map((point, idx) => (
+                    <li key={idx} className="flex items-start space-x-2 text-gray-700">
+                      <span className="text-gray-500 mt-1">→</span>
+                      <span className="text-sm">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {section.links.length > 0 && (
+              <div className="mb-3">
+                <h4 className="font-medium text-gray-800 mb-2">Références :</h4>
+                <div className="space-y-1">
+                  {section.links.map((link, idx) => (
+                    <a
+                      key={idx}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      {link}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Dates importantes */}
+        {importantDates.length > 0 && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-yellow-900 mb-3 flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Dates importantes à retenir
+            </h3>
+            <div className="space-y-3">
+              {importantDates.map((date) => (
+                <div key={date.id} className="border-l-4 border-yellow-400 pl-4">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="font-medium text-yellow-900">{date.title}</span>
+                    <span className="text-sm text-yellow-700">• {new Date(date.date).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <p className="text-sm text-yellow-800">{date.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Giveaways */}
+        {giveaways.length > 0 && (
+          <div className="mb-6">
+            {giveaways.map((giveaway) => (
+              <div key={giveaway.id} className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                <h3 className="text-lg font-semibold text-green-900 mb-2 flex items-center">
+                  <Gift className="w-5 h-5 mr-2" />
+                  {giveaway.title}
+                </h3>
+                <p className="text-green-800 mb-3">{giveaway.description}</p>
+                {giveaway.endDate && (
+                  <p className="text-sm text-green-700 mb-2">
+                    <strong>Date limite :</strong> {new Date(giveaway.endDate).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
+                {giveaway.requirements.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-green-800 mb-1">Conditions de participation :</h4>
+                    <ul className="space-y-1">
+                      {giveaway.requirements.map((req, idx) => (
+                        <li key={idx} className="flex items-start space-x-2 text-green-700">
+                          <span className="text-green-600 mt-1">✓</span>
+                          <span className="text-sm">{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Call to Actions */}
+        {callToActions.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Passez à l'action</h3>
+            <div className="space-y-4">
+              {callToActions.map((cta) => (
+                <div key={cta.id} className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">{cta.title}</h4>
+                  <p className="text-gray-700 mb-3">{cta.description}</p>
+                  <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all">
+                    {cta.buttonText}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="text-gray-500 text-sm italic mt-8 pt-4 border-t border-gray-200">
+          [Aperçu de la structure - Le contenu final sera généré aux étapes suivantes]
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Structure du contenu
+          Structure complète de l'article
         </h2>
         <p className="text-lg text-gray-600">
-          Définissez le titre, sous-titre et résumé avec un aperçu de la structure complète
+          Définissez tous les éléments de votre article : titre, introduction, sections, dates importantes et call-to-actions
         </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Formulaire de structure */}
         <div className="space-y-6">
-          {/* Titre */}
+          {/* Titre et sous-titre */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <label className="text-lg font-semibold text-gray-900">
-                Titre principal
-              </label>
-              {editingField !== 'title' && (
-                <button
-                  onClick={() => setEditingField('title')}
-                  className="p-1 text-gray-400 hover:text-blue-600"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Titre et sous-titre</h3>
             
-            {editingField === 'title' ? (
-              <div className="space-y-3">
-                <textarea
-                  value={localSettings.title}
-                  onChange={(e) => handleChange('title', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={2}
-                  autoFocus
-                />
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Titre principal</label>
+                {editingField === 'title' ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={localSettings.title}
+                      onChange={(e) => handleChange('title', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={2}
+                      autoFocus
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setEditingField(null)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditingField(null)}
+                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => setEditingField('title')}
+                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                   >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+                    <p className="text-gray-900 font-medium">{localSettings.title || 'Cliquez pour éditer le titre'}</p>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-900 font-medium">{localSettings.title || 'Cliquez pour éditer le titre'}</p>
-              </div>
-            )}
-            
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Suggestions :</h4>
-              <div className="space-y-2">
-                {suggestedTitles.map((title, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleChange('title', title)}
-                    className="block w-full text-left p-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded transition-all"
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sous-titre (optionnel)</label>
+                {editingField === 'subtitle' ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={localSettings.subtitle}
+                      onChange={(e) => handleChange('subtitle', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows={2}
+                      autoFocus
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setEditingField(null)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditingField(null)}
+                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => setEditingField('subtitle')}
+                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                   >
-                    {title}
-                  </button>
-                ))}
+                    <p className="text-gray-900">{localSettings.subtitle || 'Cliquez pour ajouter un sous-titre'}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Sous-titre */}
+          {/* Introduction */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <label className="text-lg font-semibold text-gray-900">
-                Sous-titre (optionnel)
-              </label>
-              {editingField !== 'subtitle' && (
-                <button
-                  onClick={() => setEditingField('subtitle')}
-                  className="p-1 text-gray-400 hover:text-blue-600"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h3>
+            <textarea
+              value={introduction}
+              onChange={(e) => setIntroduction(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="Rédigez l'introduction de votre article..."
+            />
+          </div>
+
+          {/* TL;DR Points */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">TL;DR - Résumé rapide</h3>
             
-            {editingField === 'subtitle' ? (
-              <div className="space-y-3">
-                <textarea
-                  value={localSettings.subtitle}
-                  onChange={(e) => handleChange('subtitle', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={2}
-                  autoFocus
-                />
-                <div className="flex space-x-2">
+            <div className="space-y-3">
+              {tldrPoints.map((point, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={point}
+                    onChange={(e) => updateTldrPoint(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
                   <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    onClick={() => removeTldrPoint(index)}
+                    className="p-2 text-red-500 hover:text-red-700"
                   >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                  >
-                    <X className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-900">{localSettings.subtitle || 'Cliquez pour ajouter un sous-titre'}</p>
-              </div>
-            )}
-            
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Suggestions :</h4>
-              <div className="space-y-2">
-                {suggestedSubtitles.map((subtitle, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleChange('subtitle', subtitle)}
-                    className="block w-full text-left p-2 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 rounded transition-all"
-                  >
-                    {subtitle}
-                  </button>
-                ))}
+              ))}
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newTldrPoint}
+                  onChange={(e) => setNewTldrPoint(e.target.value)}
+                  placeholder="Nouveau point TL;DR..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  onKeyPress={(e) => e.key === 'Enter' && addTldrPoint()}
+                />
+                <button
+                  onClick={addTldrPoint}
+                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Résumé exécutif */}
+          {/* Dates importantes */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <label className="text-lg font-semibold text-gray-900">
-                Résumé exécutif
-              </label>
-              {editingField !== 'summary' && (
-                <button
-                  onClick={() => setEditingField('summary')}
-                  className="p-1 text-gray-400 hover:text-blue-600"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Dates importantes (optionnel)
+            </h3>
             
-            {editingField === 'summary' ? (
-              <div className="space-y-3">
-                <textarea
-                  value={localSettings.summary}
-                  onChange={(e) => handleChange('summary', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  autoFocus
-                />
-                <div className="flex space-x-2">
+            <div className="space-y-4">
+              {importantDates.map((date) => (
+                <div key={date.id} className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-yellow-900">{date.title}</h4>
+                    <button
+                      onClick={() => removeImportantDate(date.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-yellow-800 mb-1">{date.description}</p>
+                  <p className="text-xs text-yellow-700">{new Date(date.date).toLocaleDateString('fr-FR')}</p>
+                </div>
+              ))}
+              
+              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newDate.title}
+                    onChange={(e) => setNewDate(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Titre de l'événement..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <input
+                    type="date"
+                    value={newDate.date}
+                    onChange={(e) => setNewDate(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <textarea
+                    value={newDate.description}
+                    onChange={(e) => setNewDate(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Description de l'événement..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  />
                   <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                    onClick={addImportantDate}
+                    disabled={!newDate.title.trim() || !newDate.date}
+                    className="w-full px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 text-sm"
                   >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setEditingField(null)}
-                    className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                  >
-                    <X className="w-4 h-4" />
+                    Ajouter la date
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-900 leading-relaxed">{localSettings.summary || 'Cliquez pour éditer le résumé'}</p>
-              </div>
-            )}
+            </div>
+          </div>
+
+          {/* Giveaways */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Gift className="w-5 h-5 mr-2" />
+              Giveaways et concours (optionnel)
+            </h3>
             
-            <p className="text-sm text-gray-500 mt-2">
-              Ce résumé apparaîtra en introduction pour donner un aperçu rapide du contenu.
-            </p>
+            <div className="space-y-4">
+              {giveaways.map((giveaway) => (
+                <div key={giveaway.id} className="p-3 border border-green-200 bg-green-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-green-900">{giveaway.title}</h4>
+                    <button
+                      onClick={() => removeGiveaway(giveaway.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-green-800 mb-2">{giveaway.description}</p>
+                  {giveaway.endDate && (
+                    <p className="text-xs text-green-700 mb-2">
+                      Fin : {new Date(giveaway.endDate).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
+                  <div className="text-xs text-green-700">
+                    {giveaway.requirements.length} condition(s) de participation
+                  </div>
+                </div>
+              ))}
+              
+              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newGiveaway.title}
+                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Titre du giveaway..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <textarea
+                    value={newGiveaway.description}
+                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Description du giveaway..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  />
+                  <input
+                    type="date"
+                    value={newGiveaway.endDate}
+                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, endDate: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <button
+                    onClick={addGiveaway}
+                    disabled={!newGiveaway.title.trim()}
+                    className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                  >
+                    Ajouter le giveaway
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Actions */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Call-to-Actions de clôture</h3>
+            
+            <div className="space-y-4">
+              {callToActions.map((cta) => (
+                <div key={cta.id} className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-blue-900">{cta.title}</h4>
+                    <button
+                      onClick={() => removeCallToAction(cta.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-blue-800 mb-2">{cta.description}</p>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-blue-700 bg-blue-200 px-2 py-1 rounded">{cta.type}</span>
+                    <span className="text-xs text-blue-700">{cta.buttonText}</span>
+                  </div>
+                </div>
+              ))}
+              
+              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
+                <div className="space-y-2">
+                  <select
+                    value={newCTA.type}
+                    onChange={(e) => setNewCTA(prev => ({ ...prev, type: e.target.value as any }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="subscribe">S'abonner</option>
+                    <option value="follow">Suivre</option>
+                    <option value="share">Partager</option>
+                    <option value="visit">Visiter</option>
+                    <option value="download">Télécharger</option>
+                    <option value="custom">Personnalisé</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={newCTA.title}
+                    onChange={(e) => setNewCTA(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Titre du CTA..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <textarea
+                    value={newCTA.description}
+                    onChange={(e) => setNewCTA(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Description du CTA..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                  />
+                  <input
+                    type="text"
+                    value={newCTA.buttonText}
+                    onChange={(e) => setNewCTA(prev => ({ ...prev, buttonText: e.target.value }))}
+                    placeholder="Texte du bouton..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <input
+                    type="url"
+                    value={newCTA.url}
+                    onChange={(e) => setNewCTA(prev => ({ ...prev, url: e.target.value }))}
+                    placeholder="URL (optionnel)..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <button
+                    onClick={addCallToAction}
+                    disabled={!newCTA.title.trim() || !newCTA.buttonText.trim()}
+                    className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                  >
+                    Ajouter le CTA
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Aperçu de la structure */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Structure de l'article</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Aperçu de l'article</h3>
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="flex items-center text-sm text-blue-600 hover:text-blue-700"
@@ -304,122 +772,24 @@ const Step5: React.FC<Step5Props> = ({
           
           {showPreview && (
             <div className="border border-gray-200 rounded-lg p-6 bg-gray-50 max-h-96 overflow-y-auto">
-              <article className="prose prose-sm max-w-none">
-                {/* En-tête */}
-                <div className="mb-6 pb-4 border-b border-gray-200">
-                  <h1 className="text-xl font-bold text-gray-900 mb-2">
-                    {localSettings.title || 'Votre titre apparaîtra ici'}
-                  </h1>
-                  {localSettings.subtitle && (
-                    <h2 className="text-lg text-gray-600 font-normal mb-3">
-                      {localSettings.subtitle}
-                    </h2>
-                  )}
-                  
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3">
-                    <div className="text-sm font-medium text-blue-800 mb-1">Résumé exécutif</div>
-                    <p className="text-blue-700 text-sm">
-                      {localSettings.summary || 'Votre résumé exécutif apparaîtra ici...'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Structure par catégorie */}
-                {Object.entries(groupedKeyPoints).map(([category, points]) => (
-                  <div key={category} className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <span className={`w-3 h-3 rounded-full mr-2 ${
-                        category === 'theme' ? 'bg-blue-500' :
-                        category === 'insight' ? 'bg-yellow-500' :
-                        category === 'quote' ? 'bg-green-500' :
-                        'bg-purple-500'
-                      }`}></span>
-                      {categoryLabels[category as keyof typeof categoryLabels] || category}
-                      <span className="ml-2 text-sm text-gray-500">({points.length})</span>
-                    </h3>
-                    
-                    <div className="space-y-3">
-                      {points.slice(0, 3).map((point, index) => (
-                        <div key={point.id} className={`border-l-4 pl-4 py-2 ${categoryColors[category as keyof typeof categoryColors] || 'bg-gray-50 border-gray-400'}`}>
-                          <h4 className="font-medium text-gray-900 text-sm mb-1">
-                            {getKeyPointTitle(point.text)}
-                          </h4>
-                          <p className="text-gray-700 text-xs leading-relaxed">
-                            {getKeyPointDescription(point.text)}
-                          </p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-gray-500">
-                              Par {point.speaker}
-                            </span>
-                            {point.webLinks && point.webLinks.length > 0 && (
-                              <span className="text-xs text-blue-600">
-                                {point.webLinks.length} lien{point.webLinks.length > 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {points.length > 3 && (
-                        <div className="text-xs text-gray-500 italic pl-4">
-                          ... et {points.length - 3} autre{points.length - 3 > 1 ? 's' : ''} point{points.length - 3 > 1 ? 's' : ''}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {keyPoints.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>Aucun point clé disponible pour la prévisualisation.</p>
-                    <p className="text-sm">Ajoutez des points clés à l'étape précédente.</p>
-                  </div>
-                )}
-
-                <div className="text-gray-500 text-sm italic mt-6 pt-4 border-t border-gray-200">
-                  [Le contenu détaillé sera généré aux étapes suivantes...]
-                </div>
-              </article>
+              {formatPreview()}
             </div>
           )}
         </div>
       </div>
 
-      {/* Statistiques */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-8 mb-8">
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">
-          Aperçu de la structure
-        </h3>
-        <div className="grid md:grid-cols-4 gap-4">
-          {Object.entries(groupedKeyPoints).map(([category, points]) => (
-            <div key={category} className="bg-white rounded-lg p-4 text-center">
-              <div className={`text-2xl font-bold mb-1 ${
-                category === 'theme' ? 'text-blue-600' :
-                category === 'insight' ? 'text-yellow-600' :
-                category === 'quote' ? 'text-green-600' :
-                'text-purple-600'
-              }`}>
-                {points.length}
-              </div>
-              <div className="text-sm text-gray-600">
-                {categoryLabels[category as keyof typeof categoryLabels] || category}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Conseils */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-8 mb-8">
         <div className="flex items-start space-x-3">
           <Lightbulb className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div>
             <h4 className="font-medium text-yellow-800 mb-1">Conseils pour une structure efficace</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Le titre doit être accrocheur et informatif (50-60 caractères idéal)</li>
-              <li>• Le sous-titre précise et complète le titre principal</li>
-              <li>• Le résumé exécutif doit être concis (2-3 phrases maximum)</li>
-              <li>• La structure suit automatiquement vos points clés par catégorie</li>
+              <li>• Le TL;DR doit résumer les points essentiels en 3-5 bullets maximum</li>
+              <li>• Les sections doivent suivre un ordre logique et progressif</li>
+              <li>• Les dates importantes créent de l'urgence et de l'engagement</li>
+              <li>• Les giveaways augmentent l'interaction et la viralité</li>
+              <li>• Les call-to-actions doivent être clairs et incitatifs</li>
             </ul>
           </div>
         </div>
@@ -428,9 +798,9 @@ const Step5: React.FC<Step5Props> = ({
       <div className="flex justify-center">
         <button
           onClick={onNext}
-          disabled={!localSettings.title.trim()}
+          disabled={!localSettings.title.trim() || !introduction.trim()}
           className={`flex items-center px-8 py-3 rounded-lg font-medium transition-all shadow-sm ${
-            localSettings.title.trim()
+            localSettings.title.trim() && introduction.trim()
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
