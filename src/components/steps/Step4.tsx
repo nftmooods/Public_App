@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
 import { generateMockKeyPoints } from '../../utils/mockData';
@@ -44,6 +44,9 @@ const Step4: React.FC<Step4Props> = ({
     progress: 0,
     api: ''
   });
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [newSpeaker, setNewSpeaker] = useState({ name: '', color: '#3B82F6' });
+  const [showAddSpeaker, setShowAddSpeaker] = useState(false);
 
   // Auto-extraction des points clés si aucun n'existe
   useEffect(() => {
@@ -185,6 +188,48 @@ const Step4: React.FC<Step4Props> = ({
       speakers: updatedSpeakers
     });
     setEditingSpeaker(null);
+  };
+
+  const handleAddSpeaker = () => {
+    if (!newSpeaker.name.trim()) return;
+    
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#84CC16', '#F97316'];
+    const usedColors = transcription.speakers.map(s => s.color);
+    const availableColor = colors.find(color => !usedColors.includes(color)) || colors[0];
+    
+    const speaker = {
+      id: `speaker_${Date.now()}`,
+      name: newSpeaker.name,
+      color: newSpeaker.color || availableColor,
+      speakingTime: 0
+    };
+    
+    onUpdateTranscription({
+      ...transcription,
+      speakers: [...transcription.speakers, speaker]
+    });
+    
+    setNewSpeaker({ name: '', color: '#3B82F6' });
+    setShowAddSpeaker(false);
+  };
+
+  const handleDeleteSpeaker = (speakerId: string) => {
+    const updatedSpeakers = transcription.speakers.filter(speaker => speaker.id !== speakerId);
+    onUpdateTranscription({
+      ...transcription,
+      speakers: updatedSpeakers
+    });
+    
+    // Mettre à jour les points clés pour retirer ce speaker
+    const speakerToDelete = transcription.speakers.find(s => s.id === speakerId);
+    if (speakerToDelete) {
+      const updatedKeyPoints = keyPoints.map(kp => 
+        kp.speaker === speakerToDelete.name 
+          ? { ...kp, speaker: transcription.speakers[0]?.name || 'Intervenant' }
+          : kp
+      );
+      onUpdateKeyPoints(updatedKeyPoints);
+    }
   };
 
   const handleKeyPointEdit = (id: string, field: 'text' | 'speaker', newValue: string) => {
@@ -357,6 +402,35 @@ ${keyPoints.map((kp, index) =>
     return colonIndex > 0 ? text.substring(colonIndex + 1).trim() : text;
   };
 
+  // Gestion du drag and drop pour réorganiser les points clés
+  const handleDragStart = (e: React.DragEvent, keyPointId: string) => {
+    setDraggedItem(keyPointId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    
+    if (!draggedItem || draggedItem === targetId) return;
+    
+    const draggedIndex = keyPoints.findIndex(kp => kp.id === draggedItem);
+    const targetIndex = keyPoints.findIndex(kp => kp.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    
+    const newKeyPoints = [...keyPoints];
+    const [draggedKeyPoint] = newKeyPoints.splice(draggedIndex, 1);
+    newKeyPoints.splice(targetIndex, 0, draggedKeyPoint);
+    
+    onUpdateKeyPoints(newKeyPoints);
+    setDraggedItem(null);
+  };
+
   // Affichage de l'extraction en cours
   if (extractionProgress.status === 'extracting' && keyPoints.length === 0) {
     return (
@@ -465,7 +539,7 @@ ${keyPoints.map((kp, index) =>
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Points clés et intervenants
@@ -528,134 +602,149 @@ ${keyPoints.map((kp, index) =>
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Panneau de contrôle */}
-        <div className="space-y-6">
-          {/* Édition des intervenants */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Intervenants ({transcription.speakers.length})
-              </h3>
-            </div>
-            <div className="space-y-3">
-              {transcription.speakers.map((speaker) => (
-                <div key={speaker.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: speaker.color }}
-                  ></div>
-                  {editingSpeaker === speaker.id ? (
-                    <input
-                      type="text"
-                      defaultValue={speaker.name}
-                      onBlur={(e) => handleSpeakerNameChange(speaker.id, e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleSpeakerNameChange(speaker.id, e.currentTarget.value);
-                        }
-                      }}
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                      autoFocus
-                    />
-                  ) : (
-                    <>
-                      <span className="flex-1 font-medium text-sm">{speaker.name}</span>
+      {/* Actions principales en haut */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex space-x-3">
+          <button
+            onClick={handleCompleteWithAI}
+            disabled={isCompleting}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
+          >
+            {isCompleting ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2" />
+            )}
+            {isCompleting ? 'Analyse en cours...' : 'Compléter avec l\'IA'}
+          </button>
+          
+          <button
+            onClick={downloadTranscription}
+            className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Télécharger
+          </button>
+        </div>
+
+        {/* Indicateur API */}
+        <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
+          <div className={`w-2 h-2 rounded-full ${
+            extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
+          }`}></div>
+          <span className="text-sm font-medium text-gray-700">
+            {extractionProgress.api || (demoMode ? 'Mode démonstration' : 'Non définie')}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-4 gap-8">
+        {/* Panneau des intervenants */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Users className="w-5 h-5 mr-2" />
+              Intervenants ({transcription.speakers.length})
+            </h3>
+            <button
+              onClick={() => setShowAddSpeaker(true)}
+              className="p-1 text-blue-600 hover:text-blue-700"
+              title="Ajouter un intervenant"
+            >
+              <UserPlus className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {transcription.speakers.map((speaker) => (
+              <div key={speaker.id} className="flex items-center space-x-3 p-3 border rounded-lg group">
+                <div 
+                  className="w-4 h-4 rounded-full"
+                  style={{ backgroundColor: speaker.color }}
+                ></div>
+                {editingSpeaker === speaker.id ? (
+                  <input
+                    type="text"
+                    defaultValue={speaker.name}
+                    onBlur={(e) => handleSpeakerNameChange(speaker.id, e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSpeakerNameChange(speaker.id, e.currentTarget.value);
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <span className="flex-1 font-medium text-sm">{speaker.name}</span>
+                    <div className="opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
                       <button
                         onClick={() => setEditingSpeaker(speaker.id)}
-                        className="p-1 text-gray-400 hover:text-gray-600"
+                        className="p-1 text-gray-400 hover:text-blue-600"
                       >
-                        <Edit3 className="w-4 h-4" />
+                        <Edit3 className="w-3 h-3" />
                       </button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Ajouter un nouveau point clé */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ajouter un point clé</h3>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={newKeyPoint.title}
-                onChange={(e) => setNewKeyPoint(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Titre du point clé..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              />
-              <textarea
-                value={newKeyPoint.description}
-                onChange={(e) => setNewKeyPoint(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Description détaillée..."
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none text-sm"
-              />
-              <select
-                value={newKeyPoint.speaker}
-                onChange={(e) => setNewKeyPoint(prev => ({ ...prev, speaker: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Sélectionner un intervenant</option>
-                {transcription.speakers.map(speaker => (
-                  <option key={speaker.id} value={speaker.name}>{speaker.name}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddKeyPoint}
-                disabled={!newKeyPoint.title.trim() || !newKeyPoint.description.trim()}
-                className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter le point clé
-              </button>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-            <div className="space-y-3">
-              <button
-                onClick={handleCompleteWithAI}
-                disabled={isCompleting}
-                className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
-              >
-                {isCompleting ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
+                      {transcription.speakers.length > 1 && (
+                        <button
+                          onClick={() => handleDeleteSpeaker(speaker.id)}
+                          className="p-1 text-gray-400 hover:text-red-600"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </>
                 )}
-                {isCompleting ? 'Analyse en cours...' : 'Compléter avec l\'IA'}
-              </button>
-              <button
-                onClick={downloadTranscription}
-                className="w-full flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Télécharger
-              </button>
-            </div>
-            
-            {/* Indicateur API */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-600 mb-1">API utilisée :</div>
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
-                }`}></div>
-                <span className="text-sm font-medium text-gray-700">
-                  {extractionProgress.api || (demoMode ? 'Mode démonstration' : 'Non définie')}
-                </span>
               </div>
-            </div>
+            ))}
+            
+            {/* Formulaire d'ajout d'intervenant */}
+            {showAddSpeaker && (
+              <div className="p-3 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newSpeaker.name}
+                    onChange={(e) => setNewSpeaker(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nom de l'intervenant"
+                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    autoFocus
+                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={newSpeaker.color}
+                      onChange={(e) => setNewSpeaker(prev => ({ ...prev, color: e.target.value }))}
+                      className="w-8 h-6 border border-gray-300 rounded"
+                    />
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={handleAddSpeaker}
+                        disabled={!newSpeaker.name.trim()}
+                        className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowAddSpeaker(false);
+                          setNewSpeaker({ name: '', color: '#3B82F6' });
+                        }}
+                        className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Points clés principaux */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-3 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-gray-900">Points clés ({keyPoints.length})</h3>
           </div>
@@ -671,12 +760,22 @@ ${keyPoints.map((kp, index) =>
           ) : (
             <div className="space-y-4">
               {keyPoints.map((keyPoint, index) => (
-                <div key={keyPoint.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div 
+                  key={keyPoint.id} 
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 group"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, keyPoint.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, keyPoint.id)}
+                >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <span className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                        {index + 1}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <GripVertical className="w-4 h-4 text-gray-400 cursor-move opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </span>
+                      </div>
                       <div className="flex items-center space-x-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
@@ -698,7 +797,7 @@ ${keyPoints.map((kp, index) =>
                         </select>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setEditingKeyPoint(keyPoint.id)}
                         className="p-1 text-gray-400 hover:text-blue-600"
@@ -808,6 +907,28 @@ ${keyPoints.map((kp, index) =>
                   </div>
                 </div>
               ))}
+              
+              {/* Bouton d'ajout de point clé entre les éléments */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    const newKP: KeyPoint = {
+                      id: Date.now().toString(),
+                      text: 'Nouveau point clé: Décrivez votre point clé ici',
+                      timestamp: 0,
+                      speaker: transcription.speakers[0]?.name || 'Utilisateur',
+                      category: 'insight',
+                      editable: true,
+                      webLinks: []
+                    };
+                    onUpdateKeyPoints([...keyPoints, newKP]);
+                  }}
+                  className="flex items-center px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un point clé
+                </button>
+              </div>
             </div>
           )}
         </div>

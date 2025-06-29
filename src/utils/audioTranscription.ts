@@ -155,13 +155,37 @@ class MockTranscriptionService implements AudioTranscriptionService {
   async transcribe(audioFile: File): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    return `Transcription de démonstration du fichier "${audioFile.name}": Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi. [Intervenant 1]: L'adoption institutionnelle s'accélère vraiment cette année. [Intervenant 2]: Absolument, et les solutions de scalabilité comme les Layer 2 changent la donne. [Intervenant 3]: Sans oublier l'interopérabilité entre les différentes blockchains qui devient cruciale.`;
+    return `[Intervenant 1]: Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi.
+
+[Intervenant 2]: Merci de m'avoir invité. Je pense que la DeFi est à un point d'inflexion vraiment intéressant. L'adoption institutionnelle s'accélère vraiment cette année.
+
+[Intervenant 3]: Absolument, et les solutions de scalabilité comme les Layer 2 changent la donne. L'adoption de la Layer 2 a augmenté de 300% cette année.
+
+[Intervenant 1]: C'est fascinant. Pouvez-vous nous parler de l'interopérabilité entre les différentes blockchains ?
+
+[Intervenant 4]: Sans oublier l'interopérabilité entre les différentes blockchains qui devient cruciale. L'expérience utilisateur devrait prioriser l'invisibilité de l'infrastructure complexe.
+
+[Intervenant 2]: Les ZK-rollups offrent la scalabilité tout en maintenant les principes de décentralisation, contrairement à d'autres solutions. C'est là où nous voyons le plus d'innovation.
+
+[Intervenant 3]: L'interopérabilité cross-chain représente la plus grande opportunité pour un mouvement d'actifs transparent entre les réseaux.`;
   }
 
   async transcribeFromUrl(url: string): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    return `Transcription de démonstration de l'URL "${url}": Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi. [Intervenant 1]: L'adoption institutionnelle s'accélère vraiment cette année. [Intervenant 2]: Absolument, et les solutions de scalabilité comme les Layer 2 changent la donne. [Intervenant 3]: Sans oublier l'interopérabilité entre les différentes blockchains qui devient cruciale.`;
+    return `[Host]: Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi.
+
+[Alex Chen]: Merci de m'avoir invité. Je pense que la DeFi est à un point d'inflexion vraiment intéressant. L'adoption institutionnelle s'accélère vraiment cette année.
+
+[Sarah Johnson]: Absolument, et les solutions de scalabilité comme les Layer 2 changent la donne. L'adoption de la Layer 2 a augmenté de 300% cette année.
+
+[Host]: C'est fascinant. Pouvez-vous nous parler de l'interopérabilité entre les différentes blockchains ?
+
+[Mike Rodriguez]: Sans oublier l'interopérabilité entre les différentes blockchains qui devient cruciale. L'expérience utilisateur devrait prioriser l'invisibilité de l'infrastructure complexe.
+
+[Sarah Johnson]: Les ZK-rollups offrent la scalabilité tout en maintenant les principes de décentralisation, contrairement à d'autres solutions. C'est là où nous voyons le plus d'innovation.
+
+[Alex Chen]: L'interopérabilité cross-chain représente la plus grande opportunité pour un mouvement d'actifs transparent entre les réseaux.`;
   }
 }
 

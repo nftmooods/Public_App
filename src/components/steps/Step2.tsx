@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, FileText, Clock, Users, ArrowRight, DollarSign, Zap, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, FileText, Clock, Users, ArrowRight, DollarSign, Zap, CheckCircle, AlertTriangle, Lightbulb, Tag } from 'lucide-react';
 import { TranscriptionData } from '../../types';
 
 interface Step2Props {
@@ -288,6 +288,45 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
     return `${minutes}min`;
   };
 
+  // Générer un résumé court et des sujets abordés
+  const generateSummary = (text: string) => {
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    return sentences.slice(0, 2).join('. ') + '.';
+  };
+
+  const generateTopics = (text: string, speakers: any[]) => {
+    // Extraire des sujets basés sur des mots-clés fréquents
+    const words = text.toLowerCase().split(/\W+/);
+    const stopWords = ['le', 'la', 'les', 'de', 'et', 'à', 'un', 'une', 'ce', 'que', 'qui', 'dans', 'pour', 'avec', 'sur', 'par', 'du', 'des', 'au', 'aux', 'est', 'sont', 'avoir', 'être', 'the', 'and', 'to', 'of', 'a', 'in', 'that', 'is', 'it', 'you', 'for', 'with', 'on', 'as'];
+    
+    const wordCount = words
+      .filter(word => word.length > 4 && !stopWords.includes(word))
+      .reduce((acc, word) => {
+        acc[word] = (acc[word] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    const topWords = Object.entries(wordCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 8)
+      .map(([word]) => word);
+
+    // Créer des sujets basés sur les mots-clés et le contexte
+    const topics = [
+      `Évolution de ${topWords[0] || 'la technologie'}`,
+      `Impact de ${topWords[1] || 'l\'innovation'}`,
+      `Perspectives sur ${topWords[2] || 'l\'avenir'}`,
+      `Analyse de ${topWords[3] || 'la situation'}`,
+      `Discussion sur ${topWords[4] || 'les tendances'}`,
+      `Insights sur ${topWords[5] || 'le marché'}`
+    ].filter((_, index) => topWords[index]);
+
+    return topics.slice(0, 4);
+  };
+
+  const summary = generateSummary(transcription.text);
+  const topics = generateTopics(transcription.text, transcription.speakers);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
@@ -295,7 +334,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           Analyse terminée avec succès
         </h2>
         <p className="text-lg text-gray-600">
-          Voici les métriques détectées et l'estimation des coûts de traitement
+          Voici l'aperçu de votre contenu et les métriques détectées
         </p>
       </div>
 
@@ -330,6 +369,44 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
               return "🎭 Traitement effectué en mode démonstration - Aucune API externe utilisée";
             }
           })()}
+        </div>
+      </div>
+
+      {/* Aperçu du contenu */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
+          Aperçu du contenu
+        </h3>
+        
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
+          <h4 className="font-medium text-gray-900 mb-3">Résumé</h4>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            {summary}
+          </p>
+          
+          <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+            <Tag className="w-4 h-4 mr-2" />
+            Principaux sujets abordés
+          </h4>
+          <div className="grid md:grid-cols-2 gap-3">
+            {topics.map((topic, index) => (
+              <div key={index} className="flex items-center space-x-2 bg-white rounded-lg p-3 border border-blue-200">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-gray-700">{topic}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-gray-700 leading-relaxed text-sm">
+            {transcription.text.substring(0, 300)}...
+          </p>
+        </div>
+        <div className="mt-4 flex items-center text-sm text-gray-500">
+          <FileText className="w-4 h-4 mr-2" />
+          <span>{transcription.text.split(' ').length} mots au total</span>
         </div>
       </div>
 
@@ -400,20 +477,6 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Aperçu du contenu */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Aperçu du contenu</h3>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-gray-700 leading-relaxed">
-            {transcription.text.substring(0, 500)}...
-          </p>
-        </div>
-        <div className="mt-4 flex items-center text-sm text-gray-500">
-          <FileText className="w-4 h-4 mr-2" />
-          <span>{transcription.text.split(' ').length} mots au total</span>
         </div>
       </div>
 
