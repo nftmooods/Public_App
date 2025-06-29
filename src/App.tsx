@@ -558,6 +558,9 @@ function App() {
             onUpdateTranscription={handleUpdateTranscription}
             onUpdateKeyPoints={handleUpdateKeyPoints}
             onNext={handleStep4Next}
+            demoMode={demoMode}
+            geminiConfigured={geminiConfigured}
+            apiKey={apiKey}
           />
         );
       case 5:

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
+import { generateMockKeyPoints } from '../../utils/mockData';
 
 interface Step4Props {
   transcription: TranscriptionData | null;
@@ -9,6 +10,9 @@ interface Step4Props {
   onUpdateTranscription: (transcription: TranscriptionData) => void;
   onUpdateKeyPoints: (keyPoints: KeyPoint[]) => void;
   onNext: () => void;
+  demoMode: boolean;
+  geminiConfigured: boolean;
+  apiKey: string;
 }
 
 interface ExtractionProgress {
@@ -23,7 +27,10 @@ const Step4: React.FC<Step4Props> = ({
   keyPoints, 
   onUpdateTranscription, 
   onUpdateKeyPoints, 
-  onNext 
+  onNext,
+  demoMode,
+  geminiConfigured,
+  apiKey
 }) => {
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
   const [editingKeyPoint, setEditingKeyPoint] = useState<string | null>(null);
@@ -38,43 +45,38 @@ const Step4: React.FC<Step4Props> = ({
     api: ''
   });
 
-  // Auto-extraction des points clés si aucun n'existe et que Gemini est disponible
+  // Auto-extraction des points clés si aucun n'existe
   useEffect(() => {
     const autoExtractKeyPoints = async () => {
       if (keyPoints.length === 0 && transcription && transcription.text) {
-        // Vérifier si Gemini est configuré
-        const demoMode = localStorage.getItem('demoMode') === 'true';
-        const apiKey = localStorage.getItem('google_ai_api_key');
-        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        console.log('🎯 Début de l\'auto-extraction des points clés...');
+        console.log('📊 Mode démo:', demoMode, '| Gemini configuré:', geminiConfigured, '| API Key présente:', !!apiKey);
         
-        let geminiApiKey = apiKey;
-        if (isAuthenticated) {
-          const userData = localStorage.getItem('user');
-          if (userData) {
-            const user = JSON.parse(userData);
-            if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-              geminiApiKey = user.apiKeys.googleAI.key;
-            }
-          }
-        }
-
-        if (!demoMode && geminiApiKey && geminiApiKey.startsWith('AIza')) {
+        if (!demoMode && geminiConfigured && apiKey && apiKey.startsWith('AIza')) {
           try {
-            console.log('🎯 Auto-extraction des points clés avec Gemini...');
+            console.log('🚀 Utilisation de Gemini pour l\'extraction...');
             
             setExtractionProgress({
               status: 'extracting',
-              currentStep: 'Analyse sémantique du contenu...',
-              progress: 25,
+              currentStep: 'Connexion à Gemini 1.5 Pro...',
+              progress: 10,
               api: 'Gemini 1.5 Pro'
             });
             
-            const geminiService = GeminiServiceFactory.create(geminiApiKey);
+            const geminiService = GeminiServiceFactory.create(apiKey);
+            
+            setExtractionProgress(prev => ({
+              ...prev,
+              currentStep: 'Analyse sémantique du contenu...',
+              progress: 30
+            }));
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             setExtractionProgress(prev => ({
               ...prev,
               currentStep: 'Extraction des insights principaux...',
-              progress: 50
+              progress: 60
             }));
             
             const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
@@ -82,12 +84,12 @@ const Step4: React.FC<Step4Props> = ({
             setExtractionProgress(prev => ({
               ...prev,
               currentStep: 'Structuration des points clés...',
-              progress: 75
+              progress: 85
             }));
             
             if (extractedKeyPoints.length > 0) {
               const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
-                id: `auto_${Date.now()}_${index}`,
+                id: `gemini_${Date.now()}_${index}`,
                 text: point,
                 timestamp: 0,
                 speaker: transcription.speakers[0]?.name || 'Intervenant',
@@ -98,60 +100,78 @@ const Step4: React.FC<Step4Props> = ({
               
               setExtractionProgress(prev => ({
                 ...prev,
-                currentStep: 'Finalisation...',
+                currentStep: `${extractedKeyPoints.length} points clés extraits avec succès`,
                 progress: 100
               }));
               
               setTimeout(() => {
                 onUpdateKeyPoints(formattedKeyPoints);
-                setExtractionProgress({
-                  status: 'completed',
-                  currentStep: `${extractedKeyPoints.length} points clés extraits avec succès`,
-                  progress: 100,
-                  api: 'Gemini 1.5 Pro'
-                });
-                console.log('✅ Points clés auto-extraits:', extractedKeyPoints.length);
+                setExtractionProgress(prev => ({
+                  ...prev,
+                  status: 'completed'
+                }));
+                console.log('✅ Points clés extraits avec Gemini:', extractedKeyPoints.length);
               }, 500);
             } else {
-              setExtractionProgress({
-                status: 'error',
-                currentStep: 'Aucun point clé trouvé',
-                progress: 0,
-                api: 'Gemini 1.5 Pro'
-              });
+              throw new Error('Aucun point clé trouvé par Gemini');
             }
           } catch (error) {
-            console.error('❌ Erreur lors de l\'auto-extraction:', error);
+            console.error('❌ Erreur lors de l\'extraction Gemini:', error);
             setExtractionProgress({
               status: 'error',
-              currentStep: `Erreur: ${(error as Error).message}`,
+              currentStep: `Erreur Gemini: ${(error as Error).message}`,
               progress: 0,
               api: 'Gemini 1.5 Pro'
             });
+            
+            // Fallback vers les données de démonstration
+            console.log('🔄 Fallback vers les données de démonstration');
+            setTimeout(() => {
+              const mockKeyPoints = generateMockKeyPoints();
+              onUpdateKeyPoints(mockKeyPoints);
+              setExtractionProgress({
+                status: 'completed',
+                currentStep: 'Données de démonstration chargées (fallback)',
+                progress: 100,
+                api: 'Mode démonstration (fallback)'
+              });
+            }, 1000);
           }
         } else {
           // Mode démonstration
+          console.log('🎭 Mode démonstration - chargement des données simulées');
           setExtractionProgress({
             status: 'extracting',
             currentStep: 'Simulation de l\'extraction...',
-            progress: 50,
+            progress: 30,
             api: 'Mode démonstration'
           });
           
           setTimeout(() => {
+            setExtractionProgress(prev => ({
+              ...prev,
+              currentStep: 'Génération des points clés simulés...',
+              progress: 70
+            }));
+          }, 1000);
+          
+          setTimeout(() => {
+            const mockKeyPoints = generateMockKeyPoints();
+            onUpdateKeyPoints(mockKeyPoints);
             setExtractionProgress({
               status: 'completed',
-              currentStep: 'Données de démonstration chargées',
+              currentStep: `${mockKeyPoints.length} points clés de démonstration chargés`,
               progress: 100,
               api: 'Mode démonstration'
             });
-          }, 2000);
+            console.log('✅ Points clés de démonstration chargés:', mockKeyPoints.length);
+          }, 2500);
         }
       }
     };
 
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey]);
 
   if (!transcription) return null;
 
@@ -229,26 +249,10 @@ const Step4: React.FC<Step4Props> = ({
     setIsCompleting(true);
     
     try {
-      // Vérifier si Gemini est configuré
-      const demoMode = localStorage.getItem('demoMode') === 'true';
-      const apiKey = localStorage.getItem('google_ai_api_key');
-      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-      
-      let geminiApiKey = apiKey;
-      if (isAuthenticated) {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-            geminiApiKey = user.apiKeys.googleAI.key;
-          }
-        }
-      }
-
-      if (!demoMode && geminiApiKey && geminiApiKey.startsWith('AIza')) {
+      if (!demoMode && geminiConfigured && apiKey && apiKey.startsWith('AIza')) {
         console.log('🚀 Complétion avec Gemini...');
         
-        const geminiService = GeminiServiceFactory.create(geminiApiKey);
+        const geminiService = GeminiServiceFactory.create(apiKey);
         const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
         
         // Filtrer les points clés qui n'existent pas déjà
@@ -379,7 +383,11 @@ ${keyPoints.map((kp, index) =>
             {/* Barre de progression */}
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
+                className={`h-3 rounded-full transition-all duration-500 ${
+                  extractionProgress.api.includes('Gemini') 
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
+                    : 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                }`}
                 style={{ width: `${extractionProgress.progress}%` }}
               ></div>
             </div>
@@ -396,23 +404,57 @@ ${keyPoints.map((kp, index) =>
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-800 mb-2">Processus d'extraction</h4>
-            <div className="space-y-2 text-sm text-blue-700">
+          <div className={`border rounded-lg p-4 ${
+            extractionProgress.api.includes('Gemini') 
+              ? 'bg-purple-50 border-purple-200' 
+              : 'bg-yellow-50 border-yellow-200'
+          }`}>
+            <h4 className={`font-medium mb-2 ${
+              extractionProgress.api.includes('Gemini') ? 'text-purple-800' : 'text-yellow-800'
+            }`}>
+              Processus d'extraction
+            </h4>
+            <div className={`space-y-2 text-sm ${
+              extractionProgress.api.includes('Gemini') ? 'text-purple-700' : 'text-yellow-700'
+            }`}>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 25 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.progress >= 10 
+                    ? (extractionProgress.api.includes('Gemini') ? 'bg-purple-600' : 'bg-yellow-600')
+                    : 'bg-gray-300'
+                }`}></div>
+                <span>Connexion à l'API</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.progress >= 30 
+                    ? (extractionProgress.api.includes('Gemini') ? 'bg-purple-600' : 'bg-yellow-600')
+                    : 'bg-gray-300'
+                }`}></div>
                 <span>Analyse sémantique du contenu</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 50 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.progress >= 60 
+                    ? (extractionProgress.api.includes('Gemini') ? 'bg-purple-600' : 'bg-yellow-600')
+                    : 'bg-gray-300'
+                }`}></div>
                 <span>Extraction des insights principaux</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 75 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.progress >= 85 
+                    ? (extractionProgress.api.includes('Gemini') ? 'bg-purple-600' : 'bg-yellow-600')
+                    : 'bg-gray-300'
+                }`}></div>
                 <span>Structuration des points clés</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${extractionProgress.progress >= 100 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  extractionProgress.progress >= 100 
+                    ? (extractionProgress.api.includes('Gemini') ? 'bg-purple-600' : 'bg-yellow-600')
+                    : 'bg-gray-300'
+                }`}></div>
                 <span>Finalisation</span>
               </div>
             </div>
@@ -435,13 +477,37 @@ ${keyPoints.map((kp, index) =>
 
       {/* Statut de l'extraction */}
       {extractionProgress.status === 'completed' && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+        <div className={`border rounded-xl p-4 mb-6 ${
+          extractionProgress.api.includes('Gemini') 
+            ? 'bg-green-50 border-green-200' 
+            : extractionProgress.api.includes('fallback')
+              ? 'bg-orange-50 border-orange-200'
+              : 'bg-yellow-50 border-yellow-200'
+        }`}>
           <div className="flex items-center space-x-2">
-            <Check className="w-5 h-5 text-green-600" />
-            <span className="font-medium text-green-800">
+            <Check className={`w-5 h-5 ${
+              extractionProgress.api.includes('Gemini') 
+                ? 'text-green-600' 
+                : extractionProgress.api.includes('fallback')
+                  ? 'text-orange-600'
+                  : 'text-yellow-600'
+            }`} />
+            <span className={`font-medium ${
+              extractionProgress.api.includes('Gemini') 
+                ? 'text-green-800' 
+                : extractionProgress.api.includes('fallback')
+                  ? 'text-orange-800'
+                  : 'text-yellow-800'
+            }`}>
               {extractionProgress.currentStep}
             </span>
-            <span className="text-sm text-green-600">
+            <span className={`text-sm ${
+              extractionProgress.api.includes('Gemini') 
+                ? 'text-green-600' 
+                : extractionProgress.api.includes('fallback')
+                  ? 'text-orange-600'
+                  : 'text-yellow-600'
+            }`}>
               • {extractionProgress.api}
             </span>
           </div>
@@ -581,7 +647,7 @@ ${keyPoints.map((kp, index) =>
                   extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
                 }`}></div>
                 <span className="text-sm font-medium text-gray-700">
-                  {extractionProgress.api || 'Non définie'}
+                  {extractionProgress.api || (demoMode ? 'Mode démonstration' : 'Non définie')}
                 </span>
               </div>
             </div>
