@@ -272,6 +272,8 @@ function App() {
       
       // Si du texte est fourni, l'utiliser directement
       if (appState.textContent.trim()) {
+        console.log('📝 Traitement du contenu texte fourni...');
+        
         const textLength = appState.textContent.length;
         const estimatedTokens = Math.floor(textLength / 4);
         const estimatedCost = estimatedTokens * 0.0001;
@@ -291,6 +293,8 @@ function App() {
           tokenCount: estimatedTokens,
           estimatedCost: estimatedCost
         };
+        
+        console.log('✅ Contenu texte traité');
       } else {
         // Utiliser l'API Gemini si configurée et en mode production
         if (!demoMode && geminiConfigured && apiKey) {
@@ -301,10 +305,13 @@ function App() {
             let transcriptionText = '';
             
             if (appState.audioFile) {
+              console.log('🎵 Transcription du fichier audio:', appState.audioFile.name);
               transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             } else if (appState.audioUrl) {
+              console.log('🔗 Transcription depuis URL audio:', appState.audioUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
             } else if (appState.youtubeUrl) {
+              console.log('📺 Transcription depuis YouTube:', appState.youtubeUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
@@ -396,7 +403,35 @@ function App() {
     setAppState(prev => ({ ...prev, keyPoints }));
   };
 
-  const handleStep4Next = () => {
+  const handleStep4Next = async () => {
+    // Si on n'a pas encore de points clés et qu'on a Gemini configuré, les extraire automatiquement
+    if (appState.keyPoints.length === 0 && !demoMode && geminiConfigured && apiKey && appState.transcription) {
+      try {
+        console.log('🎯 Extraction automatique des points clés avec Gemini...');
+        
+        const geminiService = GeminiServiceFactory.create(apiKey);
+        const extractedKeyPoints = await geminiService.extractKeyPoints(appState.transcription.text);
+        
+        if (extractedKeyPoints.length > 0) {
+          const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
+            id: `auto_${Date.now()}_${index}`,
+            text: point,
+            timestamp: 0,
+            speaker: appState.transcription?.speakers[0]?.name || 'Intervenant',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: []
+          }));
+          
+          setAppState(prev => ({ ...prev, keyPoints: formattedKeyPoints }));
+          console.log('✅ Points clés extraits automatiquement:', extractedKeyPoints.length);
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de l\'extraction automatique des points clés:', error);
+        // Continuer sans points clés automatiques
+      }
+    }
+    
     goToNextStep();
   };
 

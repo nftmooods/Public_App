@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
+import { GeminiServiceFactory } from '../../utils/geminiService';
 
 interface Step4Props {
   transcription: TranscriptionData | null;
@@ -23,6 +24,60 @@ const Step4: React.FC<Step4Props> = ({
   const [isCompleting, setIsCompleting] = useState(false);
   const [addingLinkTo, setAddingLinkTo] = useState<string | null>(null);
   const [newLink, setNewLink] = useState('');
+
+  // Auto-extraction des points clés si aucun n'existe et que Gemini est disponible
+  useEffect(() => {
+    const autoExtractKeyPoints = async () => {
+      if (keyPoints.length === 0 && transcription && transcription.text) {
+        // Vérifier si Gemini est configuré
+        const demoMode = localStorage.getItem('demoMode') === 'true';
+        const apiKey = localStorage.getItem('google_ai_api_key');
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        
+        let geminiApiKey = apiKey;
+        if (isAuthenticated) {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+              geminiApiKey = user.apiKeys.googleAI.key;
+            }
+          }
+        }
+
+        if (!demoMode && geminiApiKey && geminiApiKey.startsWith('AIza')) {
+          try {
+            console.log('🎯 Auto-extraction des points clés avec Gemini...');
+            setIsCompleting(true);
+            
+            const geminiService = GeminiServiceFactory.create(geminiApiKey);
+            const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+            
+            if (extractedKeyPoints.length > 0) {
+              const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
+                id: `auto_${Date.now()}_${index}`,
+                text: point,
+                timestamp: 0,
+                speaker: transcription.speakers[0]?.name || 'Intervenant',
+                category: 'insight' as const,
+                editable: true,
+                webLinks: []
+              }));
+              
+              onUpdateKeyPoints(formattedKeyPoints);
+              console.log('✅ Points clés auto-extraits:', extractedKeyPoints.length);
+            }
+          } catch (error) {
+            console.error('❌ Erreur lors de l\'auto-extraction:', error);
+          } finally {
+            setIsCompleting(false);
+          }
+        }
+      }
+    };
+
+    autoExtractKeyPoints();
+  }, [transcription, keyPoints.length, onUpdateKeyPoints]);
 
   if (!transcription) return null;
 
@@ -99,42 +154,93 @@ const Step4: React.FC<Step4Props> = ({
   const handleCompleteWithAI = async () => {
     setIsCompleting(true);
     
-    // Simuler la complétion IA
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    
-    // Ajouter quelques points clés supplémentaires
-    const aiSuggestions = [
-      {
-        id: `ai_${Date.now()}_1`,
-        text: "Évolution des protocoles DeFi: L'importance de l'audit de sécurité et de la gouvernance décentralisée pour maintenir la confiance des utilisateurs",
-        timestamp: 0,
-        speaker: 'IA Analysis',
-        category: 'insight' as const,
-        editable: true,
-        webLinks: ['https://defisafety.com/audits', 'https://governance-research.org']
-      },
-      {
-        id: `ai_${Date.now()}_2`,
-        text: "Impact environnemental: Les solutions Layer 2 réduisent considérablement l'empreinte carbone des transactions DeFi par rapport à Ethereum mainnet",
-        timestamp: 0,
-        speaker: 'IA Analysis',
-        category: 'theme' as const,
-        editable: true,
-        webLinks: ['https://ethereum.org/en/energy-consumption/', 'https://carbon-footprint-defi.org']
-      },
-      {
-        id: `ai_${Date.now()}_3`,
-        text: "Tendances futures: L'intégration de l'IA dans les protocoles DeFi pour l'optimisation automatique des rendements et la gestion des risques",
-        timestamp: 0,
-        speaker: 'IA Analysis',
-        category: 'insight' as const,
-        editable: true,
-        webLinks: ['https://ai-defi-integration.com']
+    try {
+      // Vérifier si Gemini est configuré
+      const demoMode = localStorage.getItem('demoMode') === 'true';
+      const apiKey = localStorage.getItem('google_ai_api_key');
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      
+      let geminiApiKey = apiKey;
+      if (isAuthenticated) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+            geminiApiKey = user.apiKeys.googleAI.key;
+          }
+        }
       }
-    ];
-    
-    onUpdateKeyPoints([...keyPoints, ...aiSuggestions]);
-    setIsCompleting(false);
+
+      if (!demoMode && geminiApiKey && geminiApiKey.startsWith('AIza')) {
+        console.log('🚀 Complétion avec Gemini...');
+        
+        const geminiService = GeminiServiceFactory.create(geminiApiKey);
+        const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+        
+        // Filtrer les points clés qui n'existent pas déjà
+        const existingTexts = keyPoints.map(kp => kp.text.toLowerCase());
+        const newKeyPoints = extractedKeyPoints
+          .filter(point => !existingTexts.some(existing => 
+            existing.includes(point.toLowerCase().substring(0, 50))
+          ))
+          .map((point, index) => ({
+            id: `ai_${Date.now()}_${index}`,
+            text: point,
+            timestamp: 0,
+            speaker: 'IA Analysis',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: []
+          }));
+        
+        if (newKeyPoints.length > 0) {
+          onUpdateKeyPoints([...keyPoints, ...newKeyPoints]);
+          console.log('✅ Nouveaux points clés ajoutés:', newKeyPoints.length);
+        } else {
+          console.log('ℹ️ Aucun nouveau point clé trouvé');
+        }
+      } else {
+        // Mode démonstration
+        console.log('🎭 Complétion en mode démonstration');
+        await new Promise(resolve => setTimeout(resolve, 4000));
+        
+        const aiSuggestions = [
+          {
+            id: `ai_${Date.now()}_1`,
+            text: "Évolution des protocoles DeFi: L'importance de l'audit de sécurité et de la gouvernance décentralisée pour maintenir la confiance des utilisateurs",
+            timestamp: 0,
+            speaker: 'IA Analysis',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: ['https://defisafety.com/audits', 'https://governance-research.org']
+          },
+          {
+            id: `ai_${Date.now()}_2`,
+            text: "Impact environnemental: Les solutions Layer 2 réduisent considérablement l'empreinte carbone des transactions DeFi par rapport à Ethereum mainnet",
+            timestamp: 0,
+            speaker: 'IA Analysis',
+            category: 'theme' as const,
+            editable: true,
+            webLinks: ['https://ethereum.org/en/energy-consumption/', 'https://carbon-footprint-defi.org']
+          },
+          {
+            id: `ai_${Date.now()}_3`,
+            text: "Tendances futures: L'intégration de l'IA dans les protocoles DeFi pour l'optimisation automatique des rendements et la gestion des risques",
+            timestamp: 0,
+            speaker: 'IA Analysis',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: ['https://ai-defi-integration.com']
+          }
+        ];
+        
+        onUpdateKeyPoints([...keyPoints, ...aiSuggestions]);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la complétion IA:', error);
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const downloadTranscription = () => {
@@ -303,25 +409,21 @@ ${keyPoints.map((kp, index) =>
             <h3 className="text-lg font-semibold text-gray-900">Points clés ({keyPoints.length})</h3>
           </div>
 
-          {keyPoints.length === 0 ? (
+          {keyPoints.length === 0 && !isCompleting ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <div className="text-gray-400 mb-4">
                 <Sparkles className="w-12 h-12 mx-auto" />
               </div>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Aucun point clé détecté</h4>
-              <p className="text-gray-600 mb-6">Ajoutez manuellement des points clés ou utilisez l'IA pour les extraire automatiquement.</p>
-              <button
-                onClick={handleCompleteWithAI}
-                disabled={isCompleting}
-                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all"
-              >
-                {isCompleting ? (
-                  <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                ) : (
-                  <Sparkles className="w-5 h-5 mr-2" />
-                )}
-                {isCompleting ? 'Extraction en cours...' : 'Extraire avec l\'IA'}
-              </button>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">Extraction en cours...</h4>
+              <p className="text-gray-600 mb-6">Les points clés sont en cours d'extraction automatique avec l'IA.</p>
+            </div>
+          ) : isCompleting ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+              <div className="text-blue-600 mb-4">
+                <RefreshCw className="w-12 h-12 mx-auto animate-spin" />
+              </div>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">Analyse en cours...</h4>
+              <p className="text-gray-600">Extraction et analyse des points clés avec l'IA...</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -467,36 +569,6 @@ ${keyPoints.map((kp, index) =>
           )}
         </div>
       </div>
-
-      {isCompleting && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Complétion avec l'IA</h3>
-              <p className="text-gray-600 mb-4">
-                Analyse des liens existants et recherche de points clés supplémentaires...
-              </p>
-              <div className="space-y-2 text-sm text-gray-500">
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"></div>
-                  <span>Analyse contextuelle des liens</span>
-                </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <span>Recherche de points clés manqués</span>
-                </div>
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <span>Enrichissement du contenu</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex justify-center mt-8">
         <button
