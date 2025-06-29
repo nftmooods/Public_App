@@ -25,7 +25,7 @@ import {
   parseTranscriptionWithSpeakers 
 } from './utils/audioTranscription';
 import { GeminiServiceFactory } from './utils/geminiService';
-import { Settings, Sparkles, AlertTriangle, LogIn } from 'lucide-react';
+import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause } from 'lucide-react';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/YouTube/URL/Texte', completed: false, active: true },
@@ -77,12 +77,18 @@ function App() {
   const [apiKey, setApiKey] = useState<string>('');
   const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
+  const [demoMode, setDemoMode] = useState(true);
 
   // Initialiser l'authentification et les clés API
   useEffect(() => {
     // Vérifier l'authentification
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const userData = localStorage.getItem('user');
+    const savedDemoMode = localStorage.getItem('demoMode');
+    
+    if (savedDemoMode !== null) {
+      setDemoMode(savedDemoMode === 'true');
+    }
     
     if (isAuthenticated && userData) {
       const user = JSON.parse(userData);
@@ -93,10 +99,11 @@ function App() {
       }));
 
       // Charger les clés API de l'utilisateur
-      if (user.apiKeys?.googleAI) {
-        setApiKey(user.apiKeys.googleAI);
+      if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+        setApiKey(user.apiKeys.googleAI.key);
         setGeminiConfigured(true);
         setApiKeyError('');
+        setDemoMode(false);
       }
     } else {
       // Fallback vers l'ancienne méthode pour la compatibilité
@@ -105,9 +112,23 @@ function App() {
         setApiKey(storedApiKey);
         setGeminiConfigured(true);
         setApiKeyError('');
+        setDemoMode(false);
       }
     }
   }, []);
+
+  const toggleDemoMode = () => {
+    const newDemoMode = !demoMode;
+    setDemoMode(newDemoMode);
+    localStorage.setItem('demoMode', newDemoMode.toString());
+    
+    if (newDemoMode) {
+      setGeminiConfigured(false);
+      setApiKeyError('');
+    } else if (apiKey) {
+      setGeminiConfigured(true);
+    }
+  };
 
   const updateStepStatus = (stepId: number, completed: boolean = false, active: boolean = false) => {
     setSteps(prevSteps => 
@@ -146,10 +167,11 @@ function App() {
     }));
 
     // Charger les clés API de l'utilisateur
-    if (user.apiKeys?.googleAI) {
-      setApiKey(user.apiKeys.googleAI);
+    if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
+      setApiKey(user.apiKeys.googleAI.key);
       setGeminiConfigured(true);
       setApiKeyError('');
+      setDemoMode(false);
     }
   };
 
@@ -164,6 +186,7 @@ function App() {
     setApiKey('');
     setGeminiConfigured(false);
     setApiKeyError('');
+    setDemoMode(true);
   };
 
   const handleApiKeySave = (newApiKey: string) => {
@@ -173,9 +196,11 @@ function App() {
     if (newApiKey && newApiKey.startsWith('AIza')) {
       localStorage.setItem('google_ai_api_key', newApiKey);
       setGeminiConfigured(true);
+      setDemoMode(false);
     } else {
       localStorage.removeItem('google_ai_api_key');
       setGeminiConfigured(false);
+      setDemoMode(true);
     }
   };
 
@@ -190,13 +215,15 @@ function App() {
       localStorage.setItem('user', JSON.stringify(updatedUser));
 
       // Mettre à jour la configuration Gemini
-      if (apiKeys.googleAI) {
-        setApiKey(apiKeys.googleAI);
+      if (apiKeys.googleAI && apiKeys.googleAI.enabled) {
+        setApiKey(apiKeys.googleAI.key);
         setGeminiConfigured(true);
         setApiKeyError('');
+        setDemoMode(false);
       } else {
         setApiKey('');
         setGeminiConfigured(false);
+        setDemoMode(true);
       }
     }
   };
@@ -380,7 +407,7 @@ function App() {
             onTextContentChange={handleTextContentChange}
             onTextFileUpload={handleTextFileUpload}
             onNext={handleStep1Next}
-            geminiConfigured={geminiConfigured}
+            geminiConfigured={geminiConfigured && !demoMode}
           />
         );
       case 2:
@@ -421,6 +448,7 @@ function App() {
         return (
           <Step6
             contentSettings={appState.contentSettings}
+            keyPoints={appState.keyPoints}
             onUpdateSettings={handleUpdateContentSettings}
             onNext={handleStep6Next}
           />
@@ -452,18 +480,21 @@ function App() {
   };
 
   const getGeminiStatusColor = () => {
+    if (demoMode) return 'text-yellow-600';
     if (apiKeyError) return 'text-red-600';
     if (geminiConfigured) return 'text-green-600';
     return 'text-yellow-600';
   };
 
   const getGeminiStatusIcon = () => {
+    if (demoMode) return <Play className="w-4 h-4" />;
     if (apiKeyError) return <AlertTriangle className="w-4 h-4" />;
     if (geminiConfigured) return <Sparkles className="w-4 h-4" />;
     return <Sparkles className="w-4 h-4" />;
   };
 
   const getGeminiStatusText = () => {
+    if (demoMode) return 'Mode démo';
     if (apiKeyError) return 'Quota dépassé';
     if (geminiConfigured) return 'Gemini 1.5 Pro';
     return 'Mode démo';
@@ -485,8 +516,28 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Mode démo toggle */}
+              <button
+                onClick={toggleDemoMode}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
+                  demoMode 
+                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                }`}
+                title={demoMode ? 'Activer le mode production' : 'Activer le mode démo'}
+              >
+                {demoMode ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                <span className="text-sm font-medium">
+                  {demoMode ? 'Démo' : 'Prod'}
+                </span>
+              </button>
+
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${apiKeyError ? 'bg-red-500' : geminiConfigured ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  demoMode ? 'bg-yellow-500' : 
+                  apiKeyError ? 'bg-red-500' : 
+                  geminiConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
                 <div className={getGeminiStatusColor()}>
                   {getGeminiStatusIcon()}
                 </div>
@@ -504,13 +555,15 @@ function App() {
                 />
               ) : (
                 <>
-                  <button
-                    onClick={() => setShowApiKeyModal(true)}
-                    className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Configurer Gemini 1.5 Pro"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
+                  {!demoMode && (
+                    <button
+                      onClick={() => setShowApiKeyModal(true)}
+                      className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Configurer Gemini 1.5 Pro"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowLoginModal(true)}
                     className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
@@ -528,7 +581,7 @@ function App() {
           </div>
           
           {/* API Key Error Banner */}
-          {apiKeyError && (
+          {apiKeyError && !demoMode && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -538,6 +591,24 @@ function App() {
                   className="text-sm text-red-600 hover:text-red-800 underline ml-2"
                 >
                   Configurer une nouvelle clé API
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Demo Mode Banner */}
+          {demoMode && (
+            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <Play className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm text-yellow-700">
+                  Mode démonstration activé - Toutes les fonctionnalités sont simulées
+                </span>
+                <button
+                  onClick={toggleDemoMode}
+                  className="text-sm text-yellow-600 hover:text-yellow-800 underline ml-2"
+                >
+                  Passer en mode production
                 </button>
               </div>
             </div>
@@ -571,13 +642,15 @@ function App() {
         onLogin={handleLogin}
       />
 
-      <ApiKeyModal
-        isOpen={showApiKeyModal}
-        onClose={() => setShowApiKeyModal(false)}
-        onSave={handleApiKeySave}
-        currentApiKey={apiKey}
-        hasError={!!apiKeyError}
-      />
+      {!demoMode && (
+        <ApiKeyModal
+          isOpen={showApiKeyModal}
+          onClose={() => setShowApiKeyModal(false)}
+          onSave={handleApiKeySave}
+          currentApiKey={apiKey}
+          hasError={!!apiKeyError}
+        />
+      )}
 
       {appState.isAuthenticated && appState.user && (
         <ApiKeysModal

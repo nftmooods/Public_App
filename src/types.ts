@@ -65,11 +65,26 @@ export interface User {
   subscription?: UserSubscription;
 }
 
+export interface ApiKeyConfig {
+  key: string;
+  enabled: boolean;
+  lastTested?: string;
+  isValid?: boolean;
+}
+
 export interface UserApiKeys {
-  googleAI?: string;
-  openAI?: string;
-  anthropic?: string;
-  elevenLabs?: string;
+  googleAI?: ApiKeyConfig;
+  openAI?: ApiKeyConfig;
+  anthropic?: ApiKeyConfig;
+  mistral?: ApiKeyConfig;
+  elevenLabs?: ApiKeyConfig;
+  twitterAPI?: {
+    apiKey: string;
+    apiSecret: string;
+    enabled: boolean;
+    lastTested?: string;
+    isValid?: boolean;
+  };
 }
 
 export interface UserSubscription {
@@ -143,3 +158,8 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string;
   message: string;
 }
+
+declare var SpeechRecognition: {
+  prototype: SpeechRecognition;
+  new(): SpeechRecognition;
+};
