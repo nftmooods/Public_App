@@ -1,5 +1,4 @@
 import { GeminiService, GeminiServiceFactory } from './geminiService';
-import { TwitterSpaceExtractor, TwitterSpaceMetadataService } from './twitterSpaceExtractor';
 
 export interface TranscriptionResult {
   text: string;
@@ -51,40 +50,13 @@ class GeminiTranscriptionService implements AudioTranscriptionService {
     }
 
     try {
-      // Vérifier si c'est un Twitter Space
-      if (TwitterSpaceExtractor.isValidTwitterSpaceUrl(url)) {
-        console.log('🐦 Détection d\'un Twitter Space, extraction en cours...');
-        
-        const spaceData = await TwitterSpaceExtractor.processTwitterSpaceUrl(url);
-        if (!spaceData) {
-          throw new Error('Impossible d\'extraire l\'audio du Twitter Space');
-        }
+      const result = await this.geminiService.transcribeFromUrl(url, {
+        language: 'fr',
+        extractKeyPoints: false,
+        detectSpeakers: true
+      });
 
-        console.log('✅ Audio du Twitter Space extrait, transcription en cours...');
-        
-        const result = await this.geminiService.transcribeFile(spaceData.audioFile, {
-          language: 'fr',
-          extractKeyPoints: false,
-          detectSpeakers: true
-        });
-
-        // Enrichir la transcription avec les métadonnées du Space
-        const enrichedResult = TwitterSpaceMetadataService.enrichTranscriptionWithSpaceData(
-          { text: result.text },
-          spaceData.spaceInfo
-        );
-
-        return enrichedResult.text;
-      } else {
-        // URL audio classique
-        const result = await this.geminiService.transcribeFromUrl(url, {
-          language: 'fr',
-          extractKeyPoints: false,
-          detectSpeakers: true
-        });
-
-        return result.text;
-      }
+      return result.text;
     } catch (error) {
       // Propager l'erreur avec plus de contexte
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -201,9 +173,7 @@ class MockTranscriptionService implements AudioTranscriptionService {
   async transcribeFromUrl(url: string): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Vérifier si c'est un Twitter Space pour adapter la réponse
-    if (TwitterSpaceExtractor.isValidTwitterSpaceUrl(url)) {
-      return `[Host]: Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi.
+    return `[Host]: Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi.
 
 [Alex Chen]: Merci de m'avoir invité. Je pense que la DeFi est à un point d'inflexion vraiment intéressant. L'adoption institutionnelle s'accélère vraiment cette année.
 
@@ -216,21 +186,6 @@ class MockTranscriptionService implements AudioTranscriptionService {
 [Sarah Johnson]: Les ZK-rollups offrent la scalabilité tout en maintenant les principes de décentralisation, contrairement à d'autres solutions. C'est là où nous voyons le plus d'innovation.
 
 [Alex Chen]: L'interopérabilité cross-chain représente la plus grande opportunité pour un mouvement d'actifs transparent entre les réseaux.`;
-    }
-    
-    return `[Intervenant 1]: Bienvenue dans cette discussion sur l'avenir de la finance décentralisée. Nous avons aujourd'hui des invités exceptionnels pour discuter des dernières tendances et innovations dans le domaine de la DeFi.
-
-[Intervenant 2]: Merci de m'avoir invité. Je pense que la DeFi est à un point d'inflexion vraiment intéressant. L'adoption institutionnelle s'accélère vraiment cette année.
-
-[Intervenant 3]: Absolument, et les solutions de scalabilité comme les Layer 2 changent la donne. L'adoption de la Layer 2 a augmenté de 300% cette année.
-
-[Intervenant 1]: C'est fascinant. Pouvez-vous nous parler de l'interopérabilité entre les différentes blockchains ?
-
-[Intervenant 4]: Sans oublier l'interopérabilité entre les différentes blockchains qui devient cruciale. L'expérience utilisateur devrait prioriser l'invisibilité de l'infrastructure complexe.
-
-[Intervenant 2]: Les ZK-rollups offrent la scalabilité tout en maintenant les principes de décentralisation, contrairement à d'autres solutions. C'est là où nous voyons le plus d'innovation.
-
-[Intervenant 3]: L'interopérabilité cross-chain représente la plus grande opportunité pour un mouvement d'actifs transparent entre les réseaux.`;
   }
 }
 

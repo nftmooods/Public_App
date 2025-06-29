@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Link, Mic, ArrowRight, AlertCircle, Sparkles, Youtube, FileText, Type, Loader2, CheckCircle, ExternalLink, Users, Clock } from 'lucide-react';
-import { TwitterSpaceExtractor, TwitterSpaceError } from '../../utils/twitterSpaceExtractor';
+import { Upload, Link, Mic, ArrowRight, AlertCircle, Sparkles, Youtube, FileText, Type, Loader2, CheckCircle } from 'lucide-react';
 
 interface Step1Props {
   audioUrl: string;
@@ -24,14 +23,6 @@ interface ProcessingStep {
   api?: string;
 }
 
-interface TwitterSpacePreview {
-  id: string;
-  title: string;
-  participants: Array<{ username: string; display_name: string }>;
-  duration?: number;
-  state: string;
-}
-
 const Step1: React.FC<Step1Props> = ({ 
   audioUrl,
   youtubeUrl, 
@@ -51,8 +42,6 @@ const Step1: React.FC<Step1Props> = ({
   const [error, setError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [twitterSpacePreview, setTwitterSpacePreview] = useState<TwitterSpacePreview | null>(null);
-  const [isLoadingSpaceInfo, setIsLoadingSpaceInfo] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -146,41 +135,12 @@ const Step1: React.FC<Step1Props> = ({
     return youtubeRegex.test(url);
   };
 
-  const handleUrlChange = async (url: string) => {
+  const handleUrlChange = (url: string) => {
     setError('');
-    setTwitterSpacePreview(null);
     onUrlChange(url);
     
     if (url && !validateUrl(url)) {
       setError('Veuillez entrer une URL Twitter Space valide ou un lien direct vers un fichier audio');
-      return;
-    }
-
-    // Vérifier si c'est un lien Twitter Space et charger les informations
-    if (url && TwitterSpaceExtractor.isValidTwitterSpaceUrl(url)) {
-      setIsLoadingSpaceInfo(true);
-      try {
-        const spaceId = TwitterSpaceExtractor.extractSpaceId(url);
-        if (spaceId) {
-          const spaceInfo = await TwitterSpaceExtractor.getSpaceInfo(spaceId);
-          if (spaceInfo) {
-            setTwitterSpacePreview({
-              id: spaceInfo.id,
-              title: spaceInfo.title,
-              participants: spaceInfo.participants,
-              duration: spaceInfo.ended_at && spaceInfo.created_at 
-                ? Math.round((new Date(spaceInfo.ended_at).getTime() - new Date(spaceInfo.created_at).getTime()) / 60000)
-                : undefined,
-              state: spaceInfo.state
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement des infos du Space:', error);
-        setError('Impossible de charger les informations de ce Twitter Space');
-      } finally {
-        setIsLoadingSpaceInfo(false);
-      }
     }
   };
 
@@ -229,12 +189,10 @@ const Step1: React.FC<Step1Props> = ({
         { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
       ];
     } else if (audioUrl || youtubeUrl) {
-      const isTwitterSpace = audioUrl && TwitterSpaceExtractor.isValidTwitterSpaceUrl(audioUrl);
-      const sourceType = isTwitterSpace ? 'Twitter Space' : youtubeUrl ? 'YouTube' : 'URL audio';
-      
+      const sourceType = youtubeUrl ? 'YouTube' : 'URL audio';
       steps = [
         { id: 'url-validation', label: `Validation de l'URL ${sourceType}`, status: 'pending', api: 'Traitement local' },
-        { id: 'download', label: `Téléchargement depuis ${sourceType}`, status: 'pending', api: isTwitterSpace ? 'Twitter API' : 'Traitement local' },
+        { id: 'download', label: `Téléchargement depuis ${sourceType}`, status: 'pending', api: 'Traitement local' },
         { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
         { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
       ];
@@ -250,9 +208,8 @@ const Step1: React.FC<Step1Props> = ({
       })));
 
       // Temps d'attente variable selon l'étape
-      const delay = (step: ProcessingStep) => {
+      const delay = step => {
         if (step.id.includes('transcription')) return 3000;
-        if (step.id.includes('download')) return 2500;
         if (step.id.includes('analysis')) return 2000;
         return 1500;
       };
@@ -334,7 +291,6 @@ const Step1: React.FC<Step1Props> = ({
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
-                        step.api.includes('Twitter') ? 'bg-blue-100 text-blue-700' :
                         step.api.includes('démonstration') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
@@ -399,61 +355,18 @@ const Step1: React.FC<Step1Props> = ({
             <h3 className="text-lg font-semibold text-gray-900">Twitter Space</h3>
           </div>
           <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="url"
-                placeholder="https://twitter.com/i/spaces/..."
-                value={audioUrl}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                  error && audioUrl ? 'border-red-300' : 'border-gray-300'
-                }`}
-              />
-              {isLoadingSpaceInfo && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                </div>
-              )}
-            </div>
-            
-            {/* Aperçu du Twitter Space */}
-            {twitterSpacePreview && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-900 text-sm mb-2">
-                  {twitterSpacePreview.title}
-                </h4>
-                <div className="flex items-center space-x-4 text-xs text-blue-700">
-                  <div className="flex items-center space-x-1">
-                    <Users className="w-3 h-3" />
-                    <span>{twitterSpacePreview.participants.length} participants</span>
-                  </div>
-                  {twitterSpacePreview.duration && (
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{twitterSpacePreview.duration}min</span>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    twitterSpacePreview.state === 'ended' ? 'bg-green-100 text-green-700' :
-                    twitterSpacePreview.state === 'live' ? 'bg-red-100 text-red-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {twitterSpacePreview.state === 'ended' ? 'Terminé' :
-                     twitterSpacePreview.state === 'live' ? 'En cours' : 'Programmé'}
-                  </span>
-                </div>
-                <div className="mt-2 text-xs text-blue-600">
-                  Participants: {twitterSpacePreview.participants.map(p => `@${p.username}`).join(', ')}
-                </div>
-              </div>
-            )}
-            
+            <input
+              type="url"
+              placeholder="https://twitter.com/i/spaces/..."
+              value={audioUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                error && audioUrl ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
             <div className="text-sm text-gray-500 space-y-1">
               <p>• URL d'un Twitter Space enregistré</p>
-              <p>• Extraction automatique de l'audio</p>
-              <p>• Détection des participants</p>
+              <p>• Lien direct vers fichier audio</p>
             </div>
           </div>
         </div>
@@ -613,31 +526,6 @@ const Step1: React.FC<Step1Props> = ({
           </div>
         </div>
       </div>
-
-      {/* Note sur l'extension */}
-      {audioUrl && TwitterSpaceExtractor.isValidTwitterSpaceUrl(audioUrl) && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start space-x-3">
-            <ExternalLink className="w-5 h-5 text-yellow-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-yellow-800 mb-1">Alternative : Extension navigateur</h4>
-              <p className="text-sm text-yellow-700 mb-2">
-                Si l'extraction automatique ne fonctionne pas, vous pouvez utiliser une extension navigateur 
-                pour télécharger l'audio du Twitter Space, puis l'importer comme fichier audio.
-              </p>
-              <a 
-                href="https://chrome.google.com/webstore/detail/twitter-space-downloader/example" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm text-yellow-600 hover:text-yellow-800 underline flex items-center"
-              >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Extension Twitter Space Downloader
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex justify-center">
         <button
