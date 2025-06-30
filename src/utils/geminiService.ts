@@ -49,10 +49,11 @@ export class GeminiService {
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
       
-      // Validate file size (max 20MB for audio files)
+      // Validate file size (max 20MB for inline data)
       const maxSizeBytes = 20 * 1024 * 1024; // 20MB
       if (audioFile.size > maxSizeBytes) {
-        throw new Error(`File too large. Maximum size is 20MB, got ${(audioFile.size / 1024 / 1024).toFixed(2)}MB`);
+        console.log('📁 File too large for inline data, using Files API...');
+        return await this.transcribeFileWithFilesAPI(audioFile, options);
       }
 
       // Validate file type
@@ -66,41 +67,42 @@ export class GeminiService {
         console.warn('⚠️ File type not in supported list, but attempting transcription:', audioFile.type);
       }
 
-      // Convert audio file to base64
+      // Convert audio file to base64 for inline data
       const audioBase64 = await this.fileToBase64(audioFile);
       console.log('🔄 File converted to base64');
       
-      // Use Gemini 2.0 Flash for transcription with proper model configuration
+      // Use Gemini 2.0 Flash for transcription
       const model = this.genAI.getGenerativeModel({ 
         model: "gemini-2.0-flash-exp",
         generationConfig: {
-          temperature: 0.1, // Low temperature for more consistent transcription
+          temperature: 0.1, // Low temperature for consistent transcription
           topP: 0.8,
           topK: 40,
           maxOutputTokens: 8192,
         },
       });
 
-      // Build optimized transcription prompt based on Google's recommendations
+      // Build optimized transcription prompt
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       console.log('📝 Optimized transcription prompt built');
 
       console.log('🚀 Sending request to Gemini 2.0 Flash...');
       
-      // Create the request with proper MIME type detection
+      // Create the request with proper MIME type
       const mimeType = this.detectMimeType(audioFile);
       console.log('🔍 Detected MIME type:', mimeType);
 
-      const result = await model.generateContent([
+      const contents = [
+        { text: transcriptionPrompt },
         {
           inlineData: {
+            mimeType: mimeType,
             data: audioBase64,
-            mimeType: mimeType
-          }
+          },
         },
-        transcriptionPrompt
-      ]);
+      ];
 
+      const result = await model.generateContent({ contents });
       const response = await result.response;
       const transcriptionText = response.text();
 
@@ -130,7 +132,7 @@ export class GeminiService {
         } else if (error.message.includes('400')) {
           throw new Error('Invalid request. Please check file format and size.');
         } else if (error.message.includes('413')) {
-          throw new Error('File too large. Maximum size is 20MB.');
+          throw new Error('File too large. Maximum size is 20MB for inline data.');
         } else if (error.message.includes('415')) {
           throw new Error('Unsupported media type. Please use supported audio/video formats.');
         } else if (error.message.includes('500')) {
@@ -139,6 +141,36 @@ export class GeminiService {
       }
       
       throw new Error(`Gemini transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async transcribeFileWithFilesAPI(
+    audioFile: File,
+    options: {
+      language?: string;
+      extractKeyPoints?: boolean;
+      detectSpeakers?: boolean;
+      prompt?: string;
+    } = {}
+  ): Promise<GeminiTranscriptionResult> {
+    if (!this.genAI) {
+      throw new Error('Gemini service not configured.');
+    }
+
+    try {
+      console.log('📁 Using Files API for large file transcription...');
+      
+      // Note: In a browser environment, we can't directly use the Files API
+      // as it requires server-side implementation. For now, we'll fall back
+      // to inline data with a warning about size limits.
+      console.warn('⚠️ Files API not available in browser environment. File may be too large for processing.');
+      
+      // For large files, we could implement chunking or server-side processing
+      throw new Error('File too large for browser-based processing. Please use a smaller file (max 20MB) or implement server-side processing.');
+      
+    } catch (error) {
+      console.error('❌ Error with Files API transcription:', error);
+      throw error;
     }
   }
 
@@ -202,21 +234,34 @@ INSTRUCTIONS:
 - Maintain natural punctuation and capitalization
 - Preserve the original language of the audio`;
 
+    // Language specification
+    if (options.language) {
+      if (options.language === 'fr') {
+        prompt += `
+- The audio is expected to be in French`;
+      } else if (options.language === 'en') {
+        prompt += `
+- The audio is expected to be in English`;
+      }
+    } else {
+      prompt += `
+- Detect the language automatically (French or English expected)`;
+    }
+
+    // Speaker detection
     if (options.detectSpeakers) {
       prompt += `
 - Identify different speakers and label them as [Speaker 1], [Speaker 2], etc.
 - Use consistent speaker labels throughout the transcription
-- Format: [Speaker X]: [their words]`;
+- Format: [Speaker X]: [their words]
+- If you can identify speaker characteristics (gender, role), mention them briefly`;
     }
 
-    if (options.language) {
-      prompt += `
-- The audio is expected to be in ${options.language}`;
-    }
-
+    // Key points extraction
     if (options.extractKeyPoints) {
       prompt += `
-- After the transcription, extract key points and important topics discussed`;
+- After the transcription, extract key points and important topics discussed
+- Focus on main themes, important decisions, and actionable insights`;
     }
 
     prompt += `
@@ -226,7 +271,7 @@ TRANSCRIPTION:
 [Provide the complete transcription here]
 
 LANGUAGE:
-[Detected language]`;
+[Detected language: French or English]`;
 
     if (options.detectSpeakers) {
       prompt += `
@@ -251,7 +296,7 @@ ${options.prompt}`;
 
     prompt += `
 
-Please ensure accuracy and completeness in your transcription.`;
+Please ensure accuracy and completeness in your transcription. Focus on clarity and proper formatting.`;
 
     return prompt;
   }
@@ -469,13 +514,28 @@ Please ensure accuracy and completeness in your transcription.`;
     try {
       console.log('🎯 Extracting key points with Gemini 2.0 Flash...');
       
-      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const model = this.genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash-exp",
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          maxOutputTokens: 2048,
+        }
+      });
       
       const prompt = `Analyze this transcription and extract key points, main themes, important quotes, and major insights:
 
 ${transcription}
 
-Respond only with a list of key points, one per line, preceded by a dash (-).`;
+Focus on:
+- Main themes and topics discussed
+- Important decisions or conclusions
+- Key insights and takeaways
+- Notable quotes or statements
+- Action items or next steps
+
+Respond only with a list of key points, one per line, preceded by a dash (-).
+Each point should be concise but comprehensive (1-2 sentences max).`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -516,7 +576,14 @@ Respond only with a list of key points, one per line, preceded by a dash (-).`;
       console.log('📝 Generating content with Gemini 2.0 Flash...');
       console.log('🎯 Format:', settings.format, '| Tone:', settings.tone);
       
-      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      const model = this.genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash-exp",
+        generationConfig: {
+          temperature: 0.7, // Higher temperature for creative content generation
+          topP: 0.9,
+          maxOutputTokens: 4096,
+        }
+      });
       
       const prompt = `Generate ${settings.format} content based on this transcription and key points:
 
@@ -532,7 +599,14 @@ ${transcription}
 KEY POINTS:
 ${keyPoints.map(point => `- ${point}`).join('\n')}
 
-Generate ${settings.format} content with a ${settings.tone} tone, well-structured and engaging. Use the provided title and subtitle, and ensure the content faithfully reflects the key points from the discussion.`;
+Generate well-structured ${settings.format} content with a ${settings.tone} tone that:
+- Uses the provided title and subtitle
+- Incorporates all key points naturally
+- Maintains the ${settings.tone} tone throughout
+- Is engaging and well-formatted for ${settings.format}
+- Reflects the original discussion accurately
+
+Please create comprehensive, professional content that would be suitable for publication.`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -544,6 +618,27 @@ Generate ${settings.format} content with a ${settings.tone} tone, well-structure
     } catch (error) {
       console.error('❌ Error during content generation:', error);
       throw new Error(`Content generation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Method to count tokens in content
+  async countTokens(content: string): Promise<number> {
+    if (!this.genAI) {
+      throw new Error('Gemini service not configured.');
+    }
+
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      
+      const countTokensResponse = await model.countTokens({
+        contents: [{ role: 'user', parts: [{ text: content }] }]
+      });
+      
+      return countTokensResponse.totalTokens || 0;
+    } catch (error) {
+      console.error('❌ Error counting tokens:', error);
+      // Fallback estimation: roughly 4 characters per token
+      return Math.floor(content.length / 4);
     }
   }
 }
