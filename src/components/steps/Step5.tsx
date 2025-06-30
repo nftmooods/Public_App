@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Lightbulb, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, Calendar, Gift, ExternalLink, FileText, List, Hash, MessageSquare } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, Sparkles, FileText } from 'lucide-react';
 import { ContentSettings, KeyPoint } from '../../types';
 
 interface Step5Props {
@@ -14,32 +14,7 @@ interface ArticleSection {
   title: string;
   content: string;
   keyPoints: string[];
-  links: string[];
   order: number;
-}
-
-interface ImportantDate {
-  id: string;
-  date: string;
-  title: string;
-  description: string;
-}
-
-interface GiveawayInfo {
-  id: string;
-  title: string;
-  description: string;
-  endDate: string;
-  requirements: string[];
-}
-
-interface CallToAction {
-  id: string;
-  type: 'subscribe' | 'follow' | 'share' | 'visit' | 'download' | 'custom';
-  title: string;
-  description: string;
-  url?: string;
-  buttonText: string;
 }
 
 const Step5: React.FC<Step5Props> = ({ 
@@ -49,23 +24,12 @@ const Step5: React.FC<Step5Props> = ({
   onNext 
 }) => {
   const [localSettings, setLocalSettings] = useState<ContentSettings>(contentSettings);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
-  
-  // Nouveaux états pour la structure complète
   const [introduction, setIntroduction] = useState('');
-  const [tldrPoints, setTldrPoints] = useState<string[]>([]);
   const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
-  const [importantDates, setImportantDates] = useState<ImportantDate[]>([]);
-  const [giveaways, setGiveaways] = useState<GiveawayInfo[]>([]);
-  const [callToActions, setCallToActions] = useState<CallToAction[]>([]);
-  
-  // États pour l'ajout d'éléments
-  const [newTldrPoint, setNewTldrPoint] = useState('');
-  const [newSection, setNewSection] = useState({ title: '', content: '', keyPoints: [''], links: [''] });
-  const [newDate, setNewDate] = useState({ date: '', title: '', description: '' });
-  const [newGiveaway, setNewGiveaway] = useState({ title: '', description: '', endDate: '', requirements: [''] });
-  const [newCTA, setNewCTA] = useState({ type: 'subscribe' as const, title: '', description: '', url: '', buttonText: '' });
+  const [newSection, setNewSection] = useState({ title: '', content: '' });
+  const [isCompletingWithAI, setIsCompletingWithAI] = useState(false);
 
   const handleChange = (field: keyof ContentSettings, value: string) => {
     const updated = { ...localSettings, [field]: value };
@@ -99,16 +63,7 @@ const Step5: React.FC<Step5Props> = ({
       setIntroduction(autoIntroduction);
     }
 
-    // Générer les points TL;DR automatiquement
-    if (keyPoints.length > 0 && tldrPoints.length === 0) {
-      const autoTldr = keyPoints.slice(0, 5).map(kp => {
-        const title = kp.text.split(':')[0];
-        return title.length > 100 ? title.substring(0, 100) + '...' : title;
-      });
-      setTldrPoints(autoTldr);
-    }
-
-    // Générer les sections automatiquement
+    // Générer les sections automatiquement si aucune n'existe
     if (keyPoints.length > 0 && articleSections.length === 0) {
       const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
         if (!acc[kp.category]) {
@@ -131,46 +86,25 @@ const Step5: React.FC<Step5Props> = ({
           title: categoryTitles[category as keyof typeof categoryTitles] || category,
           content: `Cette section développe les aspects liés à ${category} abordés lors de la discussion.`,
           keyPoints: points.map(p => p.text.split(':')[0] || p.text.substring(0, 100)),
-          links: points.flatMap(p => p.webLinks || []),
           order: index
         };
       });
 
       setArticleSections(autoSections);
     }
-  }, [keyPoints, localSettings.title, introduction, tldrPoints.length, articleSections.length]);
+  }, [keyPoints, localSettings.title, introduction, articleSections.length]);
 
-  // Fonctions pour gérer les TL;DR points
-  const addTldrPoint = () => {
-    if (newTldrPoint.trim()) {
-      setTldrPoints([...tldrPoints, newTldrPoint.trim()]);
-      setNewTldrPoint('');
-    }
-  };
-
-  const removeTldrPoint = (index: number) => {
-    setTldrPoints(tldrPoints.filter((_, i) => i !== index));
-  };
-
-  const updateTldrPoint = (index: number, value: string) => {
-    const updated = [...tldrPoints];
-    updated[index] = value;
-    setTldrPoints(updated);
-  };
-
-  // Fonctions pour gérer les sections
   const addSection = () => {
     if (newSection.title.trim()) {
       const section: ArticleSection = {
         id: `section_${Date.now()}`,
         title: newSection.title,
-        content: newSection.content,
-        keyPoints: newSection.keyPoints.filter(kp => kp.trim()),
-        links: newSection.links.filter(link => link.trim()),
+        content: newSection.content || 'Contenu à développer...',
+        keyPoints: [],
         order: articleSections.length
       };
       setArticleSections([...articleSections, section]);
-      setNewSection({ title: '', content: '', keyPoints: [''], links: [''] });
+      setNewSection({ title: '', content: '' });
     }
   };
 
@@ -178,83 +112,49 @@ const Step5: React.FC<Step5Props> = ({
     setArticleSections(articleSections.filter(section => section.id !== id));
   };
 
-  // Fonctions pour gérer les dates importantes
-  const addImportantDate = () => {
-    if (newDate.title.trim() && newDate.date) {
-      const date: ImportantDate = {
-        id: `date_${Date.now()}`,
-        date: newDate.date,
-        title: newDate.title,
-        description: newDate.description
-      };
-      setImportantDates([...importantDates, date]);
-      setNewDate({ date: '', title: '', description: '' });
+  const updateSection = (id: string, field: 'title' | 'content', value: string) => {
+    setArticleSections(sections => 
+      sections.map(section => 
+        section.id === id ? { ...section, [field]: value } : section
+      )
+    );
+  };
+
+  const completeWithAI = async () => {
+    setIsCompletingWithAI(true);
+    
+    try {
+      // Simuler l'enrichissement IA
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Enrichir les sections existantes
+      const enrichedSections = articleSections.map(section => ({
+        ...section,
+        content: section.content === 'Contenu à développer...' 
+          ? `Cette section explore en détail ${section.title.toLowerCase()}. L'analyse révèle des tendances importantes et des implications significatives pour l'avenir du domaine. Les experts s'accordent sur l'importance de ces développements et leurs impacts potentiels sur l'écosystème.`
+          : section.content
+      }));
+      
+      setArticleSections(enrichedSections);
+      
+      // Enrichir l'introduction si elle est basique
+      if (introduction.includes('Cette analyse approfondie explore')) {
+        const enrichedIntro = `${introduction}\n\nCette discussion révèle des insights cruciaux sur l'évolution du secteur et met en lumière les défis et opportunités qui se dessinent. Les perspectives partagées offrent une vision éclairée des transformations en cours et des stratégies à adopter pour naviguer dans ce paysage en mutation.`;
+        setIntroduction(enrichedIntro);
+      }
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'enrichissement IA:', error);
+    } finally {
+      setIsCompletingWithAI(false);
     }
-  };
-
-  const removeImportantDate = (id: string) => {
-    setImportantDates(importantDates.filter(date => date.id !== id));
-  };
-
-  // Fonctions pour gérer les giveaways
-  const addGiveaway = () => {
-    if (newGiveaway.title.trim()) {
-      const giveaway: GiveawayInfo = {
-        id: `giveaway_${Date.now()}`,
-        title: newGiveaway.title,
-        description: newGiveaway.description,
-        endDate: newGiveaway.endDate,
-        requirements: newGiveaway.requirements.filter(req => req.trim())
-      };
-      setGiveaways([...giveaways, giveaway]);
-      setNewGiveaway({ title: '', description: '', endDate: '', requirements: [''] });
-    }
-  };
-
-  const removeGiveaway = (id: string) => {
-    setGiveaways(giveaways.filter(giveaway => giveaway.id !== id));
-  };
-
-  // Fonctions pour gérer les call-to-actions
-  const addCallToAction = () => {
-    if (newCTA.title.trim()) {
-      const cta: CallToAction = {
-        id: `cta_${Date.now()}`,
-        type: newCTA.type,
-        title: newCTA.title,
-        description: newCTA.description,
-        url: newCTA.url,
-        buttonText: newCTA.buttonText
-      };
-      setCallToActions([...callToActions, cta]);
-      setNewCTA({ type: 'subscribe', title: '', description: '', url: '', buttonText: '' });
-    }
-  };
-
-  const removeCallToAction = (id: string) => {
-    setCallToActions(callToActions.filter(cta => cta.id !== id));
   };
 
   const formatPreview = () => {
-    const formatIcons = {
-      article: FileText,
-      bullets: List,
-      thread: MessageSquare,
-      faq: Hash
-    };
-
-    const Icon = formatIcons[localSettings.format as keyof typeof formatIcons] || FileText;
-
     return (
       <div className="prose prose-sm max-w-none">
         {/* En-tête */}
         <div className="mb-6 pb-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2 mb-2">
-            <Icon className="w-5 h-5 text-blue-600" />
-            <span className="text-sm text-blue-600 font-medium">
-              {localSettings.format.charAt(0).toUpperCase() + localSettings.format.slice(1)} • {localSettings.tone}
-            </span>
-          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {localSettings.title || 'Votre titre apparaîtra ici'}
           </h1>
@@ -269,22 +169,7 @@ const Step5: React.FC<Step5Props> = ({
         {introduction && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Introduction</h3>
-            <p className="text-gray-700 leading-relaxed">{introduction}</p>
-          </div>
-        )}
-
-        {/* TL;DR */}
-        {tldrPoints.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-            <h3 className="text-lg font-semibold text-blue-900 mb-3">TL;DR - Points clés</h3>
-            <ul className="space-y-2">
-              {tldrPoints.map((point, index) => (
-                <li key={index} className="flex items-start space-x-2 text-blue-800">
-                  <span className="text-blue-600 mt-1">•</span>
-                  <span className="text-sm">{point}</span>
-                </li>
-              ))}
-            </ul>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{introduction}</p>
           </div>
         )}
 
@@ -292,115 +177,9 @@ const Step5: React.FC<Step5Props> = ({
         {articleSections.map((section, index) => (
           <div key={section.id} className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
-            <p className="text-gray-700 leading-relaxed mb-3">{section.content}</p>
-            
-            {section.keyPoints.length > 0 && (
-              <div className="mb-3">
-                <h4 className="font-medium text-gray-800 mb-2">Points abordés :</h4>
-                <ul className="space-y-1">
-                  {section.keyPoints.map((point, idx) => (
-                    <li key={idx} className="flex items-start space-x-2 text-gray-700">
-                      <span className="text-gray-500 mt-1">→</span>
-                      <span className="text-sm">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {section.links.length > 0 && (
-              <div className="mb-3">
-                <h4 className="font-medium text-gray-800 mb-2">Références :</h4>
-                <div className="space-y-1">
-                  {section.links.map((link, idx) => (
-                    <a
-                      key={idx}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      <ExternalLink className="w-3 h-3 mr-1" />
-                      {link}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{section.content}</p>
           </div>
         ))}
-
-        {/* Dates importantes */}
-        {importantDates.length > 0 && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-yellow-900 mb-3 flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Dates importantes à retenir
-            </h3>
-            <div className="space-y-3">
-              {importantDates.map((date) => (
-                <div key={date.id} className="border-l-4 border-yellow-400 pl-4">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium text-yellow-900">{date.title}</span>
-                    <span className="text-sm text-yellow-700">• {new Date(date.date).toLocaleDateString('fr-FR')}</span>
-                  </div>
-                  <p className="text-sm text-yellow-800">{date.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Giveaways */}
-        {giveaways.length > 0 && (
-          <div className="mb-6">
-            {giveaways.map((giveaway) => (
-              <div key={giveaway.id} className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
-                <h3 className="text-lg font-semibold text-green-900 mb-2 flex items-center">
-                  <Gift className="w-5 h-5 mr-2" />
-                  {giveaway.title}
-                </h3>
-                <p className="text-green-800 mb-3">{giveaway.description}</p>
-                {giveaway.endDate && (
-                  <p className="text-sm text-green-700 mb-2">
-                    <strong>Date limite :</strong> {new Date(giveaway.endDate).toLocaleDateString('fr-FR')}
-                  </p>
-                )}
-                {giveaway.requirements.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-green-800 mb-1">Conditions de participation :</h4>
-                    <ul className="space-y-1">
-                      {giveaway.requirements.map((req, idx) => (
-                        <li key={idx} className="flex items-start space-x-2 text-green-700">
-                          <span className="text-green-600 mt-1">✓</span>
-                          <span className="text-sm">{req}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Call to Actions */}
-        {callToActions.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Passez à l'action</h3>
-            <div className="space-y-4">
-              {callToActions.map((cta) => (
-                <div key={cta.id} className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-2">{cta.title}</h4>
-                  <p className="text-gray-700 mb-3">{cta.description}</p>
-                  <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all">
-                    {cta.buttonText}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="text-gray-500 text-sm italic mt-8 pt-4 border-t border-gray-200">
           [Aperçu de la structure - Le contenu final sera généré aux étapes suivantes]
@@ -410,18 +189,29 @@ const Step5: React.FC<Step5Props> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Structure complète de l'article
+          Structure de l'article
         </h2>
         <p className="text-lg text-gray-600">
-          Définissez tous les éléments de votre article : titre, introduction, sections, dates importantes et call-to-actions
+          Définissez la structure complète de votre article avec titre, introduction et sections
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Formulaire de structure */}
+      {/* Bouton Show/Hide Preview */}
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={() => setShowPreview(!showPreview)}
+          className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+          {showPreview ? 'Masquer l\'aperçu' : 'Afficher l\'aperçu'}
+        </button>
+      </div>
+
+      <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
+        {/* Formulaire de structure - Toujours visible */}
         <div className="space-y-6">
           {/* Titre et sous-titre */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -514,242 +304,81 @@ const Step5: React.FC<Step5Props> = ({
             />
           </div>
 
-          {/* TL;DR Points */}
+          {/* Sections de l'article */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">TL;DR - Résumé rapide</h3>
-            
-            <div className="space-y-3">
-              {tldrPoints.map((point, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    value={point}
-                    onChange={(e) => updateTldrPoint(index, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <button
-                    onClick={() => removeTldrPoint(index)}
-                    className="p-2 text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={newTldrPoint}
-                  onChange={(e) => setNewTldrPoint(e.target.value)}
-                  placeholder="Nouveau point TL;DR..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  onKeyPress={(e) => e.key === 'Enter' && addTldrPoint()}
-                />
-                <button
-                  onClick={addTldrPoint}
-                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Sections de l'article</h3>
+              <button
+                onClick={completeWithAI}
+                disabled={isCompletingWithAI}
+                className="flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
+              >
+                {isCompletingWithAI ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                {isCompletingWithAI ? 'Enrichissement...' : 'Compléter avec l\'IA'}
+              </button>
             </div>
-          </div>
-
-          {/* Dates importantes */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
-              Dates importantes (optionnel)
-            </h3>
             
             <div className="space-y-4">
-              {importantDates.map((date) => (
-                <div key={date.id} className="p-3 border border-yellow-200 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-yellow-900">{date.title}</h4>
+              {articleSections.map((section, index) => (
+                <div key={section.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                        {index + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                        className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                        placeholder="Titre de la section"
+                      />
+                    </div>
                     <button
-                      onClick={() => removeImportantDate(date.id)}
+                      onClick={() => removeSection(section.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-sm text-yellow-800 mb-1">{date.description}</p>
-                  <p className="text-xs text-yellow-700">{new Date(date.date).toLocaleDateString('fr-FR')}</p>
+                  <textarea
+                    value={section.content}
+                    onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
+                    placeholder="Contenu de la section..."
+                  />
                 </div>
               ))}
               
-              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="space-y-2">
+              {/* Ajouter une nouvelle section */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <div className="space-y-3">
                   <input
                     type="text"
-                    value={newDate.title}
-                    onChange={(e) => setNewDate(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Titre de l'événement..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <input
-                    type="date"
-                    value={newDate.date}
-                    onChange={(e) => setNewDate(prev => ({ ...prev, date: e.target.value }))}
+                    value={newSection.title}
+                    onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Titre de la nouvelle section..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                   <textarea
-                    value={newDate.description}
-                    onChange={(e) => setNewDate(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Description de l'événement..."
+                    value={newSection.content}
+                    onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Contenu de la section (optionnel)..."
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
                   />
                   <button
-                    onClick={addImportantDate}
-                    disabled={!newDate.title.trim() || !newDate.date}
-                    className="w-full px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 text-sm"
+                    onClick={addSection}
+                    disabled={!newSection.title.trim()}
+                    className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
                   >
-                    Ajouter la date
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Giveaways */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Gift className="w-5 h-5 mr-2" />
-              Giveaways et concours (optionnel)
-            </h3>
-            
-            <div className="space-y-4">
-              {giveaways.map((giveaway) => (
-                <div key={giveaway.id} className="p-3 border border-green-200 bg-green-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-green-900">{giveaway.title}</h4>
-                    <button
-                      onClick={() => removeGiveaway(giveaway.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-green-800 mb-2">{giveaway.description}</p>
-                  {giveaway.endDate && (
-                    <p className="text-xs text-green-700 mb-2">
-                      Fin : {new Date(giveaway.endDate).toLocaleDateString('fr-FR')}
-                    </p>
-                  )}
-                  <div className="text-xs text-green-700">
-                    {giveaway.requirements.length} condition(s) de participation
-                  </div>
-                </div>
-              ))}
-              
-              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={newGiveaway.title}
-                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Titre du giveaway..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <textarea
-                    value={newGiveaway.description}
-                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Description du giveaway..."
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  />
-                  <input
-                    type="date"
-                    value={newGiveaway.endDate}
-                    onChange={(e) => setNewGiveaway(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <button
-                    onClick={addGiveaway}
-                    disabled={!newGiveaway.title.trim()}
-                    className="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
-                  >
-                    Ajouter le giveaway
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Call to Actions */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Call-to-Actions de clôture</h3>
-            
-            <div className="space-y-4">
-              {callToActions.map((cta) => (
-                <div key={cta.id} className="p-3 border border-blue-200 bg-blue-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-blue-900">{cta.title}</h4>
-                    <button
-                      onClick={() => removeCallToAction(cta.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-blue-800 mb-2">{cta.description}</p>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-blue-700 bg-blue-200 px-2 py-1 rounded">{cta.type}</span>
-                    <span className="text-xs text-blue-700">{cta.buttonText}</span>
-                  </div>
-                </div>
-              ))}
-              
-              <div className="p-3 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="space-y-2">
-                  <select
-                    value={newCTA.type}
-                    onChange={(e) => setNewCTA(prev => ({ ...prev, type: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="subscribe">S'abonner</option>
-                    <option value="follow">Suivre</option>
-                    <option value="share">Partager</option>
-                    <option value="visit">Visiter</option>
-                    <option value="download">Télécharger</option>
-                    <option value="custom">Personnalisé</option>
-                  </select>
-                  <input
-                    type="text"
-                    value={newCTA.title}
-                    onChange={(e) => setNewCTA(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Titre du CTA..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <textarea
-                    value={newCTA.description}
-                    onChange={(e) => setNewCTA(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Description du CTA..."
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  />
-                  <input
-                    type="text"
-                    value={newCTA.buttonText}
-                    onChange={(e) => setNewCTA(prev => ({ ...prev, buttonText: e.target.value }))}
-                    placeholder="Texte du bouton..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <input
-                    type="url"
-                    value={newCTA.url}
-                    onChange={(e) => setNewCTA(prev => ({ ...prev, url: e.target.value }))}
-                    placeholder="URL (optionnel)..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <button
-                    onClick={addCallToAction}
-                    disabled={!newCTA.title.trim() || !newCTA.buttonText.trim()}
-                    className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
-                  >
-                    Ajouter le CTA
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter la section
                   </button>
                 </div>
               </div>
@@ -757,39 +386,35 @@ const Step5: React.FC<Step5Props> = ({
           </div>
         </div>
 
-        {/* Aperçu de la structure */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Aperçu de l'article</h3>
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center text-sm text-blue-600 hover:text-blue-700"
-            >
-              {showPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-              {showPreview ? 'Masquer' : 'Afficher'}
-            </button>
-          </div>
-          
-          {showPreview && (
+        {/* Aperçu de la structure - Affiché seulement si showPreview est true */}
+        {showPreview && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Aperçu de l'article
+              </h3>
+            </div>
+            
             <div className="border border-gray-200 rounded-lg p-6 bg-gray-50 max-h-96 overflow-y-auto">
               {formatPreview()}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Conseils */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-8 mb-8">
         <div className="flex items-start space-x-3">
-          <Lightbulb className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <Sparkles className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div>
             <h4 className="font-medium text-yellow-800 mb-1">Conseils pour une structure efficace</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Le TL;DR doit résumer les points essentiels en 3-5 bullets maximum</li>
-              <li>• Les sections doivent suivre un ordre logique et progressif</li>
-              <li>• Les dates importantes créent de l'urgence et de l'engagement</li>
-              <li>• Les giveaways augmentent l'interaction et la viralité</li>
-              <li>• Les call-to-actions doivent être clairs et incitatifs</li>
+              <li>• Organisez vos sections dans un ordre logique et progressif</li>
+              <li>• Chaque section doit avoir un objectif clair et distinct</li>
+              <li>• L'introduction doit présenter le contexte et les enjeux</li>
+              <li>• Utilisez l'IA pour enrichir automatiquement le contenu des sections</li>
+              <li>• Vous pourrez affiner le contenu aux étapes suivantes</li>
             </ul>
           </div>
         </div>
@@ -798,9 +423,9 @@ const Step5: React.FC<Step5Props> = ({
       <div className="flex justify-center">
         <button
           onClick={onNext}
-          disabled={!localSettings.title.trim() || !introduction.trim()}
+          disabled={!localSettings.title.trim() || !introduction.trim() || articleSections.length === 0}
           className={`flex items-center px-8 py-3 rounded-lg font-medium transition-all shadow-sm ${
-            localSettings.title.trim() && introduction.trim()
+            localSettings.title.trim() && introduction.trim() && articleSections.length > 0
               ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
