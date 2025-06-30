@@ -119,7 +119,7 @@ function App() {
 
     // Configure Gemini if Google AI API key is available
     if (user && apiKeys.googleAI && apiKeys.googleAI.enabled && apiKeys.googleAI.key) {
-      console.log('🔧 Configuring Gemini 2.0 Flash with user API key');
+      console.log('🔧 Configuring Gemini 2.5 Flash with user API key');
       setApiKey(apiKeys.googleAI.key);
       setGeminiConfigured(true);
       setApiKeyError('');
@@ -128,7 +128,7 @@ function App() {
       // Fallback to old method for compatibility
       const storedApiKey = localStorage.getItem('google_ai_api_key');
       if (storedApiKey && storedApiKey.startsWith('AIza')) {
-        console.log('🔧 Configuring Gemini 2.0 Flash with stored API key');
+        console.log('🔧 Configuring Gemini 2.5 Flash with stored API key');
         setApiKey(storedApiKey);
         setGeminiConfigured(true);
         setApiKeyError('');
@@ -375,19 +375,19 @@ function App() {
         // Use Gemini API if configured and in production mode
         if (!demoMode && geminiConfigured && apiKey) {
           try {
-            console.log('🚀 Using Gemini 2.0 Flash API for transcription...');
+            console.log('🚀 Using Gemini 2.5 Flash API for transcription...');
             
             const transcriptionService = TranscriptionServiceFactory.create(apiKey);
             let transcriptionText = '';
             
             if (appState.audioFile) {
-              console.log('🎵 Transcribing audio file with Gemini 2.0 Flash:', appState.audioFile.name);
+              console.log('🎵 Transcribing audio file with Gemini 2.5 Flash:', appState.audioFile.name);
               transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             } else if (appState.audioUrl) {
-              console.log('🔗 Transcribing from audio URL with Gemini 2.0 Flash:', appState.audioUrl);
+              console.log('🔗 Transcribing from audio URL with Gemini 2.5 Flash:', appState.audioUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
             } else if (appState.youtubeUrl) {
-              console.log('📺 Transcribing from YouTube with Gemini 2.0 Flash:', appState.youtubeUrl);
+              console.log('📺 Transcribing from YouTube with Gemini 2.5 Flash:', appState.youtubeUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
@@ -409,13 +409,13 @@ function App() {
                 estimatedCost: estimatedCost
               };
               
-              console.log('✅ Gemini 2.0 Flash transcription successful');
+              console.log('✅ Gemini 2.5 Flash transcription successful');
             } else {
-              throw new Error('Empty transcription received from Gemini 2.0 Flash');
+              throw new Error('Empty transcription received from Gemini 2.5 Flash');
             }
             
           } catch (error) {
-            console.error('❌ Gemini 2.0 Flash error:', error);
+            console.error('❌ Gemini 2.5 Flash error:', error);
             
             // Check if it's a quota error
             if (isQuotaError(error as Error)) {
@@ -489,7 +489,7 @@ function App() {
     // If we don't have key points yet and Gemini is configured, extract them automatically
     if (appState.keyPoints.length === 0 && !demoMode && geminiConfigured && apiKey && appState.transcription) {
       try {
-        console.log('🎯 Automatic key points extraction with Gemini 2.0 Flash...');
+        console.log('🎯 Automatic key points extraction with Gemini 2.5 Flash...');
         
         const geminiService = GeminiServiceFactory.create(apiKey);
         const extractedKeyPoints = await geminiService.extractKeyPoints(appState.transcription.text);
@@ -546,7 +546,7 @@ function App() {
       
       // Use Gemini API if configured and in production mode
       if (!demoMode && geminiConfigured && apiKey && appState.transcription) {
-        console.log('🚀 Content generation with Gemini 2.0 Flash...');
+        console.log('🚀 Content generation with Gemini 2.5 Flash...');
         
         const geminiService = GeminiServiceFactory.create(apiKey);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
@@ -563,7 +563,7 @@ function App() {
           isProcessing: false 
         }));
         
-        console.log('✅ Content generated with Gemini 2.0 Flash');
+        console.log('✅ Content generated with Gemini 2.5 Flash');
       } else {
         // Demo mode
         console.log('🎭 Content generation in demo mode');
@@ -711,7 +711,7 @@ function App() {
   const getGeminiStatusText = () => {
     if (demoMode) return 'Demo Mode';
     if (apiKeyError) return 'API Error';
-    if (geminiConfigured) return 'Gemini 2.0 Flash';
+    if (geminiConfigured) return 'Gemini 2.5 Flash';
     return 'Demo Mode';
   };
 
@@ -789,7 +789,7 @@ function App() {
                     <button
                       onClick={() => setShowApiKeyModal(true)}
                       className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Configure Gemini 2.0 Flash"
+                      title="Configure Gemini 2.5 Flash"
                     >
                       <Settings className="w-4 h-4" />
                     </button>

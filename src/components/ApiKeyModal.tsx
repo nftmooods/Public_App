@@ -46,7 +46,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Gemini 2.0 Flash Configuration
+              Gemini 2.5 Flash Configuration
             </h2>
           </div>
           <button
@@ -80,10 +80,10 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Advanced Transcription with Gemini 2.0 Flash
+                  Advanced Transcription with Gemini 2.5 Flash
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Gemini 2.0 Flash offers the latest in AI transcription technology with improved 
+                  Gemini 2.5 Flash offers the latest in AI transcription technology with improved 
                   accuracy, faster processing, and enhanced multimodal capabilities for audio analysis.
                 </p>
               </div>
@@ -135,7 +135,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div className="flex items-start space-x-3">
               <Sparkles className="w-5 h-5 text-green-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-green-800 mb-1">Gemini 2.0 Flash Benefits</h4>
+                <h4 className="font-medium text-green-800 mb-1">Gemini 2.5 Flash Benefits</h4>
                 <ul className="text-sm text-green-700 space-y-1">
                   <li>• Latest AI transcription technology</li>
                   <li>• Improved accuracy and speed</li>
