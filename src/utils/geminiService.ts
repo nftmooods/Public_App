@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface GeminiTranscriptionResult {
   text: string;
@@ -16,13 +16,13 @@ export interface GeminiSegment {
 }
 
 export class GeminiService {
-  private genAI: GoogleGenAI | null = null;
+  private genAI: GoogleGenerativeAI | null = null;
   private apiKey: string | null = null;
 
   constructor(apiKey?: string) {
     if (apiKey) {
       this.apiKey = apiKey;
-      this.genAI = new GoogleGenAI(apiKey);
+      this.genAI = new GoogleGenerativeAI(apiKey);
       console.log('🔧 Gemini 2.5 Flash service initialized with API key');
     }
   }
