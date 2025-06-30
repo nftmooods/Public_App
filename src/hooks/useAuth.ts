@@ -104,17 +104,21 @@ export const useAuth = () => {
       // Attendre un peu pour que le trigger se déclenche
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Si l'utilisateur est créé mais pas encore confirmé par email
-      if (result.user && !result.user.email_confirmed_at) {
-        // Créer le profil manuellement si nécessaire
-        const userData = await createUserFromAuthAndProfile(result.user);
-        if (userData) {
-          setUser(userData);
-          setIsAuthenticated(true);
+      // Immediately sign in the user to establish a proper session with refresh tokens
+      if (result.user) {
+        try {
+          await AuthService.signIn(email, password);
+          // The user state will be updated via onAuthStateChange
+        } catch (signInError) {
+          console.error('Erreur lors de la connexion automatique après inscription:', signInError);
+          // If auto sign-in fails, still try to create user data from the sign-up result
+          const userData = await createUserFromAuthAndProfile(result.user);
+          if (userData) {
+            setUser(userData);
+            setIsAuthenticated(true);
+          }
         }
       }
-      
-      // L'utilisateur sera mis à jour via onAuthStateChange une fois confirmé
     } catch (error) {
       setIsLoading(false);
       throw error;
