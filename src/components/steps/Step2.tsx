@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, FileText, Clock, Users, ArrowRight, DollarSign, Zap, CheckCircle, AlertTriangle, Lightbulb, Tag } from 'lucide-react';
+import { Loader2, FileText, Clock, Users, ArrowRight, Zap, CheckCircle, AlertTriangle, Lightbulb, Tag, TestTube } from 'lucide-react';
 import { TranscriptionData } from '../../types';
 
 interface Step2Props {
@@ -22,7 +22,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
 
   useEffect(() => {
     if (isProcessing) {
-      // Déterminer les étapes selon le type de contenu
+      // Determine steps based on content type
       const demoMode = localStorage.getItem('demoMode') === 'true';
       const apiKey = localStorage.getItem('google_ai_api_key');
       const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -40,7 +40,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
 
       const hasGemini = !demoMode && geminiApiKey && geminiApiKey.startsWith('AIza');
       
-      // Déterminer le type de contenu
+      // Determine content type
       const hasTextContent = localStorage.getItem('textContent')?.trim();
       const hasAudioFile = localStorage.getItem('audioFile');
       const hasAudioUrl = localStorage.getItem('audioUrl')?.trim();
@@ -52,76 +52,76 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
         steps = [
           {
             id: 'text-analysis',
-            label: 'Analyse du contenu texte',
+            label: 'Text content analysis',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local',
-            details: 'Parsing et structuration du texte fourni'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Local processing',
+            details: 'Parsing and structuring provided text'
           },
           {
             id: 'speaker-detection',
-            label: 'Détection des intervenants',
+            label: 'Speaker detection',
             status: 'pending',
-            api: 'Algorithme local',
-            details: 'Identification des patterns [Intervenant X]:'
+            api: 'Local algorithm',
+            details: 'Identifying [Speaker X]: patterns'
           },
           {
             id: 'key-points',
-            label: 'Extraction des points clés',
+            label: 'Key points extraction',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
-            details: 'Analyse sémantique et extraction des insights'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
+            details: 'Semantic analysis and insight extraction'
           },
           {
             id: 'cost-estimation',
-            label: 'Estimation des coûts',
+            label: 'Token calculation',
             status: 'pending',
-            api: 'Calcul local',
-            details: 'Comptage des tokens et estimation tarifaire'
+            api: 'Local calculation',
+            details: 'Token counting and usage estimation'
           }
         ];
       } else if (hasAudioFile || hasAudioUrl || hasYoutubeUrl) {
         steps = [
           {
             id: 'audio-processing',
-            label: hasYoutubeUrl ? 'Extraction audio YouTube' : 'Traitement du fichier audio',
+            label: hasYoutubeUrl ? 'YouTube audio extraction' : 'Audio file processing',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
-            details: hasYoutubeUrl ? 'Extraction de la piste audio' : 'Préparation pour transcription'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
+            details: hasYoutubeUrl ? 'Extracting audio track' : 'Preparing for transcription'
           },
           {
             id: 'transcription',
-            label: 'Transcription audio',
+            label: 'Audio transcription',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées',
-            details: 'Conversion audio vers texte avec détection des speakers'
+            api: hasGemini ? 'Gemini 2.5 Flash (Multimodal)' : 'Simulated data',
+            details: 'Converting audio to text with speaker detection'
           },
           {
             id: 'language-detection',
-            label: 'Détection de la langue',
+            label: 'Language detection',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Algorithme local',
-            details: 'Identification automatique de la langue parlée'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Local algorithm',
+            details: 'Automatic language identification'
           },
           {
             id: 'speaker-analysis',
-            label: 'Analyse des intervenants',
+            label: 'Speaker analysis',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local',
-            details: 'Séparation et identification des voix'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Local processing',
+            details: 'Voice separation and identification'
           },
           {
             id: 'key-points',
-            label: 'Extraction des points clés',
+            label: 'Key points extraction',
             status: 'pending',
-            api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
-            details: 'Analyse sémantique et extraction des insights'
+            api: hasGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
+            details: 'Semantic analysis and insight extraction'
           },
           {
             id: 'cost-estimation',
-            label: 'Estimation des coûts',
+            label: 'Token calculation',
             status: 'pending',
-            api: 'Calcul local',
-            details: 'Comptage des tokens et estimation tarifaire'
+            api: 'Local calculation',
+            details: 'Token counting and usage estimation'
           }
         ];
       }
@@ -129,23 +129,23 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
       setProgressSteps(steps);
       setCurrentStepIndex(0);
 
-      // Simuler la progression
+      // Simulate progression
       const progressInterval = setInterval(() => {
         setProgressSteps(prev => {
           const newSteps = [...prev];
           const currentIndex = newSteps.findIndex(step => step.status === 'processing');
           
           if (currentIndex >= 0) {
-            // Marquer l'étape actuelle comme terminée
+            // Mark current step as completed
             newSteps[currentIndex].status = 'completed';
             
-            // Passer à l'étape suivante
+            // Move to next step
             if (currentIndex + 1 < newSteps.length) {
               newSteps[currentIndex + 1].status = 'processing';
               setCurrentStepIndex(currentIndex + 1);
             }
           } else {
-            // Démarrer la première étape
+            // Start first step
             if (newSteps.length > 0 && newSteps[0].status === 'pending') {
               newSteps[0].status = 'processing';
               setCurrentStepIndex(0);
@@ -156,7 +156,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
         });
       }, 1500);
 
-      // Nettoyer l'intervalle après 10 secondes
+      // Clean up interval after completion
       setTimeout(() => {
         clearInterval(progressInterval);
         setProgressSteps(prev => prev.map(step => ({ ...step, status: 'completed' })));
@@ -171,17 +171,17 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
       <div className="max-w-5xl mx-auto p-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Analyse en cours
+            Analysis in Progress
           </h2>
           <p className="text-lg text-gray-600">
-            Traitement de votre contenu avec les APIs configurées
+            Processing your content with configured APIs
           </p>
         </div>
 
-        {/* Barre de progression globale */}
+        {/* Global progress bar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Progression globale</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Global Progress</h3>
             <span className="text-sm text-gray-500">
               {Math.round((progressSteps.filter(s => s.status === 'completed').length / progressSteps.length) * 100)}%
             </span>
@@ -196,7 +196,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
             ></div>
           </div>
 
-          {/* Étapes détaillées */}
+          {/* Detailed steps */}
           <div className="space-y-4">
             {progressSteps.map((step, index) => (
               <div 
@@ -234,7 +234,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
-                        step.api.includes('démonstration') ? 'bg-yellow-100 text-yellow-700' :
+                        step.api.includes('demo') || step.api.includes('Demo') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {step.api}
@@ -257,15 +257,15 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           </div>
         </div>
 
-        {/* Informations sur les APIs utilisées */}
+        {/* Information about APIs used */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">APIs et services utilisés</h3>
+          <h3 className="text-lg font-semibold text-blue-900 mb-4">APIs and services used</h3>
           <div className="grid md:grid-cols-2 gap-4">
             {Array.from(new Set(progressSteps.map(s => s.api).filter(Boolean))).map((api, index) => (
               <div key={index} className="flex items-center space-x-3 bg-white rounded-lg p-3">
                 <div className={`w-3 h-3 rounded-full ${
                   api?.includes('Gemini') ? 'bg-purple-500' :
-                  api?.includes('démonstration') ? 'bg-yellow-500' :
+                  api?.includes('demo') || api?.includes('Demo') ? 'bg-yellow-500' :
                   'bg-gray-500'
                 }`}></div>
                 <span className="text-sm font-medium text-gray-900">{api}</span>
@@ -288,14 +288,14 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
     return `${minutes}min`;
   };
 
-  // Générer un résumé court et des sujets abordés
+  // Generate short summary and topics discussed
   const generateSummary = (text: string) => {
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
     return sentences.slice(0, 2).join('. ') + '.';
   };
 
   const generateTopics = (text: string, speakers: any[]) => {
-    // Extraire des sujets basés sur des mots-clés fréquents
+    // Extract topics based on frequent keywords
     const words = text.toLowerCase().split(/\W+/);
     const stopWords = ['le', 'la', 'les', 'de', 'et', 'à', 'un', 'une', 'ce', 'que', 'qui', 'dans', 'pour', 'avec', 'sur', 'par', 'du', 'des', 'au', 'aux', 'est', 'sont', 'avoir', 'être', 'the', 'and', 'to', 'of', 'a', 'in', 'that', 'is', 'it', 'you', 'for', 'with', 'on', 'as'];
     
@@ -311,14 +311,14 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
       .slice(0, 8)
       .map(([word]) => word);
 
-    // Créer des sujets basés sur les mots-clés et le contexte
+    // Create topics based on keywords and context
     const topics = [
-      `Évolution de ${topWords[0] || 'la technologie'}`,
-      `Impact de ${topWords[1] || 'l\'innovation'}`,
-      `Perspectives sur ${topWords[2] || 'l\'avenir'}`,
-      `Analyse de ${topWords[3] || 'la situation'}`,
-      `Discussion sur ${topWords[4] || 'les tendances'}`,
-      `Insights sur ${topWords[5] || 'le marché'}`
+      `Evolution of ${topWords[0] || 'technology'}`,
+      `Impact of ${topWords[1] || 'innovation'}`,
+      `Perspectives on ${topWords[2] || 'the future'}`,
+      `Analysis of ${topWords[3] || 'the situation'}`,
+      `Discussion on ${topWords[4] || 'trends'}`,
+      `Insights on ${topWords[5] || 'the market'}`
     ].filter((_, index) => topWords[index]);
 
     return topics.slice(0, 4);
@@ -331,18 +331,18 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Analyse terminée avec succès
+          Analysis Completed Successfully
         </h2>
         <p className="text-lg text-gray-600">
-          Voici l'aperçu de votre contenu et les métriques détectées
+          Here's the overview of your content and detected metrics
         </p>
       </div>
 
-      {/* Résumé des APIs utilisées */}
+      {/* APIs used summary */}
       <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
         <div className="flex items-center space-x-2 mb-2">
           <CheckCircle className="w-5 h-5 text-green-600" />
-          <h3 className="font-medium text-green-800">Traitement terminé</h3>
+          <h3 className="font-medium text-green-800">Processing completed</h3>
         </div>
         <div className="text-sm text-green-700">
           {(() => {
@@ -354,9 +354,13 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
             if (isAuthenticated) {
               const userData = localStorage.getItem('user');
               if (userData) {
-                const user = JSON.parse(userData);
-                if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-                  geminiApiKey = user.apiKeys.googleAI.key;
+                try {
+                  const user = JSON.parse(userData);
+                  if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled && user.apiKeys.googleAI.key) {
+                    geminiApiKey = user.apiKeys.googleAI.key;
+                  }
+                } catch (e) {
+                  console.error('Error parsing user data:', e);
                 }
               }
             }
@@ -364,30 +368,41 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
             const hasGemini = !demoMode && geminiApiKey && geminiApiKey.startsWith('AIza');
             
             if (hasGemini) {
-              return "✅ Traitement effectué avec Gemini 1.5 Pro - Votre clé API a été utilisée";
+              return "✅ Processing done with Gemini 2.5 Flash - Your API key was used";
             } else {
-              return "🎭 Traitement effectué en mode démonstration - Aucune API externe utilisée";
+              return "🎭 Processing done in demo mode - No external API used";
             }
           })()}
         </div>
       </div>
 
-      {/* Aperçu du contenu */}
+      {/* Beta Test Notice */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 mb-6">
+        <div className="flex items-center space-x-2 mb-2">
+          <TestTube className="w-5 h-5 text-green-600" />
+          <h3 className="font-medium text-green-800">Beta Test - Free Usage</h3>
+        </div>
+        <div className="text-sm text-green-700">
+          🎉 This analysis was processed for free as part of our Beta Test program. No payment required - use your own API keys for unlimited processing!
+        </div>
+      </div>
+
+      {/* Content overview */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Lightbulb className="w-5 h-5 mr-2 text-yellow-500" />
-          Aperçu du contenu
+          Content Overview
         </h3>
         
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
-          <h4 className="font-medium text-gray-900 mb-3">Résumé</h4>
+          <h4 className="font-medium text-gray-900 mb-3">Summary</h4>
           <p className="text-gray-700 leading-relaxed mb-4">
             {summary}
           </p>
           
           <h4 className="font-medium text-gray-900 mb-3 flex items-center">
             <Tag className="w-4 h-4 mr-2" />
-            Principaux sujets abordés
+            Main topics discussed
           </h4>
           <div className="grid md:grid-cols-2 gap-3">
             {topics.map((topic, index) => (
@@ -406,11 +421,11 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
         </div>
         <div className="mt-4 flex items-center text-sm text-gray-500">
           <FileText className="w-4 h-4 mr-2" />
-          <span>{transcription.text.split(' ').length} mots au total</span>
+          <span>{transcription.text.split(' ').length} words total</span>
         </div>
       </div>
 
-      {/* Métriques principales */}
+      {/* Main metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
           <div className="flex items-center justify-center mb-3">
@@ -419,7 +434,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           <div className="text-2xl font-bold text-gray-900 mb-1">
             {formatDuration(transcription.duration)}
           </div>
-          <div className="text-sm text-gray-600">Durée totale</div>
+          <div className="text-sm text-gray-600">Total duration</div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
@@ -429,7 +444,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           <div className="text-2xl font-bold text-gray-900 mb-1">
             {transcription.speakers.length}
           </div>
-          <div className="text-sm text-gray-600">Intervenants détectés</div>
+          <div className="text-sm text-gray-600">Speakers detected</div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
@@ -439,23 +454,23 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           <div className="text-2xl font-bold text-gray-900 mb-1">
             {transcription.tokenCount.toLocaleString()}
           </div>
-          <div className="text-sm text-gray-600">Tokens estimés</div>
+          <div className="text-sm text-gray-600">Estimated tokens</div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
           <div className="flex items-center justify-center mb-3">
-            <DollarSign className="w-8 h-8 text-purple-600" />
+            <TestTube className="w-8 h-8 text-green-600" />
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">
-            {transcription.estimatedCost.toFixed(2)}€
+          <div className="text-2xl font-bold text-green-900 mb-1">
+            FREE
           </div>
-          <div className="text-sm text-gray-600">Coût estimé</div>
+          <div className="text-sm text-green-600">Beta Test</div>
         </div>
       </div>
 
-      {/* Intervenants détectés */}
+      {/* Detected speakers */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Intervenants identifiés</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Identified Speakers</h3>
         <div className="grid md:grid-cols-2 gap-4">
           {transcription.speakers.map((speaker) => (
             <div 
@@ -480,40 +495,15 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
         </div>
       </div>
 
-      {/* Détails de facturation */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">Détails de facturation</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-blue-800">Transcription complète</span>
-            <span className="font-medium text-blue-900">{(transcription.estimatedCost * 0.4).toFixed(2)}€</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-blue-800">Extraction des points clés</span>
-            <span className="font-medium text-blue-900">{(transcription.estimatedCost * 0.3).toFixed(2)}€</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-blue-800">Génération de contenu</span>
-            <span className="font-medium text-blue-900">{(transcription.estimatedCost * 0.3).toFixed(2)}€</span>
-          </div>
-          <div className="border-t border-blue-300 pt-3">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-blue-900">Total estimé</span>
-              <span className="text-xl font-bold text-blue-900">{transcription.estimatedCost.toFixed(2)}€</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Information importante */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+      {/* Important information */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
         <div className="flex items-start space-x-3">
-          <div className="w-5 h-5 text-yellow-600 mt-0.5">⚠️</div>
+          <div className="w-5 h-5 text-blue-600 mt-0.5">ℹ️</div>
           <div>
-            <h4 className="font-medium text-yellow-800 mb-1">Information importante</h4>
-            <p className="text-sm text-yellow-700">
-              Le coût final peut varier légèrement selon la complexité du contenu et les options choisies. 
-              Vous pourrez valider le paiement à l'étape suivante avant le traitement complet.
+            <h4 className="font-medium text-blue-800 mb-1">Next Steps</h4>
+            <p className="text-sm text-blue-700">
+              Your content has been successfully analyzed and is ready for editing and structuring. 
+              You can now refine the transcription, organize key points, and generate professional content.
             </p>
           </div>
         </div>
@@ -524,7 +514,7 @@ const Step2: React.FC<Step2Props> = ({ transcription, isProcessing, onNext }) =>
           onClick={onNext}
           className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
         >
-          Continuer vers le paiement
+          Continue to Transcription
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>

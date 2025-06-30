@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Stepper from './Stepper';
 import Step1 from './steps/Step1';
 import Step2 from './steps/Step2';
-import Step3 from './steps/Step3';
 import Step4 from './steps/Step4';
 import Step5 from './steps/Step5';
 import Step6 from './steps/Step6';
@@ -14,7 +13,7 @@ import UserMenu from './UserMenu';
 import ApiKeysModal from './ApiKeysModal';
 import ProfileModal from './ProfileModal';
 import { useAppContext } from '../contexts/AppContext';
-import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap } from 'lucide-react';
+import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap, TestTube } from 'lucide-react';
 
 export const MainApp: React.FC = () => {
   const {
@@ -47,16 +46,15 @@ export const MainApp: React.FC = () => {
     // Step handlers
     handleStep1Next,
     handleStep2Next,
-    handlePaymentAccept,
     handleUpdateTranscription,
     handleUpdateKeyPoints,
-    handleStep4Next,
+    handleStep3Next,
     handleUpdateContentSettings,
+    handleStep4Next,
     handleStep5Next,
-    handleStep6Next,
     handleContentChange,
     handleRegenerate,
-    handleStep7Next,
+    handleStep6Next,
     
     // Content handlers
     handleUrlChange,
@@ -115,43 +113,36 @@ export const MainApp: React.FC = () => {
         );
       case 3:
         return (
-          <Step3
-            transcription={appState.transcription}
-            onPaymentAccept={handlePaymentAccept}
-          />
-        );
-      case 4:
-        return (
           <Step4
             transcription={appState.transcription}
             keyPoints={appState.keyPoints}
             onUpdateTranscription={handleUpdateTranscription}
             onUpdateKeyPoints={handleUpdateKeyPoints}
-            onNext={handleStep4Next}
+            onNext={handleStep3Next}
             demoMode={demoMode}
             geminiConfigured={geminiConfigured}
             apiKey={apiKey}
           />
         );
-      case 5:
+      case 4:
         return (
           <Step5
             keyPoints={appState.keyPoints}
             contentSettings={appState.contentSettings}
             onUpdateSettings={handleUpdateContentSettings}
-            onNext={handleStep5Next}
+            onNext={handleStep4Next}
           />
         );
-      case 6:
+      case 5:
         return (
           <Step6
             contentSettings={appState.contentSettings}
             keyPoints={appState.keyPoints}
             onUpdateSettings={handleUpdateContentSettings}
-            onNext={handleStep6Next}
+            onNext={handleStep5Next}
           />
         );
-      case 7:
+      case 6:
         return (
           <Step7
             transcription={appState.transcription}
@@ -162,10 +153,10 @@ export const MainApp: React.FC = () => {
             onContentChange={handleContentChange}
             onSettingsChange={handleUpdateContentSettings}
             onRegenerate={handleRegenerate}
-            onNext={handleStep7Next}
+            onNext={handleStep6Next}
           />
         );
-      case 8:
+      case 7:
         return (
           <Step8
             generatedContent={appState.generatedContent}
@@ -225,8 +216,14 @@ export const MainApp: React.FC = () => {
                 <span className="text-white font-bold text-sm">R</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Rekapp</h1>
-                <p className="text-sm text-gray-500">Transform audio and text into professional content</p>
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-xl font-bold text-gray-900">Rekapp</h1>
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                    <TestTube className="w-3 h-3" />
+                    <span className="text-xs font-bold">BETA TEST</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">Transform audio and text into professional content • Free unlimited usage</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -301,8 +298,18 @@ export const MainApp: React.FC = () => {
               )}
               
               <div className="text-sm text-gray-500">
-                Step {appState.currentStep} of 8
+                Step {appState.currentStep} of 7
               </div>
+            </div>
+          </div>
+          
+          {/* Beta Test Banner */}
+          <div className="mt-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <TestTube className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-700">
+                <strong>🎉 Beta Test Phase</strong> - Free unlimited usage with your own API keys • No payment required • Help us improve the product!
+              </span>
             </div>
           </div>
           
@@ -358,7 +365,7 @@ export const MainApp: React.FC = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-4">
         <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-500">
-          <p>© 2025 Rekapp. Transform audio and text into professional content.</p>
+          <p>© 2025 Rekapp. Transform audio and text into professional content • Beta Test - Free unlimited usage</p>
         </div>
       </footer>
 

@@ -17,13 +17,12 @@ import { GeminiServiceFactory } from '../utils/geminiService';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/Text content', completed: false, active: true },
-  { id: 2, title: 'Analysis', description: 'Key points & cost', completed: false, active: false },
-  { id: 3, title: 'Payment', description: 'Validation & acceptance', completed: false, active: false },
-  { id: 4, title: 'Transcription', description: 'Complete editing', completed: false, active: false },
-  { id: 5, title: 'Structure', description: 'Title & overview', completed: false, active: false },
-  { id: 6, title: 'Format', description: 'Type & tone', completed: false, active: false },
-  { id: 7, title: 'Generation', description: 'Enriched content', completed: false, active: false },
-  { id: 8, title: 'Export', description: 'Publication & sharing', completed: false, active: false }
+  { id: 2, title: 'Analysis', description: 'Key points & insights', completed: false, active: false },
+  { id: 3, title: 'Transcription', description: 'Complete editing', completed: false, active: false },
+  { id: 4, title: 'Structure', description: 'Title & overview', completed: false, active: false },
+  { id: 5, title: 'Format', description: 'Type & tone', completed: false, active: false },
+  { id: 6, title: 'Generation', description: 'Enriched content', completed: false, active: false },
+  { id: 7, title: 'Export', description: 'Publication & sharing', completed: false, active: false }
 ];
 
 const initialAppState: AppState = {
@@ -46,7 +45,7 @@ const initialAppState: AppState = {
   },
   generatedContent: '',
   paymentInfo: {
-    accepted: false,
+    accepted: true, // Always accepted in Beta Test
     method: null,
     amount: 0,
     currency: 'USD'
@@ -91,16 +90,15 @@ interface AppContextType {
   // Step handlers
   handleStep1Next: () => Promise<void>;
   handleStep2Next: () => void;
-  handlePaymentAccept: (method: 'crypto' | 'card', amount: number) => void;
   handleUpdateTranscription: (transcription: any) => void;
   handleUpdateKeyPoints: (keyPoints: any[]) => void;
-  handleStep4Next: () => Promise<void>;
+  handleStep3Next: () => Promise<void>;
   handleUpdateContentSettings: (settings: any) => void;
+  handleStep4Next: () => void;
   handleStep5Next: () => void;
-  handleStep6Next: () => void;
   handleContentChange: (content: string) => void;
   handleRegenerate: () => Promise<void>;
-  handleStep7Next: () => void;
+  handleStep6Next: () => void;
   
   // Content handlers
   handleUrlChange: (url: string) => void;
@@ -221,19 +219,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           ...prev,
           currentStep: stepId,
           transcription: mockTranscription,
-          keyPoints: stepId >= 4 ? mockKeyPoints : prev.keyPoints,
-          generatedContent: stepId >= 7 ? mockContent : prev.generatedContent,
-          contentSettings: stepId >= 5 ? {
+          keyPoints: stepId >= 3 ? mockKeyPoints : prev.keyPoints,
+          generatedContent: stepId >= 6 ? mockContent : prev.generatedContent,
+          contentSettings: stepId >= 4 ? {
             ...prev.contentSettings,
             title: 'Demo Analysis',
             subtitle: 'Automatically generated content for demonstration'
-          } : prev.contentSettings,
-          paymentInfo: stepId >= 3 ? {
-            accepted: true,
-            method: 'card',
-            amount: 15.99,
-            currency: 'USD'
-          } : prev.paymentInfo
+          } : prev.contentSettings
         }));
       }
       return;
@@ -254,7 +246,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const nextStep = appState.currentStep + 1;
     console.log(`➡️ Moving to next step: ${nextStep}`);
     
-    if (nextStep <= 8) {
+    if (nextStep <= 7) {
       updateStepStatus(appState.currentStep, true, false);
       setAppState(prev => ({ ...prev, currentStep: nextStep }));
       updateStepStatus(nextStep, false, true);
@@ -401,7 +393,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         
         const textLength = appState.textContent.length;
         const estimatedTokens = Math.floor(textLength / 4);
-        const estimatedCost = estimatedTokens * 0.0001;
+        const estimatedCost = 0; // Free in Beta Test
         
         // Parse text to detect speakers
         const parsedData = parseTranscriptionWithSpeakers(appState.textContent);
@@ -443,7 +435,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             if (transcriptionText) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
               const estimatedTokens = Math.floor(transcriptionText.length / 4);
-              const estimatedCost = estimatedTokens * 0.0001;
+              const estimatedCost = 0; // Free in Beta Test
               
               transcriptionResult = {
                 text: transcriptionText,
@@ -510,19 +502,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     goToNextStep();
   };
 
-  const handlePaymentAccept = (method: 'crypto' | 'card', amount: number) => {
-    setAppState(prev => ({ 
-      ...prev, 
-      paymentInfo: { 
-        accepted: true, 
-        method, 
-        amount, 
-        currency: 'USD' 
-      } 
-    }));
-    goToNextStep();
-  };
-
   const handleUpdateTranscription = (transcription: any) => {
     setAppState(prev => ({ ...prev, transcription }));
   };
@@ -531,7 +510,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAppState(prev => ({ ...prev, keyPoints }));
   };
 
-  const handleStep4Next = async () => {
+  const handleStep3Next = async () => {
     // If we don't have key points yet and Gemini is configured, extract them automatically
     if (appState.keyPoints.length === 0 && !demoMode && geminiConfigured && apiKey && appState.transcription) {
       try {
@@ -567,11 +546,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAppState(prev => ({ ...prev, contentSettings: settings }));
   };
 
-  const handleStep5Next = () => {
+  const handleStep4Next = () => {
     goToNextStep();
   };
 
-  const handleStep6Next = () => {
+  const handleStep5Next = () => {
     goToNextStep();
   };
 
@@ -637,7 +616,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const handleStep7Next = () => {
+  const handleStep6Next = () => {
     goToNextStep();
   };
 
@@ -676,16 +655,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Step handlers
     handleStep1Next,
     handleStep2Next,
-    handlePaymentAccept,
     handleUpdateTranscription,
     handleUpdateKeyPoints,
-    handleStep4Next,
+    handleStep3Next,
     handleUpdateContentSettings,
+    handleStep4Next,
     handleStep5Next,
-    handleStep6Next,
     handleContentChange,
     handleRegenerate,
-    handleStep7Next,
+    handleStep6Next,
     
     // Content handlers
     handleUrlChange,
