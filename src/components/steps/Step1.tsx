@@ -173,7 +173,7 @@ const Step1: React.FC<Step1Props> = ({
     }
     
     const useGemini = !demoMode && geminiConfigured && hasValidApiKey;
-    console.log('🔍 Will use Gemini:', useGemini);
+    console.log('🔍 Will use Gemini 2.0 Flash:', useGemini);
     
     if (textContent.trim() || textFile) {
       return [
@@ -195,14 +195,14 @@ const Step1: React.FC<Step1Props> = ({
           id: 'text-analysis', 
           label: 'Advanced semantic analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
+          api: useGemini ? 'Gemini 2.0 Flash' : 'Demo mode',
           duration: useGemini ? 4000 : 2500
         },
         { 
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 1.5 Pro' : 'Local algorithm',
+          api: useGemini ? 'Gemini 2.0 Flash' : 'Local algorithm',
           duration: useGemini ? 3000 : 2000
         },
         { 
@@ -229,21 +229,21 @@ const Step1: React.FC<Step1Props> = ({
           id: 'audio-preprocessing', 
           label: 'Transcription preparation', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
+          api: useGemini ? 'Gemini 2.0 Flash' : 'Demo mode',
           duration: 2000
         },
         { 
           id: 'transcription', 
           label: 'Audio to text transcription', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Simulated data',
+          api: useGemini ? 'Gemini 2.0 Flash (Multimodal)' : 'Simulated data',
           duration: baseTranscriptionTime
         },
         { 
           id: 'speaker-analysis', 
           label: 'Speaker analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 1.5 Pro' : 'Local processing',
+          api: useGemini ? 'Gemini 2.0 Flash' : 'Local processing',
           duration: 2500
         },
         { 
@@ -333,7 +333,7 @@ const Step1: React.FC<Step1Props> = ({
             Analysis in Progress
           </h2>
           <p className="text-gray-600">
-            Intelligent processing of your content
+            Intelligent processing of your content with Gemini 2.0 Flash
           </p>
         </div>
 
@@ -427,13 +427,13 @@ const Step1: React.FC<Step1Props> = ({
                 <>
                   <p>• Analyzing {textContent.length} characters of text</p>
                   <p>• Automatic speaker detection</p>
-                  <p>• Intelligent key points extraction</p>
+                  <p>• Intelligent key points extraction with Gemini 2.0 Flash</p>
                 </>
               ) : audioFile ? (
                 <>
                   <p>• Processing audio file: {audioFile.name}</p>
                   <p>• Size: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                  <p>• Multimodal AI transcription</p>
+                  <p>• Multimodal AI transcription with Gemini 2.0 Flash</p>
                 </>
               ) : null}
             </div>
@@ -460,7 +460,7 @@ const Step1: React.FC<Step1Props> = ({
           <div className="flex items-center">
             <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
             <span className="text-blue-800 font-medium text-sm">
-              Gemini 1.5 Pro configured - Advanced multimodal transcription enabled
+              Gemini 2.0 Flash configured - Advanced multimodal transcription enabled
             </span>
           </div>
         </div>
@@ -648,7 +648,7 @@ const Step1: React.FC<Step1Props> = ({
             <div className="text-xs text-blue-700 space-y-1">
               <p>• Preliminary analysis and cost estimation</p>
               <p>• Automatic speaker detection (for audio/video)</p>
-              <p>• Key insights extraction</p>
+              <p>• Key insights extraction with Gemini 2.0 Flash</p>
               <p>• Token count and pricing calculation</p>
             </div>
           </div>

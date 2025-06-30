@@ -23,7 +23,7 @@ export class GeminiService {
     if (apiKey) {
       this.apiKey = apiKey;
       this.genAI = new GoogleGenerativeAI(apiKey);
-      console.log('🔧 Service Gemini initialisé avec clé API');
+      console.log('🔧 Gemini 2.0 Flash service initialized with API key');
     }
   }
 
@@ -41,25 +41,25 @@ export class GeminiService {
     } = {}
   ): Promise<GeminiTranscriptionResult> {
     if (!this.genAI) {
-      throw new Error('Service Gemini non configuré. Veuillez fournir une clé API Google AI.');
+      throw new Error('Gemini service not configured. Please provide a Google AI API key.');
     }
 
     try {
-      console.log('🎵 Début de la transcription Gemini pour:', audioFile.name);
-      console.log('📊 Taille du fichier:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('🎵 Starting Gemini 2.0 Flash transcription for:', audioFile.name);
+      console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       
-      // Convertir le fichier audio en base64
+      // Convert audio file to base64
       const audioBase64 = await this.fileToBase64(audioFile);
-      console.log('🔄 Fichier converti en base64');
+      console.log('🔄 File converted to base64');
       
-      // Utiliser Gemini 1.5 Pro pour la transcription
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      // Use Gemini 2.0 Flash for transcription
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
-      // Construire le prompt pour la transcription
+      // Build transcription prompt
       const transcriptionPrompt = this.buildTranscriptionPrompt(options);
-      console.log('📝 Prompt de transcription construit');
+      console.log('📝 Transcription prompt built');
 
-      console.log('🚀 Envoi de la requête à Gemini...');
+      console.log('🚀 Sending request to Gemini 2.0 Flash...');
       const result = await model.generateContent([
         {
           inlineData: {
@@ -73,35 +73,35 @@ export class GeminiService {
       const response = await result.response;
       const transcriptionText = response.text();
 
-      console.log('✅ Transcription Gemini terminée');
-      console.log('📄 Longueur de la transcription:', transcriptionText.length, 'caractères');
+      console.log('✅ Gemini 2.0 Flash transcription completed');
+      console.log('📄 Transcription length:', transcriptionText.length, 'characters');
 
-      // Parser la réponse pour extraire les différentes informations
+      // Parse response to extract different information
       const parsedResult = this.parseGeminiResponse(transcriptionText, options);
 
       return {
         text: parsedResult.text,
         language: parsedResult.language || this.detectLanguage(parsedResult.text),
-        confidence: parsedResult.confidence || 0.9,
+        confidence: parsedResult.confidence || 0.95,
         segments: parsedResult.segments,
         keyPoints: parsedResult.keyPoints
       };
 
     } catch (error) {
-      console.error('❌ Erreur lors de la transcription Gemini:', error);
+      console.error('❌ Error during Gemini 2.0 Flash transcription:', error);
       
-      // Analyser le type d'erreur
+      // Analyze error type
       if (error instanceof Error) {
         if (error.message.includes('quota') || error.message.includes('429')) {
-          throw new Error('Quota API dépassé. Vérifiez votre clé API ou augmentez votre quota.');
+          throw new Error('API quota exceeded. Check your API key or increase your quota.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
-          throw new Error('Clé API invalide ou permissions insuffisantes.');
+          throw new Error('Invalid API key or insufficient permissions.');
         } else if (error.message.includes('400')) {
-          throw new Error('Format de fichier non supporté ou fichier corrompu.');
+          throw new Error('Unsupported file format or corrupted file.');
         }
       }
       
-      throw new Error(`Erreur Gemini: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      throw new Error(`Gemini error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -115,29 +115,29 @@ export class GeminiService {
     } = {}
   ): Promise<GeminiTranscriptionResult> {
     if (!this.genAI) {
-      throw new Error('Service Gemini non configuré. Veuillez fournir une clé API Google AI.');
+      throw new Error('Gemini service not configured. Please provide a Google AI API key.');
     }
 
     try {
-      console.log('🌐 Téléchargement de l\'audio depuis:', audioUrl);
+      console.log('🌐 Downloading audio from:', audioUrl);
       
-      // Télécharger le fichier audio depuis l'URL
+      // Download audio file from URL
       const response = await fetch(audioUrl);
       if (!response.ok) {
-        throw new Error(`Impossible de télécharger l'audio: ${response.statusText}`);
+        throw new Error(`Unable to download audio: ${response.statusText}`);
       }
 
       const audioBlob = await response.blob();
       const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mpeg' });
       
-      console.log('📥 Audio téléchargé, taille:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('📥 Audio downloaded, size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
 
-      // Utiliser la méthode de transcription de fichier
+      // Use file transcription method
       return await this.transcribeFile(audioFile, options);
 
     } catch (error) {
-      console.error('❌ Erreur lors de la transcription depuis URL:', error);
-      throw new Error(`Erreur transcription URL: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      console.error('❌ Error during URL transcription:', error);
+      throw new Error(`URL transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -147,38 +147,38 @@ export class GeminiService {
     detectSpeakers?: boolean;
     prompt?: string;
   }): string {
-    let prompt = `Transcris précisément ce fichier audio en français. `;
+    let prompt = `Transcribe this audio file accurately. `;
 
-    if (options.language && options.language !== 'fr') {
-      prompt += `Si l'audio n'est pas en français, transcris-le dans sa langue originale puis traduis en français. `;
+    if (options.language && options.language !== 'en') {
+      prompt += `If the audio is not in English, transcribe it in its original language then translate to English. `;
     }
 
     if (options.detectSpeakers) {
-      prompt += `Identifie les différents intervenants et indique qui parle à chaque moment. Format: [Intervenant X]: texte. `;
+      prompt += `Identify different speakers and indicate who is speaking at each moment. Format: [Speaker X]: text. `;
     }
 
     if (options.extractKeyPoints) {
-      prompt += `Après la transcription, liste les points clés et moments importants de la discussion. `;
+      prompt += `After transcription, list key points and important moments from the discussion. `;
     }
 
     prompt += `
-Structure ta réponse comme suit:
+Structure your response as follows:
 TRANSCRIPTION:
-[transcription complète ici]
+[complete transcription here]
 
-LANGUE_DETECTEE:
-[langue détectée]
+DETECTED_LANGUAGE:
+[detected language]
 
-${options.detectSpeakers ? `INTERVENANTS:
-[liste des intervenants détectés]
+${options.detectSpeakers ? `SPEAKERS:
+[list of detected speakers]
 
-` : ''}${options.extractKeyPoints ? `POINTS_CLES:
-[points clés de la discussion]
+` : ''}${options.extractKeyPoints ? `KEY_POINTS:
+[key points from the discussion]
 
-` : ''}Sois précis et fidèle au contenu audio.`;
+` : ''}Be precise and faithful to the audio content.`;
 
     if (options.prompt) {
-      prompt += `\n\nInstructions supplémentaires: ${options.prompt}`;
+      prompt += `\n\nAdditional instructions: ${options.prompt}`;
     }
 
     return prompt;
@@ -191,7 +191,7 @@ ${options.detectSpeakers ? `INTERVENANTS:
     segments?: GeminiSegment[];
     keyPoints?: string[];
   } {
-    console.log('🔍 Parsing de la réponse Gemini...');
+    console.log('🔍 Parsing Gemini 2.0 Flash response...');
     
     const sections = {
       transcription: '',
@@ -200,39 +200,39 @@ ${options.detectSpeakers ? `INTERVENANTS:
       keyPoints: ''
     };
 
-    // Parser les différentes sections de la réponse
-    const transcriptionMatch = response.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\n(?:LANGUE_DETECTEE|INTERVENANTS|POINTS_CLES|$))/);
+    // Parse different sections of the response
+    const transcriptionMatch = response.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\n(?:DETECTED_LANGUAGE|SPEAKERS|KEY_POINTS|$))/);
     if (transcriptionMatch) {
       sections.transcription = transcriptionMatch[1].trim();
-      console.log('📝 Section transcription trouvée:', sections.transcription.length, 'caractères');
+      console.log('📝 Transcription section found:', sections.transcription.length, 'characters');
     }
 
-    const languageMatch = response.match(/LANGUE_DETECTEE:\s*(.*?)(?=\n|$)/);
+    const languageMatch = response.match(/DETECTED_LANGUAGE:\s*(.*?)(?=\n|$)/);
     if (languageMatch) {
       sections.language = languageMatch[1].trim();
-      console.log('🌍 Langue détectée:', sections.language);
+      console.log('🌍 Language detected:', sections.language);
     }
 
-    const keyPointsMatch = response.match(/POINTS_CLES:\s*([\s\S]*?)$/);
+    const keyPointsMatch = response.match(/KEY_POINTS:\s*([\s\S]*?)$/);
     if (keyPointsMatch) {
       sections.keyPoints = keyPointsMatch[1].trim();
-      console.log('🎯 Points clés trouvés');
+      console.log('🎯 Key points found');
     }
 
-    // Si pas de structure, utiliser toute la réponse comme transcription
+    // If no structure, use entire response as transcription
     if (!sections.transcription) {
       sections.transcription = response;
-      console.log('⚠️ Pas de structure détectée, utilisation de toute la réponse');
+      console.log('⚠️ No structure detected, using entire response');
     }
 
-    // Parser les segments avec speakers si détection activée
+    // Parse segments with speakers if detection enabled
     let segments: GeminiSegment[] = [];
     if (options.detectSpeakers && sections.transcription) {
       segments = this.parseSegmentsWithSpeakers(sections.transcription);
-      console.log('👥 Segments avec speakers parsés:', segments.length);
+      console.log('👥 Segments with speakers parsed:', segments.length);
     }
 
-    // Parser les points clés
+    // Parse key points
     let keyPoints: string[] = [];
     if (sections.keyPoints) {
       keyPoints = sections.keyPoints
@@ -240,13 +240,13 @@ ${options.detectSpeakers ? `INTERVENANTS:
         .filter(line => line.trim())
         .map(line => line.replace(/^[-•*]\s*/, '').trim())
         .filter(point => point.length > 0);
-      console.log('🎯 Points clés extraits:', keyPoints.length);
+      console.log('🎯 Key points extracted:', keyPoints.length);
     }
 
     return {
       text: sections.transcription,
       language: sections.language,
-      confidence: 0.95, // Gemini a généralement une haute confiance
+      confidence: 0.96, // Gemini 2.0 Flash has even higher confidence
       segments: segments.length > 0 ? segments : undefined,
       keyPoints: keyPoints.length > 0 ? keyPoints : undefined
     };
@@ -261,7 +261,7 @@ ${options.detectSpeakers ? `INTERVENANTS:
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
 
-      // Chercher le pattern [Intervenant X]: texte
+      // Look for pattern [Speaker X]: text
       const speakerMatch = trimmedLine.match(/^\[([^\]]+)\]:\s*(.+)$/);
       if (speakerMatch) {
         const speaker = speakerMatch[1];
@@ -269,19 +269,19 @@ ${options.detectSpeakers ? `INTERVENANTS:
         
         segments.push({
           start: currentTime,
-          end: currentTime + Math.max(30, text.length * 0.1), // Estimation basée sur la longueur
+          end: currentTime + Math.max(30, text.length * 0.1), // Estimation based on length
           text: text,
           speaker: speaker
         });
         
         currentTime += Math.max(30, text.length * 0.1);
       } else {
-        // Ligne sans speaker identifié
+        // Line without identified speaker
         segments.push({
           start: currentTime,
           end: currentTime + Math.max(30, trimmedLine.length * 0.1),
           text: trimmedLine,
-          speaker: 'Intervenant'
+          speaker: 'Speaker'
         });
         
         currentTime += Math.max(30, trimmedLine.length * 0.1);
@@ -296,7 +296,7 @@ ${options.detectSpeakers ? `INTERVENANTS:
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result as string;
-        // Enlever le préfixe data:audio/...;base64,
+        // Remove data:audio/...;base64, prefix
         const base64 = result.split(',')[1];
         resolve(base64);
       };
@@ -307,14 +307,14 @@ ${options.detectSpeakers ? `INTERVENANTS:
 
   private detectLanguage(text: string): string {
     const languagePatterns = {
-      'Français': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être)\b/gi,
+      'French': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être)\b/gi,
       'English': /\b(the|and|to|of|a|in|that|is|it|you|for|with|on|as|be|at|by|this|have|from|or|one|had|but|words|not|what|all|were|they|we|when|your|can|said)\b/gi,
-      'Español': /\b(el|la|de|que|y|a|en|un|es|se|no|te|lo|le|da|su|por|son|con|para|una|del|al|como|las|los|pero|sus|fue|ser|ha|todo|era|muy|hasta|desde)\b/gi,
-      'Deutsch': /\b(der|die|und|in|den|von|zu|das|mit|sich|des|auf|für|ist|im|dem|nicht|ein|eine|als|auch|es|an|werden|aus|er|hat|dass|sie|nach|wird|bei)\b/gi
+      'Spanish': /\b(el|la|de|que|y|a|en|un|es|se|no|te|lo|le|da|su|por|son|con|para|una|del|al|como|las|los|pero|sus|fue|ser|ha|todo|era|muy|hasta|desde)\b/gi,
+      'German': /\b(der|die|und|in|den|von|zu|das|mit|sich|des|auf|für|ist|im|dem|nicht|ein|eine|als|auch|es|an|werden|aus|er|hat|dass|sie|nach|wird|bei)\b/gi
     };
 
     let maxMatches = 0;
-    let detectedLanguage = 'Français';
+    let detectedLanguage = 'English';
 
     for (const [lang, pattern] of Object.entries(languagePatterns)) {
       const matches = text.match(pattern);
@@ -329,22 +329,22 @@ ${options.detectSpeakers ? `INTERVENANTS:
     return detectedLanguage;
   }
 
-  // Méthode pour extraire les points clés d'une transcription existante
+  // Method to extract key points from existing transcription
   async extractKeyPoints(transcription: string): Promise<string[]> {
     if (!this.genAI) {
-      throw new Error('Service Gemini non configuré.');
+      throw new Error('Gemini service not configured.');
     }
 
     try {
-      console.log('🎯 Extraction des points clés avec Gemini...');
+      console.log('🎯 Extracting key points with Gemini 2.0 Flash...');
       
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
       
-      const prompt = `Analyse cette transcription et extrais les points clés, thèmes principaux, citations importantes et insights majeurs:
+      const prompt = `Analyze this transcription and extract key points, main themes, important quotes, and major insights:
 
 ${transcription}
 
-Réponds uniquement avec une liste de points clés, un par ligne, précédés d'un tiret (-).`;
+Respond only with a list of key points, one per line, preceded by a dash (-).`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -356,16 +356,16 @@ Réponds uniquement avec une liste de points clés, un par ligne, précédés d'
         .map(line => line.replace(/^-\s*/, '').trim())
         .filter(point => point.length > 0);
 
-      console.log('✅ Points clés extraits:', keyPoints.length);
+      console.log('✅ Key points extracted:', keyPoints.length);
       return keyPoints;
 
     } catch (error) {
-      console.error('❌ Erreur lors de l\'extraction des points clés:', error);
+      console.error('❌ Error during key points extraction:', error);
       return [];
     }
   }
 
-  // Méthode pour générer du contenu basé sur la transcription
+  // Method to generate content based on transcription
   async generateContent(
     transcription: string,
     keyPoints: string[],
@@ -378,46 +378,46 @@ Réponds uniquement avec une liste de points clés, un par ligne, précédés d'
     }
   ): Promise<string> {
     if (!this.genAI) {
-      throw new Error('Service Gemini non configuré.');
+      throw new Error('Gemini service not configured.');
     }
 
     try {
-      console.log('📝 Génération de contenu avec Gemini...');
-      console.log('🎯 Format:', settings.format, '| Ton:', settings.tone);
+      console.log('📝 Generating content with Gemini 2.0 Flash...');
+      console.log('🎯 Format:', settings.format, '| Tone:', settings.tone);
       
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
       
-      const prompt = `Génère un contenu ${settings.format} basé sur cette transcription et ces points clés:
+      const prompt = `Generate ${settings.format} content based on this transcription and key points:
 
-TITRE: ${settings.title}
-SOUS-TITRE: ${settings.subtitle}
-RÉSUMÉ: ${settings.summary}
+TITLE: ${settings.title}
+SUBTITLE: ${settings.subtitle}
+SUMMARY: ${settings.summary}
 TONE: ${settings.tone}
 FORMAT: ${settings.format}
 
 TRANSCRIPTION:
 ${transcription}
 
-POINTS CLÉS:
+KEY POINTS:
 ${keyPoints.map(point => `- ${point}`).join('\n')}
 
-Génère un contenu ${settings.format} avec un ton ${settings.tone}, bien structuré et engageant. Utilise le titre et sous-titre fournis, et assure-toi que le contenu reflète fidèlement les points clés de la discussion.`;
+Generate ${settings.format} content with a ${settings.tone} tone, well-structured and engaging. Use the provided title and subtitle, and ensure the content faithfully reflects the key points from the discussion.`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const generatedContent = response.text();
       
-      console.log('✅ Contenu généré:', generatedContent.length, 'caractères');
+      console.log('✅ Content generated:', generatedContent.length, 'characters');
       return generatedContent;
 
     } catch (error) {
-      console.error('❌ Erreur lors de la génération de contenu:', error);
-      throw new Error(`Erreur génération contenu: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+      console.error('❌ Error during content generation:', error);
+      throw new Error(`Content generation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
 
-// Service factory pour créer une instance Gemini
+// Service factory to create Gemini instance
 export class GeminiServiceFactory {
   private static instance: GeminiService | null = null;
 

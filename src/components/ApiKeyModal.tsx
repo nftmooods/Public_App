@@ -46,7 +46,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Gemini 1.5 Pro Configuration
+              Gemini 2.0 Flash Configuration
             </h2>
           </div>
           <button
@@ -80,11 +80,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Advanced Transcription with Gemini 1.5 Pro
+                  Advanced Transcription with Gemini 2.0 Flash
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Gemini 1.5 Pro offers high-quality multimodal transcription with automatic 
-                  speaker detection, key point extraction, and support for many languages.
+                  Gemini 2.0 Flash offers the latest in AI transcription technology with improved 
+                  accuracy, faster processing, and enhanced multimodal capabilities for audio analysis.
                 </p>
               </div>
             </div>
@@ -135,13 +135,14 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div className="flex items-start space-x-3">
               <Sparkles className="w-5 h-5 text-green-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-green-800 mb-1">Gemini 1.5 Pro Benefits</h4>
+                <h4 className="font-medium text-green-800 mb-1">Gemini 2.0 Flash Benefits</h4>
                 <ul className="text-sm text-green-700 space-y-1">
-                  <li>• High-precision multimodal transcription</li>
-                  <li>• Automatic speaker detection</li>
-                  <li>• Intelligent key point extraction</li>
+                  <li>• Latest AI transcription technology</li>
+                  <li>• Improved accuracy and speed</li>
+                  <li>• Enhanced multimodal capabilities</li>
+                  <li>• Better speaker detection</li>
+                  <li>• Advanced contextual understanding</li>
                   <li>• Support for 100+ languages</li>
-                  <li>• Advanced contextual analysis</li>
                 </ul>
               </div>
             </div>
