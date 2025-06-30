@@ -81,7 +81,7 @@ function App() {
   const [apiKeyError, setApiKeyError] = useState<string>('');
   const [demoMode, setDemoMode] = useState(true);
 
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
 
   // Mettre à jour l'état de l'application avec les données d'authentification
@@ -160,11 +160,16 @@ function App() {
   };
 
   const handleLogout = async () => {
-    // La gestion de la déconnexion est maintenant dans useAuth
-    setApiKey('');
-    setGeminiConfigured(false);
-    setApiKeyError('');
-    setDemoMode(true);
+    try {
+      await signOut();
+      // Réinitialiser les états locaux
+      setApiKey('');
+      setGeminiConfigured(false);
+      setApiKeyError('');
+      setDemoMode(true);
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+    }
   };
 
   const handleApiKeySave = (newApiKey: string) => {
