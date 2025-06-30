@@ -3,17 +3,21 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please configure Supabase connection.');
-}
+// Fallback pour le développement local si les variables ne sont pas définies
+const defaultUrl = 'https://demo.supabase.co';
+const defaultKey = 'demo-key';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
+export const supabase = createClient(
+  supabaseUrl || defaultUrl, 
+  supabaseAnonKey || defaultKey, 
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
   }
-});
+);
 
 // Types pour TypeScript
 export interface Profile {

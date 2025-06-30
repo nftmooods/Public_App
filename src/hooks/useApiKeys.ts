@@ -8,12 +8,41 @@ export const useApiKeys = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+      console.warn('Supabase non configuré - Utilisation du stockage local');
+      loadLocalApiKeys();
+      return;
+    }
+
     if (user) {
       loadApiKeys();
     } else {
       setApiKeys([]);
     }
   }, [user]);
+
+  const loadLocalApiKeys = () => {
+    try {
+      const stored = localStorage.getItem('apiKeys');
+      if (stored) {
+        setApiKeys(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des clés API locales:', error);
+    }
+  };
+
+  const saveLocalApiKeys = (keys: UserApiKey[]) => {
+    try {
+      localStorage.setItem('apiKeys', JSON.stringify(keys));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des clés API locales:', error);
+    }
+  };
 
   const loadApiKeys = async () => {
     if (!user) return;
@@ -30,6 +59,8 @@ export const useApiKeys = () => {
       setApiKeys(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des clés API:', error);
+      // Fallback vers le stockage local
+      loadLocalApiKeys();
     } finally {
       setLoading(false);
     }
@@ -42,10 +73,32 @@ export const useApiKeys = () => {
     api_key: string;
     enabled?: boolean;
   }) => {
-    if (!user) throw new Error('Utilisateur non connecté');
-
-    // Masquer la clé API pour l'affichage
     const masked_key = maskApiKey(apiKeyData.api_key);
+    const newApiKey: UserApiKey = {
+      id: Date.now().toString(),
+      user_id: user?.id || 'local',
+      name: apiKeyData.name,
+      provider: apiKeyData.provider,
+      usage_type: apiKeyData.usage_type,
+      api_key: apiKeyData.api_key,
+      masked_key,
+      enabled: apiKeyData.enabled ?? true,
+      is_valid: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!user || !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+      // Utiliser le stockage local
+      const updatedKeys = [newApiKey, ...apiKeys];
+      setApiKeys(updatedKeys);
+      saveLocalApiKeys(updatedKeys);
+      return newApiKey;
+    }
 
     const { data, error } = await supabase
       .from('user_api_keys')
@@ -54,7 +107,7 @@ export const useApiKeys = () => {
         name: apiKeyData.name,
         provider: apiKeyData.provider,
         usage_type: apiKeyData.usage_type,
-        api_key: apiKeyData.api_key, // En production, chiffrer cette valeur
+        api_key: apiKeyData.api_key,
         masked_key,
         enabled: apiKeyData.enabled ?? true
       })
@@ -68,11 +121,21 @@ export const useApiKeys = () => {
   };
 
   const updateApiKey = async (id: string, updates: Partial<UserApiKey>) => {
-    if (!user) throw new Error('Utilisateur non connecté');
-
     // Si on met à jour la clé API, recalculer le masque
     if (updates.api_key) {
       updates.masked_key = maskApiKey(updates.api_key);
+    }
+
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!user || !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+      // Utiliser le stockage local
+      const updatedKeys = apiKeys.map(key => key.id === id ? { ...key, ...updates } : key);
+      setApiKeys(updatedKeys);
+      saveLocalApiKeys(updatedKeys);
+      return updatedKeys.find(key => key.id === id);
     }
 
     const { data, error } = await supabase
@@ -90,7 +153,17 @@ export const useApiKeys = () => {
   };
 
   const deleteApiKey = async (id: string) => {
-    if (!user) throw new Error('Utilisateur non connecté');
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!user || !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+      // Utiliser le stockage local
+      const updatedKeys = apiKeys.filter(key => key.id !== id);
+      setApiKeys(updatedKeys);
+      saveLocalApiKeys(updatedKeys);
+      return;
+    }
 
     const { error } = await supabase
       .from('user_api_keys')

@@ -12,6 +12,16 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Vérifier si Supabase est configuré
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project') || supabaseAnonKey.includes('your-anon-key')) {
+      console.warn('Supabase non configuré - Mode hors ligne activé');
+      setLoading(false);
+      return;
+    }
+
     // Récupérer la session actuelle
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -21,6 +31,9 @@ export const useAuth = () => {
         setUser(null);
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error('Erreur lors de la récupération de la session:', error);
+      setLoading(false);
     });
 
     // Écouter les changements d'authentification
