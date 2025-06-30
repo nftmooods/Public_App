@@ -37,7 +37,7 @@ const Step5: React.FC<Step5Props> = ({
     onUpdateSettings(updated);
   };
 
-  // Initialisation automatique basée sur les points clés
+  // Automatic initialization based on key points
   useEffect(() => {
     if (keyPoints.length > 0 && !localSettings.title) {
       const themes = keyPoints.filter(kp => kp.category === 'theme');
@@ -45,25 +45,25 @@ const Step5: React.FC<Step5Props> = ({
       
       if (themes.length > 0) {
         const mainTheme = themes[0].text.split(':')[0] || themes[0].text.substring(0, 50);
-        handleChange('title', `${mainTheme} - Analyse complète`);
+        handleChange('title', `${mainTheme} - Complete Analysis`);
       } else if (insights.length > 0) {
         const mainInsight = insights[0].text.split(':')[0] || insights[0].text.substring(0, 50);
-        handleChange('title', `${mainInsight} - Insights clés`);
+        handleChange('title', `${mainInsight} - Key Insights`);
       }
     }
 
-    // Générer l'introduction automatiquement
+    // Generate introduction automatically
     if (keyPoints.length > 0 && !introduction) {
       const keyThemes = keyPoints.slice(0, 3).map(kp => {
         const title = kp.text.split(':')[0];
         return title.length > 80 ? title.substring(0, 80) + '...' : title;
       }).join(', ');
       
-      const autoIntroduction = `Cette analyse approfondie explore ${keyThemes} et d'autres aspects essentiels abordés lors de cette discussion. Nous examinerons les tendances émergentes, les innovations techniques et les perspectives d'avenir qui façonnent le paysage actuel.`;
+      const autoIntroduction = `This comprehensive analysis explores ${keyThemes} and other essential aspects discussed during this conversation. We examine emerging trends, technical innovations, and future perspectives that shape the current landscape.`;
       setIntroduction(autoIntroduction);
     }
 
-    // Générer les sections automatiquement si aucune n'existe
+    // Generate sections automatically if none exist
     if (keyPoints.length > 0 && articleSections.length === 0) {
       const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
         if (!acc[kp.category]) {
@@ -75,16 +75,16 @@ const Step5: React.FC<Step5Props> = ({
 
       const autoSections: ArticleSection[] = Object.entries(groupedKeyPoints).map(([category, points], index) => {
         const categoryTitles = {
-          theme: 'Thèmes principaux',
-          insight: 'Insights et analyses',
-          quote: 'Citations importantes',
-          question: 'Questions soulevées'
+          theme: 'Main Themes',
+          insight: 'Insights and Analysis',
+          quote: 'Important Quotes',
+          question: 'Questions Raised'
         };
 
         return {
           id: `section_${index}`,
           title: categoryTitles[category as keyof typeof categoryTitles] || category,
-          content: `Cette section développe les aspects liés à ${category} abordés lors de la discussion.`,
+          content: `This section develops the aspects related to ${category} discussed during the conversation.`,
           keyPoints: points.map(p => p.text.split(':')[0] || p.text.substring(0, 100)),
           order: index
         };
@@ -99,7 +99,7 @@ const Step5: React.FC<Step5Props> = ({
       const section: ArticleSection = {
         id: `section_${Date.now()}`,
         title: newSection.title,
-        content: newSection.content || 'Contenu à développer...',
+        content: newSection.content || 'Content to be developed...',
         keyPoints: [],
         order: articleSections.length
       };
@@ -124,27 +124,27 @@ const Step5: React.FC<Step5Props> = ({
     setIsCompletingWithAI(true);
     
     try {
-      // Simuler l'enrichissement IA
+      // Simulate AI enrichment
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Enrichir les sections existantes
+      // Enrich existing sections
       const enrichedSections = articleSections.map(section => ({
         ...section,
-        content: section.content === 'Contenu à développer...' 
-          ? `Cette section explore en détail ${section.title.toLowerCase()}. L'analyse révèle des tendances importantes et des implications significatives pour l'avenir du domaine. Les experts s'accordent sur l'importance de ces développements et leurs impacts potentiels sur l'écosystème.`
+        content: section.content === 'Content to be developed...' 
+          ? `This section explores in detail ${section.title.toLowerCase()}. The analysis reveals important trends and significant implications for the future of the field. Experts agree on the importance of these developments and their potential impacts on the ecosystem.`
           : section.content
       }));
       
       setArticleSections(enrichedSections);
       
-      // Enrichir l'introduction si elle est basique
-      if (introduction.includes('Cette analyse approfondie explore')) {
-        const enrichedIntro = `${introduction}\n\nCette discussion révèle des insights cruciaux sur l'évolution du secteur et met en lumière les défis et opportunités qui se dessinent. Les perspectives partagées offrent une vision éclairée des transformations en cours et des stratégies à adopter pour naviguer dans ce paysage en mutation.`;
+      // Enrich introduction if it's basic
+      if (introduction.includes('This comprehensive analysis explores')) {
+        const enrichedIntro = `${introduction}\n\nThis discussion reveals crucial insights about the sector's evolution and highlights the challenges and opportunities that are emerging. The shared perspectives offer an enlightened vision of ongoing transformations and strategies to adopt for navigating this changing landscape.`;
         setIntroduction(enrichedIntro);
       }
       
     } catch (error) {
-      console.error('Erreur lors de l\'enrichissement IA:', error);
+      console.error('Error during AI enrichment:', error);
     } finally {
       setIsCompletingWithAI(false);
     }
@@ -153,10 +153,10 @@ const Step5: React.FC<Step5Props> = ({
   const formatPreview = () => {
     return (
       <div className="prose prose-sm max-w-none">
-        {/* En-tête */}
+        {/* Header */}
         <div className="mb-6 pb-4 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {localSettings.title || 'Votre titre apparaîtra ici'}
+            {localSettings.title || 'Your title will appear here'}
           </h1>
           {localSettings.subtitle && (
             <h2 className="text-lg text-gray-600 font-normal mb-3">
@@ -173,7 +173,7 @@ const Step5: React.FC<Step5Props> = ({
           </div>
         )}
 
-        {/* Sections de l'article */}
+        {/* Article sections */}
         {articleSections.map((section, index) => (
           <div key={section.id} className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
@@ -182,7 +182,7 @@ const Step5: React.FC<Step5Props> = ({
         ))}
 
         <div className="text-gray-500 text-sm italic mt-8 pt-4 border-t border-gray-200">
-          [Aperçu de la structure - Le contenu final sera généré aux étapes suivantes]
+          [Structure preview - Final content will be generated in the following steps]
         </div>
       </div>
     );
@@ -192,34 +192,34 @@ const Step5: React.FC<Step5Props> = ({
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Structure de l'article
+          Article Structure
         </h2>
         <p className="text-lg text-gray-600">
-          Définissez la structure complète de votre article avec titre, introduction et sections
+          Define the complete structure of your article with title, introduction and sections
         </p>
       </div>
 
-      {/* Bouton Show/Hide Preview */}
+      {/* Show/Hide Preview Button */}
       <div className="flex justify-end mb-6">
         <button
           onClick={() => setShowPreview(!showPreview)}
           className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
         >
           {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-          {showPreview ? 'Masquer l\'aperçu' : 'Afficher l\'aperçu'}
+          {showPreview ? 'Hide Preview' : 'Show Preview'}
         </button>
       </div>
 
       <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-        {/* Formulaire de structure - Toujours visible */}
+        {/* Structure form - Always visible */}
         <div className="space-y-6">
-          {/* Titre et sous-titre */}
+          {/* Title and subtitle */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Titre et sous-titre</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Title and Subtitle</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Titre principal</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Main Title</label>
                 {editingField === 'title' ? (
                   <div className="space-y-2">
                     <textarea
@@ -249,13 +249,13 @@ const Step5: React.FC<Step5Props> = ({
                     onClick={() => setEditingField('title')}
                     className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                   >
-                    <p className="text-gray-900 font-medium">{localSettings.title || 'Cliquez pour éditer le titre'}</p>
+                    <p className="text-gray-900 font-medium">{localSettings.title || 'Click to edit the title'}</p>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sous-titre (optionnel)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle (optional)</label>
                 {editingField === 'subtitle' ? (
                   <div className="space-y-2">
                     <textarea
@@ -285,7 +285,7 @@ const Step5: React.FC<Step5Props> = ({
                     onClick={() => setEditingField('subtitle')}
                     className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                   >
-                    <p className="text-gray-900">{localSettings.subtitle || 'Cliquez pour ajouter un sous-titre'}</p>
+                    <p className="text-gray-900">{localSettings.subtitle || 'Click to add a subtitle'}</p>
                   </div>
                 )}
               </div>
@@ -300,14 +300,14 @@ const Step5: React.FC<Step5Props> = ({
               onChange={(e) => setIntroduction(e.target.value)}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Rédigez l'introduction de votre article..."
+              placeholder="Write your article introduction..."
             />
           </div>
 
-          {/* Sections de l'article */}
+          {/* Article sections */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Sections de l'article</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
               <button
                 onClick={completeWithAI}
                 disabled={isCompletingWithAI}
@@ -318,7 +318,7 @@ const Step5: React.FC<Step5Props> = ({
                 ) : (
                   <Sparkles className="w-4 h-4 mr-2" />
                 )}
-                {isCompletingWithAI ? 'Enrichissement...' : 'Compléter avec l\'IA'}
+                {isCompletingWithAI ? 'Enriching...' : 'Complete with AI'}
               </button>
             </div>
             
@@ -335,7 +335,7 @@ const Step5: React.FC<Step5Props> = ({
                         value={section.title}
                         onChange={(e) => updateSection(section.id, 'title', e.target.value)}
                         className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
-                        placeholder="Titre de la section"
+                        placeholder="Section title"
                       />
                     </div>
                     <button
@@ -350,25 +350,25 @@ const Step5: React.FC<Step5Props> = ({
                     onChange={(e) => updateSection(section.id, 'content', e.target.value)}
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                    placeholder="Contenu de la section..."
+                    placeholder="Section content..."
                   />
                 </div>
               ))}
               
-              {/* Ajouter une nouvelle section */}
+              {/* Add new section */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <div className="space-y-3">
                   <input
                     type="text"
                     value={newSection.title}
                     onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Titre de la nouvelle section..."
+                    placeholder="New section title..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                   <textarea
                     value={newSection.content}
                     onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Contenu de la section (optionnel)..."
+                    placeholder="Section content (optional)..."
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
                   />
@@ -378,7 +378,7 @@ const Step5: React.FC<Step5Props> = ({
                     className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Ajouter la section
+                    Add Section
                   </button>
                 </div>
               </div>
@@ -386,13 +386,13 @@ const Step5: React.FC<Step5Props> = ({
           </div>
         </div>
 
-        {/* Aperçu de la structure - Affiché seulement si showPreview est true */}
+        {/* Structure preview - Only shown if showPreview is true */}
         {showPreview && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <FileText className="w-5 h-5 mr-2" />
-                Aperçu de l'article
+                Article Preview
               </h3>
             </div>
             
@@ -403,18 +403,18 @@ const Step5: React.FC<Step5Props> = ({
         )}
       </div>
 
-      {/* Conseils */}
+      {/* Tips */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-8 mb-8">
         <div className="flex items-start space-x-3">
           <Sparkles className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-yellow-800 mb-1">Conseils pour une structure efficace</h4>
+            <h4 className="font-medium text-yellow-800 mb-1">Tips for an effective structure</h4>
             <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Organisez vos sections dans un ordre logique et progressif</li>
-              <li>• Chaque section doit avoir un objectif clair et distinct</li>
-              <li>• L'introduction doit présenter le contexte et les enjeux</li>
-              <li>• Utilisez l'IA pour enrichir automatiquement le contenu des sections</li>
-              <li>• Vous pourrez affiner le contenu aux étapes suivantes</li>
+              <li>• Organize your sections in a logical and progressive order</li>
+              <li>• Each section should have a clear and distinct objective</li>
+              <li>• The introduction should present the context and issues</li>
+              <li>• Use AI to automatically enrich section content</li>
+              <li>• You can refine the content in the following steps</li>
             </ul>
           </div>
         </div>
@@ -430,7 +430,7 @@ const Step5: React.FC<Step5Props> = ({
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          Continuer vers le format
+          Continue to Format
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>

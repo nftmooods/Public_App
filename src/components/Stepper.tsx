@@ -12,11 +12,11 @@ interface StepperProps {
 const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demoMode = false }) => {
   const canNavigateToStep = (stepId: number) => {
     if (demoMode) {
-      // En mode démo, on peut naviguer vers toutes les étapes
+      // In demo mode, you can navigate to all steps
       return true;
     }
     
-    // En mode production, navigation normale
+    // In production mode, normal navigation
     const step = steps.find(s => s.id === stepId);
     return step?.completed || stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
   };
@@ -24,7 +24,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
   return (
     <div className="w-full bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="max-w-6xl mx-auto">
-        {/* Indicateur de mode en haut */}
+        {/* Mode indicator at the top */}
         <div className="flex justify-center mb-4">
           <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
             demoMode 
@@ -35,7 +35,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
               demoMode ? 'bg-yellow-500' : 'bg-green-500'
             }`}></div>
             <span>
-              {demoMode ? '🎭 MODE DÉMO - Navigation libre' : '🚀 MODE PRODUCTION - Navigation séquentielle'}
+              {demoMode ? '🎭 DEMO MODE - Free navigation' : '🚀 PRODUCTION MODE - Sequential navigation'}
             </span>
           </div>
         </div>
@@ -72,7 +72,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
                       <Circle className={`w-4 h-4 ${isActive ? 'fill-current' : ''}`} />
                     )}
                     
-                    {/* Indicateur spécial pour le mode démo */}
+                    {/* Special indicator for demo mode */}
                     {demoMode && !step.completed && !isActive && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white"></div>
                     )}
@@ -90,16 +90,16 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
                       {step.description}
                     </div>
                     
-                    {/* Indicateur de disponibilité */}
+                    {/* Availability indicator */}
                     {demoMode && !step.completed && !isActive && (
                       <div className="text-xs text-yellow-600 font-medium">
-                        Cliquez pour accéder
+                        Click to access
                       </div>
                     )}
                     
                     {!canNavigate && !demoMode && !step.completed && !isActive && (
                       <div className="text-xs text-gray-400">
-                        Verrouillé
+                        Locked
                       </div>
                     )}
                   </div>
@@ -116,26 +116,26 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
           })}
         </div>
         
-        {/* Légende en bas */}
+        {/* Legend at the bottom */}
         <div className="flex justify-center mt-4">
           <div className="flex items-center space-x-6 text-xs text-gray-500">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-              <span>Terminé</span>
+              <span>Completed</span>
             </div>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-blue-100 border border-blue-600 rounded-full"></div>
-              <span>Actuel</span>
+              <span>Current</span>
             </div>
             {demoMode ? (
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                <span>Accessible (démo)</span>
+                <span>Available (demo)</span>
               </div>
             ) : (
               <div className="flex items-center space-x-1">
                 <Lock className="w-2 h-2" />
-                <span>Verrouillé</span>
+                <span>Locked</span>
               </div>
             )}
           </div>

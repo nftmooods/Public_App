@@ -44,13 +44,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Le nom est requis';
+      newErrors.name = 'Name is required';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'L\'email est requis';
+      newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = 'Invalid email';
     }
 
     setErrors(newErrors);
@@ -61,17 +61,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     const newErrors: Record<string, string> = {};
 
     if (!formData.currentPassword) {
-      newErrors.currentPassword = 'Mot de passe actuel requis';
+      newErrors.currentPassword = 'Current password required';
     }
 
     if (!formData.newPassword) {
-      newErrors.newPassword = 'Nouveau mot de passe requis';
+      newErrors.newPassword = 'New password required';
     } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = 'Minimum 6 caractères';
+      newErrors.newPassword = 'Minimum 6 characters';
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     setErrors(newErrors);
@@ -82,22 +82,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
     if (!validateProfileForm()) return;
 
     try {
-      // Mettre à jour le profil
+      // Update profile
       if (formData.name !== user.name) {
         await updateProfile({ name: formData.name });
       }
 
-      // Mettre à jour l'email si changé
+      // Update email if changed
       if (formData.email !== user.email) {
         await updateEmail(formData.email);
         setErrors({ 
-          general: 'Un email de confirmation a été envoyé à votre nouvelle adresse. Veuillez vérifier votre boîte de réception.' 
+          general: 'A confirmation email has been sent to your new address. Please check your inbox.' 
         });
       } else {
         onClose();
       }
     } catch (error: any) {
-      setErrors({ general: error.message || 'Erreur lors de la mise à jour' });
+      setErrors({ general: error.message || 'Error during update' });
     }
   };
 
@@ -112,15 +112,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
         newPassword: '', 
         confirmPassword: '' 
       }));
-      setErrors({ general: 'Mot de passe mis à jour avec succès' });
+      setErrors({ general: 'Password updated successfully' });
     } catch (error: any) {
-      setErrors({ general: error.message || 'Erreur lors du changement de mot de passe' });
+      setErrors({ general: error.message || 'Error changing password' });
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'SUPPRIMER') {
-      setErrors({ delete: 'Veuillez taper "SUPPRIMER" pour confirmer' });
+    if (deleteConfirmText !== 'DELETE') {
+      setErrors({ delete: 'Please type "DELETE" to confirm' });
       return;
     }
 
@@ -129,14 +129,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       await signOut();
       onClose();
     } catch (error: any) {
-      setErrors({ delete: error.message || 'Erreur lors de la suppression du compte' });
+      setErrors({ delete: error.message || 'Error deleting account' });
     }
   };
 
   const tabs = [
-    { id: 'profile', name: 'Profil', icon: User },
-    { id: 'security', name: 'Sécurité', icon: Lock },
-    { id: 'danger', name: 'Zone de danger', icon: AlertTriangle }
+    { id: 'profile', name: 'Profile', icon: User },
+    { id: 'security', name: 'Security', icon: Lock },
+    { id: 'danger', name: 'Danger Zone', icon: AlertTriangle }
   ];
 
   return (
@@ -144,7 +144,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            Paramètres du profil
+            Profile Settings
           </h2>
           <button
             onClick={onClose}
@@ -178,15 +178,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
         </div>
 
         <div className="p-6">
-          {/* Messages d'erreur/succès globaux */}
+          {/* Global error/success messages */}
           {errors.general && (
             <div className={`mb-6 p-4 rounded-lg ${
-              errors.general.includes('succès') || errors.general.includes('confirmation')
+              errors.general.includes('success') || errors.general.includes('confirmation')
                 ? 'bg-green-50 border border-green-200'
                 : 'bg-red-50 border border-red-200'
             }`}>
               <p className={`text-sm ${
-                errors.general.includes('succès') || errors.general.includes('confirmation')
+                errors.general.includes('success') || errors.general.includes('confirmation')
                   ? 'text-green-700'
                   : 'text-red-700'
               }`}>
@@ -195,18 +195,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
             </div>
           )}
 
-          {/* Onglet Profil */}
+          {/* Profile Tab */}
           {activeTab === 'profile' && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Informations personnelles
+                  Personal Information
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom complet
+                      Full Name
                     </label>
                     <input
                       type="text"
@@ -215,7 +215,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       }`}
-                      placeholder="Votre nom complet"
+                      placeholder="Your full name"
                     />
                     {errors.name && (
                       <p className="text-sm text-red-600 mt-1">{errors.name}</p>
@@ -224,7 +224,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Adresse email
+                      Email Address
                     </label>
                     <input
                       type="email"
@@ -233,24 +233,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       }`}
-                      placeholder="votre@email.com"
+                      placeholder="your@email.com"
                     />
                     {errors.email && (
                       <p className="text-sm text-red-600 mt-1">{errors.email}</p>
                     )}
                     {formData.email !== user.email && (
                       <p className="text-sm text-blue-600 mt-1">
-                        Un email de confirmation sera envoyé à la nouvelle adresse
+                        A confirmation email will be sent to the new address
                       </p>
                     )}
                   </div>
 
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Informations du compte</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Account Information</h4>
                     <div className="space-y-2 text-sm text-gray-600">
-                      <p><strong>Plan :</strong> {user.subscription?.plan || 'Free'}</p>
-                      <p><strong>Statut :</strong> {user.subscription?.status || 'Active'}</p>
-                      <p><strong>Membre depuis :</strong> {new Date(user.createdAt).toLocaleDateString('fr-FR')}</p>
+                      <p><strong>Plan:</strong> {user.subscription?.plan || 'Free'}</p>
+                      <p><strong>Status:</strong> {user.subscription?.status || 'Active'}</p>
+                      <p><strong>Member since:</strong> {new Date(user.createdAt).toLocaleDateString('en-US')}</p>
                     </div>
                   </div>
                 </div>
@@ -261,7 +261,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   onClick={onClose}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
-                  Annuler
+                  Cancel
                 </button>
                 <button
                   onClick={handleSaveProfile}
@@ -273,24 +273,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  Sauvegarder
+                  Save
                 </button>
               </div>
             </div>
           )}
 
-          {/* Onglet Sécurité */}
+          {/* Security Tab */}
           {activeTab === 'security' && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Changer le mot de passe
+                  Change Password
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Mot de passe actuel
+                      Current Password
                     </label>
                     <div className="relative">
                       <input
@@ -300,7 +300,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
                           errors.currentPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
-                        placeholder="Votre mot de passe actuel"
+                        placeholder="Your current password"
                       />
                       <button
                         type="button"
@@ -317,7 +317,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nouveau mot de passe
+                      New Password
                     </label>
                     <div className="relative">
                       <input
@@ -327,7 +327,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
                           errors.newPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
-                        placeholder="Nouveau mot de passe (min. 6 caractères)"
+                        placeholder="New password (min. 6 characters)"
                       />
                       <button
                         type="button"
@@ -344,7 +344,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirmer le nouveau mot de passe
+                      Confirm New Password
                     </label>
                     <div className="relative">
                       <input
@@ -354,7 +354,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
                           errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
-                        placeholder="Confirmez le nouveau mot de passe"
+                        placeholder="Confirm new password"
                       />
                       <button
                         type="button"
@@ -384,7 +384,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                 >
-                  Annuler
+                  Cancel
                 </button>
                 <button
                   onClick={handleChangePassword}
@@ -396,13 +396,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   ) : (
                     <Lock className="w-4 h-4 mr-2" />
                   )}
-                  Changer le mot de passe
+                  Change Password
                 </button>
               </div>
             </div>
           )}
 
-          {/* Onglet Zone de danger */}
+          {/* Danger Zone Tab */}
           {activeTab === 'danger' && (
             <div className="space-y-6">
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -410,11 +410,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                   <AlertTriangle className="w-6 h-6 text-red-600 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="text-lg font-medium text-red-900 mb-2">
-                      Supprimer le compte
+                      Delete Account
                     </h3>
                     <p className="text-sm text-red-700 mb-4">
-                      Cette action est irréversible. Toutes vos données, clés API, projets et historiques 
-                      seront définitivement supprimés. Vous ne pourrez pas récupérer votre compte.
+                      This action is irreversible. All your data, API keys, projects and history 
+                      will be permanently deleted. You cannot recover your account.
                     </p>
 
                     {!showDeleteConfirm ? (
@@ -423,20 +423,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                         className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Supprimer mon compte
+                        Delete My Account
                       </button>
                     ) : (
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-red-900 mb-2">
-                            Pour confirmer, tapez "SUPPRIMER" dans le champ ci-dessous :
+                            To confirm, type "DELETE" in the field below:
                           </label>
                           <input
                             type="text"
                             value={deleteConfirmText}
                             onChange={(e) => setDeleteConfirmText(e.target.value)}
                             className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                            placeholder="SUPPRIMER"
+                            placeholder="DELETE"
                           />
                           {errors.delete && (
                             <p className="text-sm text-red-600 mt-1">{errors.delete}</p>
@@ -452,11 +452,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                             }}
                             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                           >
-                            Annuler
+                            Cancel
                           </button>
                           <button
                             onClick={handleDeleteAccount}
-                            disabled={isLoading || deleteConfirmText !== 'SUPPRIMER'}
+                            disabled={isLoading || deleteConfirmText !== 'DELETE'}
                             className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
                           >
                             {isLoading ? (
@@ -464,7 +464,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
                             ) : (
                               <Trash2 className="w-4 h-4 mr-2" />
                             )}
-                            Supprimer définitivement
+                            Delete Permanently
                           </button>
                         </div>
                       </div>
@@ -474,13 +474,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user }) =>
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">Que se passe-t-il quand vous supprimez votre compte ?</h4>
+                <h4 className="font-medium text-yellow-800 mb-2">What happens when you delete your account?</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Toutes vos clés API seront supprimées</li>
-                  <li>• Votre historique de transcriptions sera effacé</li>
-                  <li>• Vos projets sauvegardés seront perdus</li>
-                  <li>• Votre profil et toutes les données associées seront supprimés</li>
-                  <li>• Cette action ne peut pas être annulée</li>
+                  <li>• All your API keys will be deleted</li>
+                  <li>• Your transcription history will be erased</li>
+                  <li>• Your saved projects will be lost</li>
+                  <li>• Your profile and all associated data will be deleted</li>
+                  <li>• This action cannot be undone</li>
                 </ul>
               </div>
             </div>

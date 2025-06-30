@@ -20,7 +20,7 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
     
     setIsProcessing(true);
     
-    // Simuler le traitement du paiement
+    // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     onPaymentAccept(selectedMethod, transcription.estimatedCost);
@@ -29,18 +29,18 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
   const paymentMethods = [
     {
       id: 'card' as const,
-      name: 'Carte bancaire',
+      name: 'Credit Card',
       icon: CreditCard,
-      description: 'Paiement sécurisé par carte',
-      features: ['Paiement instantané', 'Sécurisé SSL', 'Toutes cartes acceptées'],
+      description: 'Secure card payment',
+      features: ['Instant payment', 'SSL secured', 'All cards accepted'],
       color: 'blue'
     },
     {
       id: 'crypto' as const,
-      name: 'Cryptomonnaie',
+      name: 'Cryptocurrency',
       icon: Bitcoin,
       description: 'Bitcoin, Ethereum, USDC',
-      features: ['Paiement décentralisé', 'Frais réduits', 'Anonyme'],
+      features: ['Decentralized payment', 'Lower fees', 'Anonymous'],
       color: 'orange'
     }
   ];
@@ -49,39 +49,39 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Validation et paiement
+          Validation and Payment
         </h2>
         <p className="text-lg text-gray-600">
-          Choisissez votre méthode de paiement pour procéder au traitement complet
+          Choose your payment method to proceed with complete processing
         </p>
       </div>
 
-      {/* Récapitulatif de commande */}
+      {/* Order Summary */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Récapitulatif de votre commande</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center py-2 border-b border-gray-100">
-            <span className="text-gray-600">Durée du contenu</span>
+            <span className="text-gray-600">Content duration</span>
             <span className="font-medium">{Math.floor(transcription.duration / 60)} minutes</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-gray-100">
-            <span className="text-gray-600">Nombre d'intervenants</span>
+            <span className="text-gray-600">Number of speakers</span>
             <span className="font-medium">{transcription.speakers.length}</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-gray-100">
-            <span className="text-gray-600">Tokens estimés</span>
+            <span className="text-gray-600">Estimated tokens</span>
             <span className="font-medium">{transcription.tokenCount.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-3 bg-blue-50 rounded-lg px-4">
-            <span className="font-semibold text-blue-900">Total à payer</span>
-            <span className="text-xl font-bold text-blue-900">{transcription.estimatedCost.toFixed(2)}€</span>
+            <span className="font-semibold text-blue-900">Total to pay</span>
+            <span className="text-xl font-bold text-blue-900">${transcription.estimatedCost.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      {/* Méthodes de paiement */}
+      {/* Payment Methods */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Choisissez votre méthode de paiement</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose your payment method</h3>
         <div className="grid md:grid-cols-2 gap-4">
           {paymentMethods.map((method) => {
             const Icon = method.icon;
@@ -129,14 +129,14 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
         </div>
       </div>
 
-      {/* Formulaire de paiement par carte */}
+      {/* Card Payment Form */}
       {selectedMethod === 'card' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de paiement</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Numéro de carte
+                Card Number
               </label>
               <input
                 type="text"
@@ -146,7 +146,7 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nom sur la carte
+                Name on Card
               </label>
               <input
                 type="text"
@@ -156,11 +156,11 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date d'expiration
+                Expiry Date
               </label>
               <input
                 type="text"
-                placeholder="MM/AA"
+                placeholder="MM/YY"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -178,10 +178,10 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
         </div>
       )}
 
-      {/* Formulaire de paiement crypto */}
+      {/* Crypto Payment Form */}
       {selectedMethod === 'crypto' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Paiement en cryptomonnaie</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Cryptocurrency Payment</h3>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               {['Bitcoin (BTC)', 'Ethereum (ETH)', 'USDC'].map((crypto) => (
@@ -195,36 +195,36 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
             </div>
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <p className="text-sm text-orange-800">
-                Après validation, vous recevrez une adresse de portefeuille pour effectuer le paiement.
-                Le traitement commencera automatiquement après confirmation de la transaction.
+                After validation, you will receive a wallet address to make the payment.
+                Processing will start automatically after transaction confirmation.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Sécurité */}
+      {/* Security */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
         <div className="flex items-start space-x-3">
           <Shield className="w-5 h-5 text-green-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-green-800 mb-1">Paiement sécurisé</h4>
+            <h4 className="font-medium text-green-800 mb-1">Secure Payment</h4>
             <p className="text-sm text-green-700">
-              Toutes les transactions sont sécurisées et chiffrées. Vos données de paiement ne sont jamais stockées sur nos serveurs.
+              All transactions are secured and encrypted. Your payment data is never stored on our servers.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Conditions */}
+      {/* Terms */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8">
         <div className="flex items-start space-x-3">
           <AlertCircle className="w-5 h-5 text-gray-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-gray-800 mb-1">Conditions d'utilisation</h4>
+            <h4 className="font-medium text-gray-800 mb-1">Terms of Use</h4>
             <p className="text-sm text-gray-600">
-              En procédant au paiement, vous acceptez nos conditions d'utilisation et notre politique de confidentialité. 
-              Le traitement commencera immédiatement après confirmation du paiement.
+              By proceeding with payment, you accept our terms of use and privacy policy. 
+              Processing will begin immediately after payment confirmation.
             </p>
           </div>
         </div>
@@ -243,11 +243,11 @@ const Step3: React.FC<Step3Props> = ({ transcription, onPaymentAccept }) => {
           {isProcessing ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Traitement en cours...
+              Processing...
             </>
           ) : (
             <>
-              Confirmer le paiement ({transcription.estimatedCost.toFixed(2)}€)
+              Confirm Payment (${transcription.estimatedCost.toFixed(2)})
               <ArrowRight className="w-5 h-5 ml-2" />
             </>
           )}

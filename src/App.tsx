@@ -64,7 +64,7 @@ const initialAppState: AppState = {
     accepted: false,
     method: null,
     amount: 0,
-    currency: 'EUR'
+    currency: 'USD'
   },
   isProcessing: false,
   user: null,
@@ -169,12 +169,12 @@ function App() {
 
   const handleStepClick = (stepId: number) => {
     if (demoMode) {
-      // En mode démo, navigation libre vers toutes les étapes
+      // In demo mode, free navigation to all steps
       console.log(`🎭 Demo mode: Free navigation to step ${stepId}`);
       setAppState(prev => ({ ...prev, currentStep: stepId }));
       updateStepStatus(stepId, false, true);
       
-      // Générer des données de démo si nécessaire pour les étapes avancées
+      // Generate demo data if needed for advanced steps
       if (stepId > 1 && !appState.transcription) {
         console.log('🎭 Generating demo data for advanced step navigation');
         const mockTranscription = generateMockTranscription();
@@ -189,21 +189,21 @@ function App() {
           generatedContent: stepId >= 7 ? mockContent : prev.generatedContent,
           contentSettings: stepId >= 5 ? {
             ...prev.contentSettings,
-            title: 'Analyse de démonstration',
-            subtitle: 'Contenu généré automatiquement pour la démonstration'
+            title: 'Demo Analysis',
+            subtitle: 'Automatically generated content for demonstration'
           } : prev.contentSettings,
           paymentInfo: stepId >= 3 ? {
             accepted: true,
             method: 'card',
             amount: 15.99,
-            currency: 'EUR'
+            currency: 'USD'
           } : prev.paymentInfo
         }));
       }
       return;
     }
     
-    // Mode production: navigation normale
+    // Production mode: normal navigation
     const canNavigate = steps.find(s => s.id === stepId)?.completed || 
                        stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
     
@@ -508,7 +508,7 @@ function App() {
         accepted: true, 
         method, 
         amount, 
-        currency: 'EUR' 
+        currency: 'USD' 
       } 
     }));
     goToNextStep();
@@ -776,15 +776,15 @@ function App() {
                 className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all"
                 title="New Analysis"
               >
-                <span className="text-white font-bold text-sm">TS</span>
+                <span className="text-white font-bold text-sm">R</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Content Synthesizer</h1>
-                <p className="text-sm text-gray-500">Transform audio discussions into professional content</p>
+                <h1 className="text-xl font-bold text-gray-900">Rekapp</h1>
+                <p className="text-sm text-gray-500">Transform audio and text into professional content</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Mode indicator - Plus visible */}
+              {/* Mode indicator - More visible */}
               <div className={`flex items-center space-x-3 px-4 py-2 rounded-lg border-2 transition-all ${
                 demoMode 
                   ? 'bg-yellow-50 border-yellow-300 text-yellow-800' 
@@ -796,7 +796,7 @@ function App() {
                   }`}></div>
                   <Zap className="w-4 h-4" />
                   <span className="font-bold text-sm">
-                    {demoMode ? 'MODE DÉMO' : 'MODE PROD'}
+                    {demoMode ? 'DEMO MODE' : 'PROD MODE'}
                   </span>
                 </div>
                 <button
@@ -806,7 +806,7 @@ function App() {
                       ? 'hover:bg-yellow-200' 
                       : 'hover:bg-green-200'
                   }`}
-                  title={demoMode ? 'Passer en mode production' : 'Passer en mode démo'}
+                  title={demoMode ? 'Switch to production mode' : 'Switch to demo mode'}
                 >
                   {demoMode ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                 </button>
@@ -882,13 +882,13 @@ function App() {
               <div className="flex items-center space-x-2">
                 <Play className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm text-yellow-700">
-                  <strong>Mode démo activé</strong> - Navigation libre entre toutes les étapes • Toutes les fonctionnalités sont simulées
+                  <strong>Demo mode active</strong> - Free navigation between all steps • All features are simulated
                 </span>
                 <button
                   onClick={toggleDemoMode}
                   className="text-sm text-yellow-600 hover:text-yellow-800 underline ml-2"
                 >
-                  Passer en mode production
+                  Switch to production mode
                 </button>
               </div>
             </div>
@@ -912,7 +912,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-4">
         <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-500">
-          <p>© 2025 Content Synthesizer. Transform discussions into content.</p>
+          <p>© 2025 Rekapp. Transform audio and text into professional content.</p>
         </div>
       </footer>
 
