@@ -232,7 +232,7 @@ function App() {
       const content = e.target?.result as string;
       setAppState(prev => ({ ...prev, textContent: content }));
     };
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
   };
 
   const handleStep1Next = async () => {
