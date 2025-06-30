@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Link, Mic, ArrowRight, AlertCircle, Sparkles, Youtube, FileText, Type, Loader2, CheckCircle } from 'lucide-react';
+import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic } from 'lucide-react';
 
 interface Step1Props {
   audioUrl: string;
@@ -24,13 +24,9 @@ interface ProcessingStep {
 }
 
 const Step1: React.FC<Step1Props> = ({ 
-  audioUrl,
-  youtubeUrl, 
   audioFile,
   textContent,
   textFile,
-  onUrlChange,
-  onYoutubeUrlChange, 
   onFileUpload,
   onTextContentChange,
   onTextFileUpload,
@@ -42,6 +38,7 @@ const Step1: React.FC<Step1Props> = ({
   const [error, setError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
+  const [activeTab, setActiveTab] = useState<'audio' | 'text'>('audio');
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -119,49 +116,12 @@ const Step1: React.FC<Step1Props> = ({
     }
   };
 
-  const validateUrl = (url: string) => {
-    if (!url) return true;
-    
-    const twitterSpaceRegex = /^https?:\/\/(twitter\.com|x\.com)\/i\/spaces\/[a-zA-Z0-9]+/;
-    const audioUrlRegex = /^https?:\/\/.+\.(mp3|wav|m4a|mp4)(\?.*)?$/i;
-    
-    return twitterSpaceRegex.test(url) || audioUrlRegex.test(url);
-  };
-
-  const validateYoutubeUrl = (url: string) => {
-    if (!url) return true;
-    
-    const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]+/;
-    return youtubeRegex.test(url);
-  };
-
-  const handleUrlChange = (url: string) => {
-    setError('');
-    onUrlChange(url);
-    
-    if (url && !validateUrl(url)) {
-      setError('Veuillez entrer une URL Twitter Space valide ou un lien direct vers un fichier audio');
-    }
-  };
-
-  const handleYoutubeChange = (url: string) => {
-    setError('');
-    onYoutubeUrlChange(url);
-    
-    if (url && !validateYoutubeUrl(url)) {
-      setError('Veuillez entrer une URL YouTube valide');
-    }
-  };
-
   const handleTextChange = (text: string) => {
     setError('');
     onTextContentChange(text);
   };
 
-  const canProceed = (audioUrl.trim() !== '' && validateUrl(audioUrl)) || 
-                    (youtubeUrl.trim() !== '' && validateYoutubeUrl(youtubeUrl)) || 
-                    audioFile !== null ||
-                    textContent.trim() !== '';
+  const canProceed = audioFile !== null || textContent.trim() !== '';
 
   const handleNextWithProgress = async () => {
     if (!canProceed) return;
@@ -185,14 +145,6 @@ const Step1: React.FC<Step1Props> = ({
       steps = [
         { id: 'file-validation', label: 'Validation du fichier audio', status: 'pending', api: 'Traitement local' },
         { id: 'audio-processing', label: 'Préparation pour transcription', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration' },
-        { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
-        { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
-      ];
-    } else if (audioUrl || youtubeUrl) {
-      const sourceType = youtubeUrl ? 'YouTube' : 'URL audio';
-      steps = [
-        { id: 'url-validation', label: `Validation de l'URL ${sourceType}`, status: 'pending', api: 'Traitement local' },
-        { id: 'download', label: `Téléchargement depuis ${sourceType}`, status: 'pending', api: 'Traitement local' },
         { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
         { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
       ];
@@ -316,13 +268,13 @@ const Step1: React.FC<Step1Props> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Importez votre contenu
+          Import Your Content
         </h2>
         <p className="text-lg text-gray-600">
-          Choisissez votre source : Twitter Space, YouTube, fichier audio/vidéo ou texte
+          Choose your content source to get started with transforming it into structured summaries
         </p>
       </div>
 
@@ -347,66 +299,50 @@ const Step1: React.FC<Step1Props> = ({
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Twitter Space URL */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Link className="w-6 h-6 text-blue-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Twitter Space</h3>
-          </div>
-          <div className="space-y-4">
-            <input
-              type="url"
-              placeholder="https://twitter.com/i/spaces/..."
-              value={audioUrl}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                error && audioUrl ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>• URL d'un Twitter Space enregistré</p>
-              <p>• Lien direct vers fichier audio</p>
+      {/* Tabs */}
+      <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab('audio')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-all ${
+            activeTab === 'audio'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          <span>Audio File</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('text')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-all ${
+            activeTab === 'text'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Text Content</span>
+        </button>
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === 'audio' ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center mb-6">
+            <Mic className="w-6 h-6 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Upload Audio File</h3>
+              <p className="text-sm text-gray-600">Supported formats: MP3, WAV, M4A, MP4 (max 100MB)</p>
             </div>
           </div>
-        </div>
 
-        {/* YouTube URL */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Youtube className="w-6 h-6 text-red-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">YouTube</h3>
-          </div>
-          <div className="space-y-4">
-            <input
-              type="url"
-              placeholder="https://youtube.com/watch?v=..."
-              value={youtubeUrl}
-              onChange={(e) => handleYoutubeChange(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${
-                error && youtubeUrl ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>• Vidéo YouTube publique</p>
-              <p>• Extraction audio automatique</p>
-            </div>
-          </div>
-        </div>
-
-        {/* File Upload */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Upload className="w-6 h-6 text-green-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Fichier audio</h3>
-          </div>
           <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer ${
               dragActive 
-                ? 'border-green-500 bg-green-50' 
+                ? 'border-blue-500 bg-blue-50' 
                 : audioFile
                   ? 'border-green-500 bg-green-50'
-                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                  : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -421,43 +357,52 @@ const Step1: React.FC<Step1Props> = ({
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="space-y-2">
-              <Mic className={`w-10 h-10 mx-auto ${
-                audioFile ? 'text-green-600' : 'text-gray-400'
-              }`} />
+            
+            <div className="space-y-4">
+              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
+                audioFile ? 'bg-green-100' : 'bg-gray-100'
+              }`}>
+                <Upload className={`w-8 h-8 ${
+                  audioFile ? 'text-green-600' : 'text-gray-400'
+                }`} />
+              </div>
+              
               {audioFile ? (
-                <>
-                  <p className="text-sm font-medium text-green-700">
+                <div>
+                  <p className="text-lg font-medium text-green-700 mb-2">
                     {audioFile.name}
                   </p>
-                  <p className="text-xs text-green-600">
+                  <p className="text-sm text-green-600">
                     {(audioFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
-                </>
+                </div>
               ) : (
-                <>
-                  <p className="text-sm text-gray-600">
-                    Glissez-déposez ou cliquez
+                <div>
+                  <p className="text-lg text-gray-700 mb-2">
+                    Drop your audio file here
                   </p>
-                  <p className="text-xs text-gray-500">
-                    MP3, WAV, M4A, MP4
+                  <p className="text-sm text-gray-500">
+                    or click to browse
                   </p>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
-
-        {/* Text Input */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center mb-6">
             <Type className="w-6 h-6 text-purple-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Texte</h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Text Content</h3>
+              <p className="text-sm text-gray-600">Paste your text or upload a text file</p>
+            </div>
           </div>
-          <div className="space-y-4">
+
+          <div className="space-y-6">
             {/* File upload for text */}
             <div
-              className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
                 textDragActive 
                   ? 'border-purple-500 bg-purple-50' 
                   : textFile
@@ -477,51 +422,57 @@ const Step1: React.FC<Step1Props> = ({
                 onChange={handleTextFileChange}
                 className="hidden"
               />
-              <div className="space-y-1">
-                <FileText className={`w-6 h-6 mx-auto ${
+              <div className="space-y-3">
+                <FileText className={`w-8 h-8 mx-auto ${
                   textFile ? 'text-purple-600' : 'text-gray-400'
                 }`} />
                 {textFile ? (
-                  <p className="text-xs font-medium text-purple-700">
+                  <p className="text-sm font-medium text-purple-700">
                     {textFile.name}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-600">
-                    Fichier TXT/MD
-                  </p>
+                  <div>
+                    <p className="text-sm text-gray-700">Upload text file</p>
+                    <p className="text-xs text-gray-500">TXT, MD files supported</p>
+                  </div>
                 )}
               </div>
             </div>
             
             {/* Text area */}
-            <textarea
-              placeholder="Ou collez votre texte ici..."
-              value={textContent}
-              onChange={(e) => handleTextChange(e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm"
-            />
-            
-            {textContent && (
-              <div className="text-xs text-purple-600">
-                {textContent.length} caractères • {textContent.split(' ').length} mots
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Or paste your text here
+              </label>
+              <textarea
+                placeholder="Paste your content here..."
+                value={textContent}
+                onChange={(e) => handleTextChange(e.target.value)}
+                rows={12}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              />
+              
+              {textContent && (
+                <div className="mt-2 text-sm text-purple-600">
+                  {textContent.length} characters • {textContent.split(' ').length} words
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Information Notice */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div className="mt-8 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-start space-x-3">
           <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-800 mb-1">Prochaines étapes</h4>
+            <h4 className="font-medium text-blue-800 mb-1">Next Steps</h4>
             <div className="text-sm text-blue-700 space-y-1">
-              <p>• Analyse préliminaire et estimation des coûts</p>
-              <p>• Détection automatique des intervenants (pour audio/vidéo)</p>
-              <p>• Extraction des points clés principaux</p>
-              <p>• Calcul du nombre de tokens et du prix</p>
+              <p>• Preliminary analysis and cost estimation</p>
+              <p>• Automatic speaker detection (for audio/video)</p>
+              <p>• Key insights extraction</p>
+              <p>• Token count and pricing calculation</p>
             </div>
           </div>
         </div>
@@ -537,7 +488,7 @@ const Step1: React.FC<Step1Props> = ({
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          Analyser le contenu
+          Analyze Content
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>
