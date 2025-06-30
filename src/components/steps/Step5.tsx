@@ -227,14 +227,14 @@ const Step5: React.FC<Step5Props> = ({
 
   const formatPreview = () => {
     return (
-      <div className="prose prose-sm max-w-none">
+      <div className="prose prose-lg max-w-none">
         {/* Header */}
-        <div className="mb-6 pb-4 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="mb-8 pb-6 border-b border-gray-200">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
             {localSettings.title || 'Your title will appear here'}
           </h1>
           {localSettings.subtitle && (
-            <h2 className="text-lg text-gray-600 font-normal mb-3">
+            <h2 className="text-xl text-gray-600 font-normal mb-4">
               {localSettings.subtitle}
             </h2>
           )}
@@ -242,9 +242,9 @@ const Step5: React.FC<Step5Props> = ({
 
         {/* Introduction */}
         {introduction && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Introduction</h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{introduction}</p>
+          <div className="mb-8">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Introduction</h3>
+            <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-line">{introduction}</p>
           </div>
         )}
 
@@ -252,21 +252,22 @@ const Step5: React.FC<Step5Props> = ({
         {articleSections
           .sort((a, b) => a.order - b.order)
           .map((section, index) => (
-            <div key={section.id} className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{section.content}</p>
+            <div key={section.id} className="mb-8">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">{section.title}</h3>
+              <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-line mb-4">{section.content}</p>
               
               {/* Key points in this section */}
               {section.keyPointIds.length > 0 && (
-                <div className="mt-4 pl-4 border-l-2 border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">Key Points:</h4>
-                  <ul className="space-y-1">
+                <div className="mt-6 pl-6 border-l-4 border-blue-200 bg-blue-50 rounded-r-lg p-4">
+                  <h4 className="text-lg font-medium text-blue-900 mb-3">Key Points:</h4>
+                  <ul className="space-y-2">
                     {section.keyPointIds.map(keyPointId => {
                       const keyPoint = getKeyPointById(keyPointId);
                       if (!keyPoint) return null;
                       return (
-                        <li key={keyPointId} className="text-sm text-blue-700">
-                          • {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
+                        <li key={keyPointId} className="text-blue-800">
+                          <strong>• {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}:</strong>
+                          <span className="ml-2">{keyPoint.text.split(':')[1]?.trim() || keyPoint.text.substring(80)}</span>
                         </li>
                       );
                     })}
@@ -276,7 +277,7 @@ const Step5: React.FC<Step5Props> = ({
             </div>
           ))}
 
-        <div className="text-gray-500 text-sm italic mt-8 pt-4 border-t border-gray-200">
+        <div className="text-gray-500 text-base italic mt-12 pt-6 border-t border-gray-200">
           [Structure preview - Final content will be generated in the following steps]
         </div>
       </div>
@@ -305,323 +306,322 @@ const Step5: React.FC<Step5Props> = ({
         </button>
       </div>
 
-      <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
-        {/* Available Key Points */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Tag className="w-5 h-5 mr-2 text-blue-600" />
-            Available Key Points ({getUnassignedKeyPoints().length})
-          </h3>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {getUnassignedKeyPoints().map((keyPoint) => (
-              <div
-                key={keyPoint.id}
-                draggable
-                onDragStart={(e) => handleKeyPointDragStart(e, keyPoint.id)}
-                className={`p-3 border border-gray-200 rounded-lg cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all ${
-                  draggedKeyPoint === keyPoint.id ? 'opacity-50' : ''
-                }`}
-              >
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
-                    keyPoint.category === 'quote' ? 'bg-green-100 text-green-700' :
-                    keyPoint.category === 'insight' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-purple-100 text-purple-700'
-                  }`}>
-                    {keyPoint.category}
-                  </span>
-                  <span className="text-xs text-gray-500">{keyPoint.speaker}</span>
-                </div>
-                <p className="text-sm text-gray-700 line-clamp-2">
-                  {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
-                </p>
-              </div>
-            ))}
-            
-            {getUnassignedKeyPoints().length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">All key points have been assigned to sections</p>
-              </div>
-            )}
+      {showPreview ? (
+        /* Full-screen preview */
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="max-w-4xl mx-auto">
+            {formatPreview()}
           </div>
         </div>
-
-        {/* Structure form */}
-        <div className={`space-y-6 ${showPreview ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
-          {/* Title and subtitle */}
+      ) : (
+        /* Main editing interface */
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Available Key Points */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Title and Subtitle</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Tag className="w-5 h-5 mr-2 text-blue-600" />
+              Available Key Points ({getUnassignedKeyPoints().length})
+            </h3>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Main Title</label>
-                {editingField === 'title' ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={localSettings.title}
-                      onChange={(e) => handleChange('title', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={2}
-                      autoFocus
-                    />
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setEditingField(null)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setEditingField(null)}
-                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    onClick={() => setEditingField('title')}
-                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                  >
-                    <p className="text-gray-900 font-medium">{localSettings.title || 'Click to edit the title'}</p>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle (optional)</label>
-                {editingField === 'subtitle' ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={localSettings.subtitle}
-                      onChange={(e) => handleChange('subtitle', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={2}
-                      autoFocus
-                    />
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setEditingField(null)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setEditingField(null)}
-                        className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    onClick={() => setEditingField('subtitle')}
-                    className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                  >
-                    <p className="text-gray-900">{localSettings.subtitle || 'Click to add a subtitle'}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Introduction */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h3>
-            <textarea
-              value={introduction}
-              onChange={(e) => setIntroduction(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Write your article introduction..."
-            />
-          </div>
-        </div>
-
-        {/* Article sections */}
-        <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${showPreview ? 'lg:col-span-1' : 'lg:col-span-1'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
-          </div>
-          
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {articleSections
-              .sort((a, b) => a.order - b.order)
-              .map((section, index) => (
-                <React.Fragment key={section.id}>
-                  {/* Drop zone for section reordering */}
-                  <div
-                    className={`h-2 transition-all duration-200 ${
-                      dragOverSectionIndex === index 
-                        ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
-                        : 'h-1'
-                    }`}
-                    onDragOver={(e) => handleSectionOrderDragOver(e, index)}
-                    onDragLeave={handleSectionOrderDragLeave}
-                    onDrop={(e) => handleSectionOrderDrop(e, index)}
-                  />
-                  
-                  <div 
-                    className={`border border-gray-200 rounded-lg p-4 transition-all ${
-                      dragOverSection === section.id ? 'border-blue-400 bg-blue-50' : ''
-                    } ${draggedSection === section.id ? 'opacity-50' : ''}`}
-                    onDragOver={(e) => handleSectionDragOver(e, section.id)}
-                    onDragLeave={handleSectionDragLeave}
-                    onDrop={(e) => handleSectionDrop(e, section.id)}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <GripVertical 
-                          className="w-4 h-4 text-gray-400 cursor-move"
-                          draggable
-                          onDragStart={(e) => handleSectionDragStart(e, section.id)}
-                        />
-                        <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={section.title}
-                          onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                          className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 flex-1"
-                          placeholder="Section title"
-                        />
-                      </div>
-                      <button
-                        onClick={() => removeSection(section.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    <textarea
-                      value={section.content}
-                      onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-3"
-                      placeholder="Section content..."
-                    />
-                    
-                    {/* Key points in this section */}
-                    <div className="space-y-2">
-                      <h5 className="text-xs font-medium text-gray-600">Key Points ({section.keyPointIds.length})</h5>
-                      {section.keyPointIds.map(keyPointId => {
-                        const keyPoint = getKeyPointById(keyPointId);
-                        if (!keyPoint) return null;
-                        return (
-                          <div key={keyPointId} className="flex items-center justify-between bg-gray-50 rounded p-2">
-                            <div className="flex items-center space-x-2 flex-1">
-                              <span className={`w-2 h-2 rounded-full ${
-                                keyPoint.category === 'theme' ? 'bg-blue-500' :
-                                keyPoint.category === 'quote' ? 'bg-green-500' :
-                                keyPoint.category === 'insight' ? 'bg-yellow-500' :
-                                'bg-purple-500'
-                              }`}></span>
-                              <span className="text-xs text-gray-700 truncate">
-                                {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 40)}...
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => removeKeyPointFromSection(section.id, keyPointId)}
-                              className="text-red-400 hover:text-red-600 ml-2"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                      
-                      {section.keyPointIds.length === 0 && (
-                        <div className="text-xs text-gray-500 italic p-2 border-2 border-dashed border-gray-200 rounded text-center">
-                          Drag key points here
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
-            
-            {/* Final drop zone for section reordering */}
-            <div
-              className={`h-2 transition-all duration-200 ${
-                dragOverSectionIndex === articleSections.length 
-                  ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
-                  : 'h-1'
-              }`}
-              onDragOver={(e) => handleSectionOrderDragOver(e, articleSections.length)}
-              onDragLeave={handleSectionOrderDragLeave}
-              onDrop={(e) => handleSectionOrderDrop(e, articleSections.length)}
-            />
-            
-            {/* Add new section */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={newSection.title}
-                  onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="New section title..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-                <textarea
-                  value={newSection.content}
-                  onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Section content (optional)..."
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                />
-                <button
-                  onClick={addSection}
-                  disabled={!newSection.title.trim()}
-                  className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {getUnassignedKeyPoints().map((keyPoint) => (
+                <div
+                  key={keyPoint.id}
+                  draggable
+                  onDragStart={(e) => handleKeyPointDragStart(e, keyPoint.id)}
+                  className={`p-3 border border-gray-200 rounded-lg cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all ${
+                    draggedKeyPoint === keyPoint.id ? 'opacity-50' : ''
+                  }`}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Section
-                </button>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
+                      keyPoint.category === 'quote' ? 'bg-green-100 text-green-700' :
+                      keyPoint.category === 'insight' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-purple-100 text-purple-700'
+                    }`}>
+                      {keyPoint.category}
+                    </span>
+                    <span className="text-xs text-gray-500">{keyPoint.speaker}</span>
+                  </div>
+                  <p className="text-sm text-gray-700 line-clamp-2">
+                    {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
+                  </p>
+                </div>
+              ))}
+              
+              {getUnassignedKeyPoints().length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">All key points have been assigned to sections</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main content area */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Title and subtitle */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Title and Subtitle</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Main Title</label>
+                  {editingField === 'title' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={localSettings.title}
+                        onChange={(e) => handleChange('title', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => setEditingField('title')}
+                      className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
+                      <p className="text-gray-900 font-medium">{localSettings.title || 'Click to edit the title'}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle (optional)</label>
+                  {editingField === 'subtitle' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={localSettings.subtitle}
+                        onChange={(e) => handleChange('subtitle', e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows={2}
+                        autoFocus
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => setEditingField('subtitle')}
+                      className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
+                      <p className="text-gray-900">{localSettings.subtitle || 'Click to add a subtitle'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Introduction */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h3>
+              <textarea
+                value={introduction}
+                onChange={(e) => setIntroduction(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Write your article introduction..."
+              />
+            </div>
+
+            {/* Article sections */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
+              </div>
+              
+              <div className="space-y-4">
+                {articleSections
+                  .sort((a, b) => a.order - b.order)
+                  .map((section, index) => (
+                    <React.Fragment key={section.id}>
+                      {/* Drop zone for section reordering */}
+                      <div
+                        className={`h-2 transition-all duration-200 ${
+                          dragOverSectionIndex === index 
+                            ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
+                            : 'h-1'
+                        }`}
+                        onDragOver={(e) => handleSectionOrderDragOver(e, index)}
+                        onDragLeave={handleSectionOrderDragLeave}
+                        onDrop={(e) => handleSectionOrderDrop(e, index)}
+                      />
+                      
+                      <div 
+                        className={`border border-gray-200 rounded-lg p-6 transition-all ${
+                          dragOverSection === section.id ? 'border-blue-400 bg-blue-50' : ''
+                        } ${draggedSection === section.id ? 'opacity-50' : ''}`}
+                        onDragOver={(e) => handleSectionDragOver(e, section.id)}
+                        onDragLeave={handleSectionDragLeave}
+                        onDrop={(e) => handleSectionDrop(e, section.id)}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <GripVertical 
+                              className="w-4 h-4 text-gray-400 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleSectionDragStart(e, section.id)}
+                            />
+                            <span className="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
+                              {index + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={section.title}
+                              onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                              className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 flex-1 text-lg"
+                              placeholder="Section title"
+                            />
+                          </div>
+                          <button
+                            onClick={() => removeSection(section.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        
+                        <textarea
+                          value={section.content}
+                          onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-4"
+                          placeholder="Section content..."
+                        />
+                        
+                        {/* Key points in this section */}
+                        <div className="space-y-3">
+                          <h5 className="text-sm font-medium text-gray-700">Suggested Key Points ({section.keyPointIds.length})</h5>
+                          {section.keyPointIds.map(keyPointId => {
+                            const keyPoint = getKeyPointById(keyPointId);
+                            if (!keyPoint) return null;
+                            return (
+                              <div key={keyPointId} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <span className={`w-3 h-3 rounded-full ${
+                                    keyPoint.category === 'theme' ? 'bg-blue-500' :
+                                    keyPoint.category === 'quote' ? 'bg-green-500' :
+                                    keyPoint.category === 'insight' ? 'bg-yellow-500' :
+                                    'bg-purple-500'
+                                  }`}></span>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 60)}...
+                                    </p>
+                                    <p className="text-xs text-gray-500">{keyPoint.speaker}</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeKeyPointFromSection(section.id, keyPointId)}
+                                  className="text-red-400 hover:text-red-600 ml-3"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          
+                          {section.keyPointIds.length === 0 && (
+                            <div className="text-sm text-gray-500 italic p-4 border-2 border-dashed border-gray-200 rounded-lg text-center">
+                              Drag key points here to organize your content
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                
+                {/* Final drop zone for section reordering */}
+                <div
+                  className={`h-2 transition-all duration-200 ${
+                    dragOverSectionIndex === articleSections.length 
+                      ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
+                      : 'h-1'
+                  }`}
+                  onDragOver={(e) => handleSectionOrderDragOver(e, articleSections.length)}
+                  onDragLeave={handleSectionOrderDragLeave}
+                  onDrop={(e) => handleSectionOrderDrop(e, articleSections.length)}
+                />
+                
+                {/* Add new section */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={newSection.title}
+                      onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="New section title..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <textarea
+                      value={newSection.content}
+                      onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
+                      placeholder="Section content (optional)..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                    />
+                    <button
+                      onClick={addSection}
+                      disabled={!newSection.title.trim()}
+                      className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Section
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Structure preview - Only shown if showPreview is true */}
-        {showPreview && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                Article Preview
-              </h3>
-            </div>
-            
-            <div className="border border-gray-200 rounded-lg p-6 bg-gray-50 max-h-96 overflow-y-auto">
-              {formatPreview()}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8 mb-8">
-        <div className="flex items-start space-x-3">
-          <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-800 mb-1">Tips for an effective structure</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Drag key points from the left panel into sections to organize your content</li>
-              <li>• Use the grip handle to reorder sections by dragging them up or down</li>
-              <li>• Each section should have a clear and distinct objective</li>
-              <li>• The introduction should present the context and main themes</li>
-              <li>• You can refine the content in the following steps</li>
-            </ul>
+      {!showPreview && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8 mb-8">
+          <div className="flex items-start space-x-3">
+            <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-blue-800 mb-1">Tips for an effective structure</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Drag key points from the left panel into sections to organize your content</li>
+                <li>• Use the grip handle to reorder sections by dragging them up or down</li>
+                <li>• Each section should have a clear and distinct objective</li>
+                <li>• The introduction should present the context and main themes</li>
+                <li>• Use "Show Preview" to see how your structure will look</li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-center">
         <button
