@@ -49,9 +49,9 @@ export class GeminiService {
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
       
-      // Validate file size (max 20MB for inline data)
-      const maxSizeBytes = 20 * 1024 * 1024; // 20MB
-      if (audioFile.size > maxSizeBytes) {
+      // Validate file size - use Files API for files > 20MB
+      const maxInlineSizeBytes = 20 * 1024 * 1024; // 20MB
+      if (audioFile.size > maxInlineSizeBytes) {
         console.log('📁 File too large for inline data, using Files API...');
         return await this.transcribeFileWithFilesAPI(audioFile, options);
       }
@@ -159,18 +159,131 @@ export class GeminiService {
 
     try {
       console.log('📁 Using Files API for large file transcription...');
+      console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       
-      // Note: In a browser environment, we can't directly use the Files API
-      // as it requires server-side implementation. For now, we'll fall back
-      // to inline data with a warning about size limits.
-      console.warn('⚠️ Files API not available in browser environment. File may be too large for processing.');
+      // Step 1: Upload file using Files API
+      console.log('⬆️ Uploading file to Gemini Files API...');
       
-      // For large files, we could implement chunking or server-side processing
-      throw new Error('File too large for browser-based processing. Please use a smaller file (max 20MB) or implement server-side processing.');
+      // Convert File to ArrayBuffer for upload
+      const arrayBuffer = await audioFile.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Detect proper MIME type
+      const mimeType = this.detectMimeType(audioFile);
+      console.log('🔍 Using MIME type:', mimeType);
+      
+      // Upload file using the Files API
+      const uploadResult = await this.genAI.files.upload({
+        file: uint8Array,
+        config: { 
+          mimeType: mimeType,
+          displayName: audioFile.name
+        }
+      });
+      
+      console.log('✅ File uploaded successfully');
+      console.log('📄 File URI:', uploadResult.uri);
+      console.log('📄 File name:', uploadResult.name);
+      
+      // Step 2: Wait for file processing (if needed)
+      console.log('⏳ Waiting for file processing...');
+      let fileInfo = uploadResult;
+      let attempts = 0;
+      const maxAttempts = 30; // 30 attempts = 5 minutes max
+      
+      while (fileInfo.state === 'PROCESSING' && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+        
+        try {
+          fileInfo = await this.genAI.files.get(uploadResult.name);
+          console.log(`📊 File processing status: ${fileInfo.state} (attempt ${attempts + 1}/${maxAttempts})`);
+        } catch (error) {
+          console.warn('⚠️ Error checking file status, continuing...', error);
+          break;
+        }
+        
+        attempts++;
+      }
+      
+      if (fileInfo.state === 'PROCESSING') {
+        console.warn('⚠️ File still processing after maximum wait time, proceeding anyway...');
+      } else if (fileInfo.state === 'FAILED') {
+        throw new Error('File processing failed on Gemini servers');
+      } else {
+        console.log('✅ File processing completed');
+      }
+      
+      // Step 3: Generate content using the uploaded file
+      console.log('🚀 Generating transcription with uploaded file...');
+      
+      const model = this.genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.1,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 8192,
+        },
+      });
+      
+      // Build transcription prompt
+      const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
+      
+      // Create content request with file reference
+      const result = await model.generateContent([
+        {
+          fileData: {
+            mimeType: fileInfo.mimeType,
+            fileUri: fileInfo.uri
+          }
+        },
+        { text: transcriptionPrompt }
+      ]);
+      
+      const response = await result.response;
+      const transcriptionText = response.text();
+      
+      console.log('✅ Gemini 2.5 Flash transcription completed via Files API');
+      console.log('📄 Transcription length:', transcriptionText.length, 'characters');
+      
+      // Step 4: Clean up - delete the uploaded file
+      try {
+        await this.genAI.files.delete(uploadResult.name);
+        console.log('🗑️ Uploaded file cleaned up');
+      } catch (error) {
+        console.warn('⚠️ Could not delete uploaded file:', error);
+      }
+      
+      // Parse response
+      const parsedResult = this.parseGeminiResponse(transcriptionText, options);
+      
+      return {
+        text: parsedResult.text,
+        language: parsedResult.language || this.detectLanguage(parsedResult.text),
+        confidence: parsedResult.confidence || 0.96,
+        segments: parsedResult.segments,
+        keyPoints: parsedResult.keyPoints
+      };
       
     } catch (error) {
       console.error('❌ Error with Files API transcription:', error);
-      throw error;
+      
+      // Enhanced error handling for Files API
+      if (error instanceof Error) {
+        if (error.message.includes('quota') || error.message.includes('429')) {
+          throw new Error('API quota exceeded. Check your API key or increase your quota.');
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          throw new Error('Invalid API key or insufficient permissions for Files API.');
+        } else if (error.message.includes('413') || error.message.includes('file too large')) {
+          throw new Error('File too large even for Files API. Please use a smaller file.');
+        } else if (error.message.includes('415') || error.message.includes('unsupported')) {
+          throw new Error('Unsupported file format for Files API.');
+        } else if (error.message.includes('processing failed')) {
+          throw new Error('File processing failed on Gemini servers. Please try again or use a different file.');
+        }
+      }
+      
+      throw new Error(`Files API transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -211,7 +324,7 @@ export class GeminiService {
       console.log('📥 Audio downloaded, size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📥 Content type:', contentType);
 
-      // Use file transcription method
+      // Use file transcription method (will automatically choose inline vs Files API)
       return await this.transcribeFile(audioFile, options);
 
     } catch (error) {
@@ -227,7 +340,7 @@ export class GeminiService {
     prompt?: string;
   }): string {
     // Build prompt following Google's best practices for audio transcription
-    let prompt = `You are an expert audio transcription AI. Please transcribe this audio file with high accuracy.
+    let prompt = `You are an expert audio transcription AI using Gemini 2.5 Flash. Please transcribe this audio file with high accuracy.
 
 INSTRUCTIONS:
 - Provide a complete, word-for-word transcription

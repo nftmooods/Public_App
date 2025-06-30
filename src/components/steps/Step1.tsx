@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic } from 'lucide-react';
+import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic, HardDrive } from 'lucide-react';
 
 interface Step1Props {
   audioUrl: string;
@@ -140,6 +140,35 @@ const Step1: React.FC<Step1Props> = ({
 
   const canProceed = audioFile !== null || textContent.trim() !== '';
 
+  const getFileSizeInfo = (file: File) => {
+    const sizeMB = file.size / (1024 * 1024);
+    const maxInlineSize = 20; // 20MB
+    const maxFileApiSize = 2000; // 2GB (theoretical limit)
+    
+    if (sizeMB <= maxInlineSize) {
+      return {
+        method: 'inline',
+        icon: Mic,
+        color: 'text-green-600',
+        description: 'Fast inline processing'
+      };
+    } else if (sizeMB <= maxFileApiSize) {
+      return {
+        method: 'files-api',
+        icon: HardDrive,
+        color: 'text-blue-600',
+        description: 'Files API processing (large file)'
+      };
+    } else {
+      return {
+        method: 'too-large',
+        icon: AlertCircle,
+        color: 'text-red-600',
+        description: 'File too large (max 2GB)'
+      };
+    }
+  };
+
   const getAnalysisSteps = () => {
     const demoMode = localStorage.getItem('demoMode') === 'true';
     console.log('🔍 Demo mode status:', demoMode);
@@ -173,7 +202,7 @@ const Step1: React.FC<Step1Props> = ({
     }
     
     const useGemini = !demoMode && geminiConfigured && hasValidApiKey;
-    console.log('🔍 Will use Gemini 2.0 Flash:', useGemini);
+    console.log('🔍 Will use Gemini 2.5 Flash:', useGemini);
     
     if (textContent.trim() || textFile) {
       return [
@@ -195,14 +224,14 @@ const Step1: React.FC<Step1Props> = ({
           id: 'text-analysis', 
           label: 'Advanced semantic analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.0 Flash' : 'Demo mode',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
           duration: useGemini ? 4000 : 2500
         },
         { 
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.0 Flash' : 'Local algorithm',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Local algorithm',
           duration: useGemini ? 3000 : 2000
         },
         { 
@@ -215,35 +244,59 @@ const Step1: React.FC<Step1Props> = ({
       ];
     } else if (audioFile) {
       const fileSizeMB = audioFile.size / (1024 * 1024);
-      const baseTranscriptionTime = Math.max(3000, fileSizeMB * 1000); // 1s per MB minimum 3s
+      const fileInfo = getFileSizeInfo(audioFile);
+      const baseTranscriptionTime = Math.max(5000, fileSizeMB * 800); // More realistic timing
       
-      return [
+      const steps = [
         { 
           id: 'file-validation', 
           label: 'Audio file validation', 
           status: 'pending' as const, 
           api: 'Local processing',
           duration: 1000
-        },
-        { 
+        }
+      ];
+
+      if (fileInfo.method === 'files-api') {
+        steps.push(
+          { 
+            id: 'file-upload', 
+            label: 'Uploading to Gemini Files API', 
+            status: 'pending' as const, 
+            api: useGemini ? 'Gemini Files API' : 'Demo mode',
+            duration: Math.max(3000, fileSizeMB * 200) // Upload time based on file size
+          },
+          { 
+            id: 'file-processing', 
+            label: 'Server-side file processing', 
+            status: 'pending' as const, 
+            api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
+            duration: Math.max(5000, fileSizeMB * 300) // Processing time
+          }
+        );
+      } else {
+        steps.push({
           id: 'audio-preprocessing', 
           label: 'Transcription preparation', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.0 Flash' : 'Demo mode',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
           duration: 2000
-        },
+        });
+      }
+
+      steps.push(
         { 
           id: 'transcription', 
-          label: 'Audio to text transcription', 
+          label: `Audio transcription ${fileInfo.method === 'files-api' ? '(Files API)' : '(Inline)'}`, 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.0 Flash (Multimodal)' : 'Simulated data',
+          api: useGemini ? 'Gemini 2.5 Flash (Multimodal)' : 'Simulated data',
           duration: baseTranscriptionTime
         },
         { 
           id: 'speaker-analysis', 
           label: 'Speaker analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.0 Flash' : 'Local processing',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Local processing',
           duration: 2500
         },
         { 
@@ -253,7 +306,19 @@ const Step1: React.FC<Step1Props> = ({
           api: 'Local algorithm',
           duration: 1500
         }
-      ];
+      );
+
+      if (fileInfo.method === 'files-api') {
+        steps.push({
+          id: 'cleanup', 
+          label: 'Cleaning up uploaded file', 
+          status: 'pending' as const, 
+          api: 'Gemini Files API',
+          duration: 1000
+        });
+      }
+
+      return steps;
     }
     return [];
   };
@@ -333,7 +398,7 @@ const Step1: React.FC<Step1Props> = ({
             Analysis in Progress
           </h2>
           <p className="text-gray-600">
-            Intelligent processing of your content with Gemini 2.0 Flash
+            Intelligent processing of your content with Gemini 2.5 Flash
           </p>
         </div>
 
@@ -427,13 +492,14 @@ const Step1: React.FC<Step1Props> = ({
                 <>
                   <p>• Analyzing {textContent.length} characters of text</p>
                   <p>• Automatic speaker detection</p>
-                  <p>• Intelligent key points extraction with Gemini 2.0 Flash</p>
+                  <p>• Intelligent key points extraction with Gemini 2.5 Flash</p>
                 </>
               ) : audioFile ? (
                 <>
                   <p>• Processing audio file: {audioFile.name}</p>
                   <p>• Size: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                  <p>• Multimodal AI transcription with Gemini 2.0 Flash</p>
+                  <p>• {getFileSizeInfo(audioFile).description}</p>
+                  <p>• Multimodal AI transcription with Gemini 2.5 Flash</p>
                 </>
               ) : null}
             </div>
@@ -460,7 +526,7 @@ const Step1: React.FC<Step1Props> = ({
           <div className="flex items-center">
             <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
             <span className="text-blue-800 font-medium text-sm">
-              Gemini 2.0 Flash configured - Advanced multimodal transcription enabled
+              Gemini 2.5 Flash configured - Advanced multimodal transcription enabled
             </span>
           </div>
         </div>
@@ -509,7 +575,9 @@ const Step1: React.FC<Step1Props> = ({
               <Mic className="w-5 h-5 text-blue-600 mr-2" />
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Upload Audio File</h3>
-                <p className="text-sm text-gray-600">Supported formats: MP3, WAV, M4A, MP4 (max 100MB)</p>
+                <p className="text-sm text-gray-600">
+                  Supported formats: MP3, WAV, M4A, MP4 • Up to 2GB with Files API
+                </p>
               </div>
             </div>
 
@@ -549,18 +617,39 @@ const Step1: React.FC<Step1Props> = ({
                     <p className="text-lg font-medium text-green-700 mb-1">
                       {audioFile.name}
                     </p>
-                    <p className="text-sm text-green-600">
+                    <p className="text-sm text-green-600 mb-2">
                       {(audioFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
+                    
+                    {/* File processing method indicator */}
+                    {(() => {
+                      const fileInfo = getFileSizeInfo(audioFile);
+                      const Icon = fileInfo.icon;
+                      return (
+                        <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
+                          fileInfo.method === 'inline' ? 'bg-green-100 text-green-700' :
+                          fileInfo.method === 'files-api' ? 'bg-blue-100 text-blue-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          <Icon className="w-3 h-3" />
+                          <span>{fileInfo.description}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div>
                     <p className="text-lg text-gray-700 mb-1">
                       Drop your audio file here
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 mb-2">
                       or click to browse
                     </p>
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <p>• Files ≤20MB: Fast inline processing</p>
+                      <p>• Files >20MB: Files API processing</p>
+                      <p>• Maximum size: 2GB</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -648,8 +737,11 @@ const Step1: React.FC<Step1Props> = ({
             <div className="text-xs text-blue-700 space-y-1">
               <p>• Preliminary analysis and cost estimation</p>
               <p>• Automatic speaker detection (for audio/video)</p>
-              <p>• Key insights extraction with Gemini 2.0 Flash</p>
+              <p>• Key insights extraction with Gemini 2.5 Flash</p>
               <p>• Token count and pricing calculation</p>
+              {audioFile && getFileSizeInfo(audioFile).method === 'files-api' && (
+                <p>• Large file processing via Gemini Files API</p>
+              )}
             </div>
           </div>
         </div>
