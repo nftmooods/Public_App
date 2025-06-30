@@ -27,6 +27,7 @@ const Step5: React.FC<Step5Props> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [introduction, setIntroduction] = useState('');
+  const [conclusion, setConclusion] = useState('');
   const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
   const [newSection, setNewSection] = useState({ title: '', content: '' });
   const [draggedKeyPoint, setDraggedKeyPoint] = useState<string | null>(null);
@@ -66,6 +67,14 @@ const Step5: React.FC<Step5Props> = ({
       setIntroduction(autoIntroduction);
     }
 
+    // Generate conclusion automatically
+    if (keyPoints.length > 0 && !conclusion) {
+      const autoConclusion = `In conclusion, this analysis highlights the key developments and insights that are shaping the future of the industry. The discussion reveals important trends and provides valuable perspectives for stakeholders and decision-makers.
+
+What are your thoughts on these insights? Share your perspective and join the conversation to help drive innovation forward.`;
+      setConclusion(autoConclusion);
+    }
+
     // Generate sections automatically if none exist
     if (keyPoints.length > 0 && articleSections.length === 0) {
       const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
@@ -95,7 +104,7 @@ const Step5: React.FC<Step5Props> = ({
 
       setArticleSections(autoSections);
     }
-  }, [keyPoints, localSettings.title, introduction, articleSections.length]);
+  }, [keyPoints, localSettings.title, introduction, conclusion, articleSections.length]);
 
   const addSection = () => {
     if (newSection.title.trim()) {
@@ -277,6 +286,14 @@ const Step5: React.FC<Step5Props> = ({
             </div>
           ))}
 
+        {/* Conclusion */}
+        {conclusion && (
+          <div className="mb-8">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">Conclusion</h3>
+            <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-line">{conclusion}</p>
+          </div>
+        )}
+
         <div className="text-gray-500 text-base italic mt-12 pt-6 border-t border-gray-200">
           [Structure preview - Final content will be generated in the following steps]
         </div>
@@ -314,53 +331,55 @@ const Step5: React.FC<Step5Props> = ({
           </div>
         </div>
       ) : (
-        /* Main editing interface */
-        <div className="grid lg:grid-cols-4 gap-8">
-          {/* Available Key Points */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Tag className="w-5 h-5 mr-2 text-blue-600" />
-              Available Key Points ({getUnassignedKeyPoints().length})
-            </h3>
-            
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {getUnassignedKeyPoints().map((keyPoint) => (
-                <div
-                  key={keyPoint.id}
-                  draggable
-                  onDragStart={(e) => handleKeyPointDragStart(e, keyPoint.id)}
-                  className={`p-3 border border-gray-200 rounded-lg cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all ${
-                    draggedKeyPoint === keyPoint.id ? 'opacity-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
-                      keyPoint.category === 'quote' ? 'bg-green-100 text-green-700' :
-                      keyPoint.category === 'insight' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-purple-100 text-purple-700'
-                    }`}>
-                      {keyPoint.category}
-                    </span>
-                    <span className="text-xs text-gray-500">{keyPoint.speaker}</span>
-                  </div>
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
-                  </p>
-                </div>
-              ))}
+        /* Main editing interface with fixed sidebar */
+        <div className="flex gap-8">
+          {/* Fixed Available Key Points Sidebar */}
+          <div className="w-80 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Tag className="w-5 h-5 mr-2 text-blue-600" />
+                Available Key Points ({getUnassignedKeyPoints().length})
+              </h3>
               
-              {getUnassignedKeyPoints().length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">All key points have been assigned to sections</p>
-                </div>
-              )}
+              <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {getUnassignedKeyPoints().map((keyPoint) => (
+                  <div
+                    key={keyPoint.id}
+                    draggable
+                    onDragStart={(e) => handleKeyPointDragStart(e, keyPoint.id)}
+                    className={`p-3 border border-gray-200 rounded-lg cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all ${
+                      draggedKeyPoint === keyPoint.id ? 'opacity-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
+                        keyPoint.category === 'quote' ? 'bg-green-100 text-green-700' :
+                        keyPoint.category === 'insight' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-purple-100 text-purple-700'
+                      }`}>
+                        {keyPoint.category}
+                      </span>
+                      <span className="text-xs text-gray-500">{keyPoint.speaker}</span>
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-2">
+                      {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
+                    </p>
+                  </div>
+                ))}
+                
+                {getUnassignedKeyPoints().length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">All key points have been assigned to sections</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Main content area */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="flex-1 space-y-6">
             {/* Title and subtitle */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Title and Subtitle</h3>
@@ -600,6 +619,21 @@ const Step5: React.FC<Step5Props> = ({
                 </div>
               </div>
             </div>
+
+            {/* Conclusion */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Conclusion & Call to Action</h3>
+              <textarea
+                value={conclusion}
+                onChange={(e) => setConclusion(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Write your conclusion and call to action..."
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                This section should summarize key insights and encourage reader engagement or action.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -616,6 +650,7 @@ const Step5: React.FC<Step5Props> = ({
                 <li>• Use the grip handle to reorder sections by dragging them up or down</li>
                 <li>• Each section should have a clear and distinct objective</li>
                 <li>• The introduction should present the context and main themes</li>
+                <li>• The conclusion should summarize insights and include a call to action</li>
                 <li>• Use "Show Preview" to see how your structure will look</li>
               </ul>
             </div>
