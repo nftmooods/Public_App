@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Download, Copy, Globe, FileText, Hash, Share2, CheckCircle } from 'lucide-react';
+import { Download, Copy, Globe, FileText, Hash, Share2, CheckCircle, RotateCcw } from 'lucide-react';
 
 interface Step8Props {
   generatedContent: string;
   contentSettings: any;
+  onNewAnalysis?: () => void;
 }
 
-const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings }) => {
+const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNewAnalysis }) => {
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<string>('');
 
@@ -216,7 +217,7 @@ ${generatedContent}`
       </div>
 
       {/* Content Preview */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Final Content Preview</h3>
         <div className="bg-gray-50 rounded-lg p-6">
           <div className="prose prose-sm max-w-none">
@@ -245,20 +246,31 @@ ${generatedContent}`
       </div>
 
       {/* Success Message */}
-      <div className="text-center mt-12 p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+      <div className="text-center p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Content Generated Successfully!</h3>
         <p className="text-gray-600 mb-6">
-          Your Twitter Space has been transformed into professional content ready for publication.
+          Your content has been transformed into professional material ready for publication.
         </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all shadow-sm"
-        >
-          Create Another Summary
-        </button>
+        <div className="flex justify-center space-x-4">
+          {onNewAnalysis && (
+            <button
+              onClick={onNewAnalysis}
+              className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              New Analysis
+            </button>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-all shadow-sm"
+          >
+            Restart Application
+          </button>
+        </div>
       </div>
     </div>
   );

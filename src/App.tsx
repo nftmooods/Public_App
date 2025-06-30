@@ -80,9 +80,34 @@ function App() {
   const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
   const [demoMode, setDemoMode] = useState(true);
+  const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
 
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
+
+  // Fonction pour réinitialiser complètement l'application
+  const resetAppState = () => {
+    console.log('🔄 Réinitialisation complète de l\'application');
+    
+    // Générer un nouvel ID de session pour forcer le refresh
+    const newSessionId = Date.now().toString();
+    setAnalysisSessionId(newSessionId);
+    
+    // Réinitialiser l'état de l'application
+    setAppState({
+      ...initialAppState,
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated
+    });
+    
+    // Réinitialiser les étapes
+    setSteps(initialSteps);
+    
+    // Effacer les erreurs
+    setApiKeyError('');
+    
+    console.log('✅ Application réinitialisée avec session ID:', newSessionId);
+  };
 
   // Mettre à jour l'état de l'application avec les données d'authentification
   useEffect(() => {
@@ -167,6 +192,8 @@ function App() {
       setGeminiConfigured(false);
       setApiKeyError('');
       setDemoMode(true);
+      // Réinitialiser complètement l'application
+      resetAppState();
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
     }
@@ -214,7 +241,7 @@ function App() {
            error.message.includes('exceeded your current quota');
   };
 
-  // Step 1 handlers
+  // Step 1 handlers avec réinitialisation complète
   const handleUrlChange = (url: string) => {
     setAppState(prev => ({ ...prev, audioUrl: url }));
   };
@@ -224,15 +251,55 @@ function App() {
   };
 
   const handleFileUpload = (file: File) => {
-    setAppState(prev => ({ ...prev, audioFile: file }));
+    console.log('📁 Nouveau fichier uploadé:', file.name);
+    // Réinitialiser complètement l'état pour le nouveau fichier
+    resetAppState();
+    setAppState(prev => ({ 
+      ...prev, 
+      audioFile: file,
+      // Effacer les autres sources
+      textContent: '',
+      textFile: null,
+      audioUrl: '',
+      youtubeUrl: '',
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated
+    }));
   };
 
   const handleTextContentChange = (text: string) => {
-    setAppState(prev => ({ ...prev, textContent: text }));
+    if (text !== appState.textContent) {
+      console.log('📝 Nouveau contenu texte saisi');
+      // Si c'est un changement significatif, réinitialiser
+      if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
+        resetAppState();
+      }
+      setAppState(prev => ({ 
+        ...prev, 
+        textContent: text,
+        // Effacer les autres sources si on saisit du texte
+        audioFile: text.trim() ? null : prev.audioFile,
+        textFile: text.trim() ? null : prev.textFile,
+        user: appState.user,
+        isAuthenticated: appState.isAuthenticated
+      }));
+    }
   };
 
   const handleTextFileUpload = (file: File) => {
-    setAppState(prev => ({ ...prev, textFile: file }));
+    console.log('📄 Nouveau fichier texte uploadé:', file.name);
+    // Réinitialiser complètement l'état pour le nouveau fichier
+    resetAppState();
+    setAppState(prev => ({ 
+      ...prev, 
+      textFile: file,
+      // Effacer les autres sources
+      audioFile: null,
+      audioUrl: '',
+      youtubeUrl: '',
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated
+    }));
     
     // Lire le contenu du fichier texte
     const reader = new FileReader();
@@ -244,11 +311,33 @@ function App() {
   };
 
   const handleStep1Next = async () => {
+    console.log('🚀 Début de l\'analyse - Session ID:', analysisSessionId);
     setAppState(prev => ({ ...prev, isProcessing: true }));
-    goToNextStep();
+    
+    // Durée d'analyse plus réaliste selon le type de contenu
+    const getAnalysisDuration = () => {
+      if (appState.textContent.trim()) {
+        const textLength = appState.textContent.length;
+        if (textLength < 1000) return 3000; // 3 secondes pour texte court
+        if (textLength < 5000) return 6000; // 6 secondes pour texte moyen
+        return 10000; // 10 secondes pour texte long
+      } else if (appState.audioFile) {
+        const fileSizeMB = appState.audioFile.size / (1024 * 1024);
+        if (fileSizeMB < 5) return 8000; // 8 secondes pour petit fichier
+        if (fileSizeMB < 20) return 15000; // 15 secondes pour fichier moyen
+        return 25000; // 25 secondes pour gros fichier
+      }
+      return 5000; // Défaut
+    };
+
+    const analysisDuration = getAnalysisDuration();
+    console.log(`⏱️ Durée d'analyse estimée: ${analysisDuration}ms`);
     
     try {
       let transcriptionResult;
+      
+      // Attendre la durée d'analyse réaliste
+      await simulateDelay(analysisDuration);
       
       // Si du texte est fourni, l'utiliser directement
       if (appState.textContent.trim()) {
@@ -337,7 +426,6 @@ function App() {
         } else {
           // Mode démonstration
           console.log('🎭 Mode démonstration - utilisation des données simulées');
-          await simulateDelay(2000);
           transcriptionResult = generateMockTranscription();
         }
       }
@@ -347,6 +435,11 @@ function App() {
         transcription: transcriptionResult,
         isProcessing: false 
       }));
+      
+      // Passer automatiquement à l'étape suivante après l'analyse
+      setTimeout(() => {
+        goToNextStep();
+      }, 500);
       
     } catch (error) {
       console.error('Erreur lors de l\'analyse:', error);
@@ -438,6 +531,10 @@ function App() {
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
+      // Durée de régénération réaliste
+      const regenerationDuration = 8000; // 8 secondes
+      await simulateDelay(regenerationDuration);
+      
       // Utiliser l'API Gemini si configurée et en mode production
       if (!demoMode && geminiConfigured && apiKey && appState.transcription) {
         console.log('🚀 Génération de contenu avec Gemini...');
@@ -461,7 +558,6 @@ function App() {
       } else {
         // Mode démonstration
         console.log('🎭 Génération de contenu en mode démonstration');
-        await simulateDelay(2000);
         
         const content = generateMockContent(
           appState.contentSettings.format, 
@@ -513,6 +609,7 @@ function App() {
             onTextFileUpload={handleTextFileUpload}
             onNext={handleStep1Next}
             geminiConfigured={geminiConfigured && !demoMode}
+            sessionId={analysisSessionId}
           />
         );
       case 2:
@@ -580,6 +677,7 @@ function App() {
           <Step8
             generatedContent={appState.generatedContent}
             contentSettings={appState.contentSettings}
+            onNewAnalysis={resetAppState}
           />
         );
       default:
@@ -626,9 +724,13 @@ function App() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <button
+                onClick={resetAppState}
+                className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all"
+                title="Nouvelle analyse"
+              >
                 <span className="text-white font-bold text-sm">TS</span>
-              </div>
+              </button>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Twitter Space Synthesizer</h1>
                 <p className="text-sm text-gray-500">Transformez les discussions audio en contenu professionnel</p>

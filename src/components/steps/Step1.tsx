@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic } from 'lucide-react';
 
 interface Step1Props {
@@ -14,6 +14,7 @@ interface Step1Props {
   onTextFileUpload: (file: File) => void;
   onNext: () => void;
   geminiConfigured?: boolean;
+  sessionId?: string;
 }
 
 interface ProcessingStep {
@@ -21,6 +22,7 @@ interface ProcessingStep {
   label: string;
   status: 'pending' | 'processing' | 'completed';
   api?: string;
+  duration?: number;
 }
 
 const Step1: React.FC<Step1Props> = ({ 
@@ -31,7 +33,8 @@ const Step1: React.FC<Step1Props> = ({
   onTextContentChange,
   onTextFileUpload,
   onNext,
-  geminiConfigured = false
+  geminiConfigured = false,
+  sessionId = ''
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [textDragActive, setTextDragActive] = useState(false);
@@ -39,6 +42,20 @@ const Step1: React.FC<Step1Props> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [activeTab, setActiveTab] = useState<'audio' | 'text'>('audio');
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+
+  // Réinitialiser l'état quand sessionId change (nouveau contenu)
+  useEffect(() => {
+    if (sessionId) {
+      setIsProcessing(false);
+      setProcessingSteps([]);
+      setCurrentStepIndex(0);
+      setAnalysisProgress(0);
+      setError('');
+      console.log('🔄 Step1 réinitialisé pour session:', sessionId);
+    }
+  }, [sessionId]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -123,54 +140,142 @@ const Step1: React.FC<Step1Props> = ({
 
   const canProceed = audioFile !== null || textContent.trim() !== '';
 
+  const getAnalysisSteps = () => {
+    const demoMode = localStorage.getItem('demoMode') === 'true';
+    const hasGemini = !demoMode && geminiConfigured;
+    
+    if (textContent.trim() || textFile) {
+      return [
+        { 
+          id: 'text-validation', 
+          label: 'Validation du contenu texte', 
+          status: 'pending' as const, 
+          api: 'Traitement local',
+          duration: 1500
+        },
+        { 
+          id: 'speaker-detection', 
+          label: 'Détection des intervenants', 
+          status: 'pending' as const, 
+          api: 'Algorithme local',
+          duration: 2000
+        },
+        { 
+          id: 'text-analysis', 
+          label: 'Analyse sémantique avancée', 
+          status: 'pending' as const, 
+          api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
+          duration: hasGemini ? 4000 : 2500
+        },
+        { 
+          id: 'key-extraction', 
+          label: 'Extraction des points clés', 
+          status: 'pending' as const, 
+          api: hasGemini ? 'Gemini 1.5 Pro' : 'Algorithme local',
+          duration: hasGemini ? 3000 : 2000
+        },
+        { 
+          id: 'cost-calculation', 
+          label: 'Calcul des coûts et tokens', 
+          status: 'pending' as const, 
+          api: 'Traitement local',
+          duration: 1000
+        }
+      ];
+    } else if (audioFile) {
+      const fileSizeMB = audioFile.size / (1024 * 1024);
+      const baseTranscriptionTime = Math.max(3000, fileSizeMB * 1000); // 1s par MB minimum 3s
+      
+      return [
+        { 
+          id: 'file-validation', 
+          label: 'Validation du fichier audio', 
+          status: 'pending' as const, 
+          api: 'Traitement local',
+          duration: 1000
+        },
+        { 
+          id: 'audio-preprocessing', 
+          label: 'Préparation pour transcription', 
+          status: 'pending' as const, 
+          api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration',
+          duration: 2000
+        },
+        { 
+          id: 'transcription', 
+          label: 'Transcription audio vers texte', 
+          status: 'pending' as const, 
+          api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées',
+          duration: baseTranscriptionTime
+        },
+        { 
+          id: 'speaker-analysis', 
+          label: 'Analyse des intervenants', 
+          status: 'pending' as const, 
+          api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local',
+          duration: 2500
+        },
+        { 
+          id: 'quality-check', 
+          label: 'Vérification de la qualité', 
+          status: 'pending' as const, 
+          api: 'Algorithme local',
+          duration: 1500
+        }
+      ];
+    }
+    return [];
+  };
+
   const handleNextWithProgress = async () => {
     if (!canProceed) return;
 
     setIsProcessing(true);
+    setAnalysisProgress(0);
     
-    // Déterminer les étapes selon le type de contenu
-    const demoMode = localStorage.getItem('demoMode') === 'true';
-    const hasGemini = !demoMode && geminiConfigured;
-    
-    let steps: ProcessingStep[] = [];
-
-    if (textContent.trim() || textFile) {
-      steps = [
-        { id: 'text-validation', label: 'Validation du contenu texte', status: 'pending', api: 'Traitement local' },
-        { id: 'speaker-detection', label: 'Détection des intervenants', status: 'pending', api: 'Algorithme local' },
-        { id: 'text-analysis', label: 'Analyse sémantique', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration' },
-        { id: 'preparation', label: 'Préparation pour l\'étape suivante', status: 'pending', api: 'Traitement local' }
-      ];
-    } else if (audioFile) {
-      steps = [
-        { id: 'file-validation', label: 'Validation du fichier audio', status: 'pending', api: 'Traitement local' },
-        { id: 'audio-processing', label: 'Préparation pour transcription', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration' },
-        { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
-        { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
-      ];
-    }
-
+    const steps = getAnalysisSteps();
     setProcessingSteps(steps);
+    setCurrentStepIndex(0);
 
-    // Simuler la progression
+    console.log('🚀 Début de l\'analyse détaillée avec', steps.length, 'étapes');
+
+    // Exécuter chaque étape avec sa durée spécifique
     for (let i = 0; i < steps.length; i++) {
-      setProcessingSteps(prev => prev.map((step, index) => ({
-        ...step,
+      const step = steps[i];
+      
+      // Marquer l'étape comme en cours
+      setProcessingSteps(prev => prev.map((s, index) => ({
+        ...s,
         status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
       })));
-
-      // Temps d'attente variable selon l'étape
-      const delay = step => {
-        if (step.id.includes('transcription')) return 3000;
-        if (step.id.includes('analysis')) return 2000;
-        return 1500;
-      };
-
-      await new Promise(resolve => setTimeout(resolve, delay(steps[i])));
+      
+      setCurrentStepIndex(i);
+      
+      console.log(`⏳ Étape ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms)`);
+      
+      // Simuler la progression de l'étape avec des micro-updates
+      const stepDuration = step.duration || 2000;
+      const updateInterval = 100; // Mise à jour toutes les 100ms
+      const updates = stepDuration / updateInterval;
+      
+      for (let j = 0; j <= updates; j++) {
+        const stepProgress = j / updates;
+        const globalProgress = ((i + stepProgress) / steps.length) * 100;
+        setAnalysisProgress(globalProgress);
+        
+        if (j < updates) {
+          await new Promise(resolve => setTimeout(resolve, updateInterval));
+        }
+      }
+      
+      // Marquer l'étape comme terminée
+      setProcessingSteps(prev => prev.map((s, index) => ({
+        ...s,
+        status: index <= i ? 'completed' : 'pending'
+      })));
     }
 
-    // Marquer toutes les étapes comme terminées
-    setProcessingSteps(prev => prev.map(step => ({ ...step, status: 'completed' })));
+    console.log('✅ Analyse terminée, passage à l\'étape suivante');
     
     // Attendre un peu puis passer à l'étape suivante
     setTimeout(() => {
@@ -184,54 +289,58 @@ const Step1: React.FC<Step1Props> = ({
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Traitement en cours
+            Analyse en cours
           </h2>
           <p className="text-lg text-gray-600">
-            Préparation de votre contenu pour l'analyse
+            Traitement intelligent de votre contenu
           </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <div className="mb-6">
+          {/* Progression globale */}
+          <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Progression</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Progression globale</h3>
               <span className="text-sm text-gray-500">
-                {Math.round((processingSteps.filter(s => s.status === 'completed').length / processingSteps.length) * 100)}%
+                {Math.round(analysisProgress)}%
               </span>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
               <div 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
-                style={{ 
-                  width: `${(processingSteps.filter(s => s.status === 'completed').length / processingSteps.length) * 100}%` 
-                }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 h-4 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${analysisProgress}%` }}
               ></div>
+            </div>
+            
+            <div className="text-sm text-gray-600 text-center">
+              Étape {currentStepIndex + 1} sur {processingSteps.length}
             </div>
           </div>
 
+          {/* Étapes détaillées */}
           <div className="space-y-4">
             {processingSteps.map((step, index) => (
               <div 
                 key={step.id}
-                className={`flex items-center space-x-4 p-4 rounded-lg transition-all ${
-                  step.status === 'processing' ? 'bg-blue-50 border border-blue-200' :
+                className={`flex items-center space-x-4 p-4 rounded-lg transition-all duration-300 ${
+                  step.status === 'processing' ? 'bg-blue-50 border border-blue-200 scale-105' :
                   step.status === 'completed' ? 'bg-green-50 border border-green-200' :
                   'bg-gray-50 border border-gray-200'
                 }`}
               >
                 <div className="flex-shrink-0">
                   {step.status === 'processing' ? (
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
                   ) : step.status === 'completed' ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-6 h-6 text-green-600" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
+                    <div className="w-6 h-6 rounded-full border-2 border-gray-300"></div>
                   )}
                 </div>
                 
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-1">
                     <h4 className={`font-medium ${
                       step.status === 'processing' ? 'text-blue-900' :
                       step.status === 'completed' ? 'text-green-900' :
@@ -241,7 +350,7 @@ const Step1: React.FC<Step1Props> = ({
                     </h4>
                     
                     {step.api && (
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
                         step.api.includes('démonstration') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
@@ -253,14 +362,40 @@ const Step1: React.FC<Step1Props> = ({
                   
                   {step.status === 'processing' && (
                     <div className="mt-2">
-                      <div className="w-full bg-blue-200 rounded-full h-1">
-                        <div className="bg-blue-600 h-1 rounded-full animate-pulse w-3/4"></div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4"></div>
                       </div>
+                    </div>
+                  )}
+                  
+                  {step.status === 'completed' && (
+                    <div className="text-xs text-green-600 mt-1">
+                      ✓ Terminé
                     </div>
                   )}
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Informations sur le traitement */}
+          <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Traitement en cours</h4>
+            <div className="text-sm text-blue-700 space-y-1">
+              {textContent.trim() ? (
+                <>
+                  <p>• Analyse de {textContent.length} caractères de texte</p>
+                  <p>• Détection automatique des intervenants</p>
+                  <p>• Extraction intelligente des points clés</p>
+                </>
+              ) : audioFile ? (
+                <>
+                  <p>• Traitement du fichier audio: {audioFile.name}</p>
+                  <p>• Taille: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p>• Transcription multimodale avec IA</p>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
