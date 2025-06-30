@@ -30,14 +30,14 @@ import { GeminiServiceFactory } from './utils/geminiService';
 import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause } from 'lucide-react';
 
 const initialSteps: Step[] = [
-  { id: 1, title: 'Import', description: 'Audio/YouTube/URL/Texte', completed: false, active: true },
-  { id: 2, title: 'Analyse', description: 'Points clés & coût', completed: false, active: false },
-  { id: 3, title: 'Paiement', description: 'Validation & acceptation', completed: false, active: false },
-  { id: 4, title: 'Transcription', description: 'Édition complète', completed: false, active: false },
-  { id: 5, title: 'Structure', description: 'Titre & aperçu', completed: false, active: false },
-  { id: 6, title: 'Format', description: 'Type & ton', completed: false, active: false },
-  { id: 7, title: 'Génération', description: 'Contenu enrichi', completed: false, active: false },
-  { id: 8, title: 'Export', description: 'Publication & partage', completed: false, active: false }
+  { id: 1, title: 'Import', description: 'Audio/Text content', completed: false, active: true },
+  { id: 2, title: 'Analysis', description: 'Key points & cost', completed: false, active: false },
+  { id: 3, title: 'Payment', description: 'Validation & acceptance', completed: false, active: false },
+  { id: 4, title: 'Transcription', description: 'Complete editing', completed: false, active: false },
+  { id: 5, title: 'Structure', description: 'Title & overview', completed: false, active: false },
+  { id: 6, title: 'Format', description: 'Type & tone', completed: false, active: false },
+  { id: 7, title: 'Generation', description: 'Enriched content', completed: false, active: false },
+  { id: 8, title: 'Export', description: 'Publication & sharing', completed: false, active: false }
 ];
 
 const initialAppState: AppState = {
@@ -56,7 +56,7 @@ const initialAppState: AppState = {
     summary: '',
     format: 'article',
     tone: 'professional',
-    language: 'fr'
+    language: 'en'
   },
   generatedContent: '',
   paymentInfo: {
@@ -85,31 +85,31 @@ function App() {
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
 
-  // Fonction pour réinitialiser complètement l'application
+  // Function to completely reset the application
   const resetAppState = () => {
-    console.log('🔄 Réinitialisation complète de l\'application');
+    console.log('🔄 Complete application reset');
     
-    // Générer un nouvel ID de session pour forcer le refresh
+    // Generate new session ID to force refresh
     const newSessionId = Date.now().toString();
     setAnalysisSessionId(newSessionId);
     
-    // Réinitialiser l'état de l'application
+    // Reset application state
     setAppState({
       ...initialAppState,
       user: appState.user,
       isAuthenticated: appState.isAuthenticated
     });
     
-    // Réinitialiser les étapes
+    // Reset steps
     setSteps(initialSteps);
     
-    // Effacer les erreurs
+    // Clear errors
     setApiKeyError('');
     
-    console.log('✅ Application réinitialisée avec session ID:', newSessionId);
+    console.log('✅ Application reset with session ID:', newSessionId);
   };
 
-  // Mettre à jour l'état de l'application avec les données d'authentification
+  // Update application state with authentication data
   useEffect(() => {
     setAppState(prev => ({
       ...prev,
@@ -117,14 +117,14 @@ function App() {
       isAuthenticated
     }));
 
-    // Configurer Gemini si une clé API Google AI est disponible
+    // Configure Gemini if Google AI API key is available
     if (user && apiKeys.googleAI && apiKeys.googleAI.enabled && apiKeys.googleAI.key) {
       setApiKey(apiKeys.googleAI.key);
       setGeminiConfigured(true);
       setApiKeyError('');
       setDemoMode(false);
     } else {
-      // Fallback vers l'ancienne méthode pour la compatibilité
+      // Fallback to old method for compatibility
       const storedApiKey = localStorage.getItem('google_ai_api_key');
       if (storedApiKey && storedApiKey.startsWith('AIza')) {
         setApiKey(storedApiKey);
@@ -181,21 +181,21 @@ function App() {
   };
 
   const handleLogin = (userData: User) => {
-    // La gestion de l'authentification est maintenant dans useAuth
+    // Authentication management is now in useAuth
   };
 
   const handleLogout = async () => {
     try {
       await signOut();
-      // Réinitialiser les états locaux
+      // Reset local states
       setApiKey('');
       setGeminiConfigured(false);
       setApiKeyError('');
       setDemoMode(true);
-      // Réinitialiser complètement l'application
+      // Complete application reset
       resetAppState();
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error('Logout error:', error);
     }
   };
 
@@ -218,7 +218,7 @@ function App() {
     try {
       await saveApiKeys(newApiKeys);
       
-      // Mettre à jour la configuration Gemini
+      // Update Gemini configuration
       if (newApiKeys.googleAI && newApiKeys.googleAI.enabled) {
         setApiKey(newApiKeys.googleAI.key);
         setGeminiConfigured(true);
@@ -230,8 +230,8 @@ function App() {
         setDemoMode(true);
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des clés API:', error);
-      setApiKeyError('Erreur lors de la sauvegarde des clés API');
+      console.error('Error saving API keys:', error);
+      setApiKeyError('Error saving API keys');
     }
   };
 
@@ -241,7 +241,7 @@ function App() {
            error.message.includes('exceeded your current quota');
   };
 
-  // Step 1 handlers avec réinitialisation complète
+  // Step 1 handlers with complete reset
   const handleUrlChange = (url: string) => {
     setAppState(prev => ({ ...prev, audioUrl: url }));
   };
@@ -251,13 +251,13 @@ function App() {
   };
 
   const handleFileUpload = (file: File) => {
-    console.log('📁 Nouveau fichier uploadé:', file.name);
-    // Réinitialiser complètement l'état pour le nouveau fichier
+    console.log('📁 New file uploaded:', file.name);
+    // Complete state reset for new file
     resetAppState();
     setAppState(prev => ({ 
       ...prev, 
       audioFile: file,
-      // Effacer les autres sources
+      // Clear other sources
       textContent: '',
       textFile: null,
       audioUrl: '',
@@ -269,15 +269,15 @@ function App() {
 
   const handleTextContentChange = (text: string) => {
     if (text !== appState.textContent) {
-      console.log('📝 Nouveau contenu texte saisi');
-      // Si c'est un changement significatif, réinitialiser
+      console.log('📝 New text content entered');
+      // If it's a significant change, reset
       if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
         resetAppState();
       }
       setAppState(prev => ({ 
         ...prev, 
         textContent: text,
-        // Effacer les autres sources si on saisit du texte
+        // Clear other sources if entering text
         audioFile: text.trim() ? null : prev.audioFile,
         textFile: text.trim() ? null : prev.textFile,
         user: appState.user,
@@ -287,13 +287,13 @@ function App() {
   };
 
   const handleTextFileUpload = (file: File) => {
-    console.log('📄 Nouveau fichier texte uploadé:', file.name);
-    // Réinitialiser complètement l'état pour le nouveau fichier
+    console.log('📄 New text file uploaded:', file.name);
+    // Complete state reset for new file
     resetAppState();
     setAppState(prev => ({ 
       ...prev, 
       textFile: file,
-      // Effacer les autres sources
+      // Clear other sources
       audioFile: null,
       audioUrl: '',
       youtubeUrl: '',
@@ -301,7 +301,7 @@ function App() {
       isAuthenticated: appState.isAuthenticated
     }));
     
-    // Lire le contenu du fichier texte
+    // Read text file content
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
@@ -311,43 +311,43 @@ function App() {
   };
 
   const handleStep1Next = async () => {
-    console.log('🚀 Début de l\'analyse - Session ID:', analysisSessionId);
+    console.log('🚀 Starting analysis - Session ID:', analysisSessionId);
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
-    // Durée d'analyse plus réaliste selon le type de contenu
+    // More realistic analysis duration based on content type
     const getAnalysisDuration = () => {
       if (appState.textContent.trim()) {
         const textLength = appState.textContent.length;
-        if (textLength < 1000) return 3000; // 3 secondes pour texte court
-        if (textLength < 5000) return 6000; // 6 secondes pour texte moyen
-        return 10000; // 10 secondes pour texte long
+        if (textLength < 1000) return 3000; // 3 seconds for short text
+        if (textLength < 5000) return 6000; // 6 seconds for medium text
+        return 10000; // 10 seconds for long text
       } else if (appState.audioFile) {
         const fileSizeMB = appState.audioFile.size / (1024 * 1024);
-        if (fileSizeMB < 5) return 8000; // 8 secondes pour petit fichier
-        if (fileSizeMB < 20) return 15000; // 15 secondes pour fichier moyen
-        return 25000; // 25 secondes pour gros fichier
+        if (fileSizeMB < 5) return 8000; // 8 seconds for small file
+        if (fileSizeMB < 20) return 15000; // 15 seconds for medium file
+        return 25000; // 25 seconds for large file
       }
-      return 5000; // Défaut
+      return 5000; // Default
     };
 
     const analysisDuration = getAnalysisDuration();
-    console.log(`⏱️ Durée d'analyse estimée: ${analysisDuration}ms`);
+    console.log(`⏱️ Estimated analysis duration: ${analysisDuration}ms`);
     
     try {
       let transcriptionResult;
       
-      // Attendre la durée d'analyse réaliste
+      // Wait for realistic analysis duration
       await simulateDelay(analysisDuration);
       
-      // Si du texte est fourni, l'utiliser directement
+      // If text is provided, use it directly
       if (appState.textContent.trim()) {
-        console.log('📝 Traitement du contenu texte fourni...');
+        console.log('📝 Processing provided text content...');
         
         const textLength = appState.textContent.length;
         const estimatedTokens = Math.floor(textLength / 4);
         const estimatedCost = estimatedTokens * 0.0001;
         
-        // Parser le texte pour détecter les speakers
+        // Parse text to detect speakers
         const parsedData = parseTranscriptionWithSpeakers(appState.textContent);
         
         transcriptionResult = {
@@ -355,32 +355,32 @@ function App() {
           language: detectLanguage(appState.textContent),
           speakers: parsedData.speakers.map(speaker => ({
             ...speaker,
-            speakingTime: Math.floor(Math.random() * 300) + 60 // Temps de parole simulé
+            speakingTime: Math.floor(Math.random() * 300) + 60 // Simulated speaking time
           })),
           timestamps: parsedData.timestamps,
-          duration: Math.max(600, textLength * 0.05), // Durée estimée basée sur la longueur
+          duration: Math.max(600, textLength * 0.05), // Estimated duration based on length
           tokenCount: estimatedTokens,
           estimatedCost: estimatedCost
         };
         
-        console.log('✅ Contenu texte traité');
+        console.log('✅ Text content processed');
       } else {
-        // Utiliser l'API Gemini si configurée et en mode production
+        // Use Gemini API if configured and in production mode
         if (!demoMode && geminiConfigured && apiKey) {
           try {
-            console.log('🚀 Utilisation de l\'API Gemini pour la transcription...');
+            console.log('🚀 Using Gemini API for transcription...');
             
             const transcriptionService = TranscriptionServiceFactory.create(apiKey);
             let transcriptionText = '';
             
             if (appState.audioFile) {
-              console.log('🎵 Transcription du fichier audio:', appState.audioFile.name);
+              console.log('🎵 Transcribing audio file:', appState.audioFile.name);
               transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             } else if (appState.audioUrl) {
-              console.log('🔗 Transcription depuis URL audio:', appState.audioUrl);
+              console.log('🔗 Transcribing from audio URL:', appState.audioUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
             } else if (appState.youtubeUrl) {
-              console.log('📺 Transcription depuis YouTube:', appState.youtubeUrl);
+              console.log('📺 Transcribing from YouTube:', appState.youtubeUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
@@ -402,30 +402,30 @@ function App() {
                 estimatedCost: estimatedCost
               };
               
-              console.log('✅ Transcription Gemini réussie');
+              console.log('✅ Gemini transcription successful');
             } else {
-              throw new Error('Transcription vide reçue de Gemini');
+              throw new Error('Empty transcription received from Gemini');
             }
             
           } catch (error) {
-            console.error('❌ Erreur Gemini:', error);
+            console.error('❌ Gemini error:', error);
             
-            // Vérifier si c'est une erreur de quota
+            // Check if it's a quota error
             if (isQuotaError(error as Error)) {
-              setApiKeyError('Quota API dépassé. Veuillez vérifier votre clé API ou passer en mode démo.');
+              setApiKeyError('API quota exceeded. Please check your API key or switch to demo mode.');
               setDemoMode(true);
               setGeminiConfigured(false);
             } else {
-              setApiKeyError(`Erreur API: ${(error as Error).message}`);
+              setApiKeyError(`API error: ${(error as Error).message}`);
             }
             
-            // Fallback vers les données de démonstration
-            console.log('🔄 Fallback vers les données de démonstration');
+            // Fallback to demo data
+            console.log('🔄 Fallback to demo data');
             transcriptionResult = generateMockTranscription();
           }
         } else {
-          // Mode démonstration
-          console.log('🎭 Mode démonstration - utilisation des données simulées');
+          // Demo mode
+          console.log('🎭 Demo mode - using simulated data');
           transcriptionResult = generateMockTranscription();
         }
       }
@@ -436,14 +436,14 @@ function App() {
         isProcessing: false 
       }));
       
-      // Passer automatiquement à l'étape suivante après l'analyse
+      // Automatically move to next step after analysis
       setTimeout(() => {
         goToNextStep();
       }, 500);
       
     } catch (error) {
-      console.error('Erreur lors de l\'analyse:', error);
-      setApiKeyError(`Erreur lors de l'analyse: ${(error as Error).message}`);
+      console.error('Analysis error:', error);
+      setApiKeyError(`Analysis error: ${(error as Error).message}`);
       setAppState(prev => ({ ...prev, isProcessing: false }));
     }
   };
@@ -477,10 +477,10 @@ function App() {
   };
 
   const handleStep4Next = async () => {
-    // Si on n'a pas encore de points clés et qu'on a Gemini configuré, les extraire automatiquement
+    // If we don't have key points yet and Gemini is configured, extract them automatically
     if (appState.keyPoints.length === 0 && !demoMode && geminiConfigured && apiKey && appState.transcription) {
       try {
-        console.log('🎯 Extraction automatique des points clés avec Gemini...');
+        console.log('🎯 Automatic key points extraction with Gemini...');
         
         const geminiService = GeminiServiceFactory.create(apiKey);
         const extractedKeyPoints = await geminiService.extractKeyPoints(appState.transcription.text);
@@ -490,18 +490,18 @@ function App() {
             id: `auto_${Date.now()}_${index}`,
             text: point,
             timestamp: 0,
-            speaker: appState.transcription?.speakers[0]?.name || 'Intervenant',
+            speaker: appState.transcription?.speakers[0]?.name || 'Speaker',
             category: 'insight' as const,
             editable: true,
             webLinks: []
           }));
           
           setAppState(prev => ({ ...prev, keyPoints: formattedKeyPoints }));
-          console.log('✅ Points clés extraits automatiquement:', extractedKeyPoints.length);
+          console.log('✅ Key points automatically extracted:', extractedKeyPoints.length);
         }
       } catch (error) {
-        console.error('❌ Erreur lors de l\'extraction automatique des points clés:', error);
-        // Continuer sans points clés automatiques
+        console.error('❌ Error during automatic key points extraction:', error);
+        // Continue without automatic key points
       }
     }
     
@@ -531,13 +531,13 @@ function App() {
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
-      // Durée de régénération réaliste
-      const regenerationDuration = 8000; // 8 secondes
+      // Realistic regeneration duration
+      const regenerationDuration = 8000; // 8 seconds
       await simulateDelay(regenerationDuration);
       
-      // Utiliser l'API Gemini si configurée et en mode production
+      // Use Gemini API if configured and in production mode
       if (!demoMode && geminiConfigured && apiKey && appState.transcription) {
-        console.log('🚀 Génération de contenu avec Gemini...');
+        console.log('🚀 Content generation with Gemini...');
         
         const geminiService = GeminiServiceFactory.create(apiKey);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
@@ -554,10 +554,10 @@ function App() {
           isProcessing: false 
         }));
         
-        console.log('✅ Contenu généré avec Gemini');
+        console.log('✅ Content generated with Gemini');
       } else {
-        // Mode démonstration
-        console.log('🎭 Génération de contenu en mode démonstration');
+        // Demo mode
+        console.log('🎭 Content generation in demo mode');
         
         const content = generateMockContent(
           appState.contentSettings.format, 
@@ -571,10 +571,10 @@ function App() {
         }));
       }
     } catch (error) {
-      console.error('❌ Erreur lors de la génération:', error);
-      setApiKeyError(`Erreur génération: ${(error as Error).message}`);
+      console.error('❌ Generation error:', error);
+      setApiKeyError(`Generation error: ${(error as Error).message}`);
       
-      // Fallback vers le contenu de démonstration
+      // Fallback to demo content
       const content = generateMockContent(
         appState.contentSettings.format, 
         appState.contentSettings.tone
@@ -700,10 +700,10 @@ function App() {
   };
 
   const getGeminiStatusText = () => {
-    if (demoMode) return 'Mode démo';
-    if (apiKeyError) return 'Erreur API';
+    if (demoMode) return 'Demo Mode';
+    if (apiKeyError) return 'API Error';
     if (geminiConfigured) return 'Gemini 1.5 Pro';
-    return 'Mode démo';
+    return 'Demo Mode';
   };
 
   if (authLoading) {
@@ -711,7 +711,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -721,23 +721,23 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <button
                 onClick={resetAppState}
                 className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all"
-                title="Nouvelle analyse"
+                title="New Analysis"
               >
                 <span className="text-white font-bold text-sm">TS</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Twitter Space Synthesizer</h1>
-                <p className="text-sm text-gray-500">Transformez les discussions audio en contenu professionnel</p>
+                <h1 className="text-xl font-bold text-gray-900">Content Synthesizer</h1>
+                <p className="text-sm text-gray-500">Transform audio discussions into professional content</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Mode démo toggle */}
+              {/* Demo mode toggle */}
               <button
                 onClick={toggleDemoMode}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
@@ -745,11 +745,11 @@ function App() {
                     ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
                     : 'bg-green-100 text-green-700 hover:bg-green-200'
                 }`}
-                title={demoMode ? 'Activer le mode production' : 'Activer le mode démo'}
+                title={demoMode ? 'Enable production mode' : 'Enable demo mode'}
               >
                 {demoMode ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
                 <span className="text-sm font-medium">
-                  {demoMode ? 'Démo' : 'Prod'}
+                  {demoMode ? 'Demo' : 'Prod'}
                 </span>
               </button>
 
@@ -780,7 +780,7 @@ function App() {
                     <button
                       onClick={() => setShowApiKeyModal(true)}
                       className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Configurer Gemini 1.5 Pro"
+                      title="Configure Gemini 1.5 Pro"
                     >
                       <Settings className="w-4 h-4" />
                     </button>
@@ -790,13 +790,13 @@ function App() {
                     className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
-                    Se connecter
+                    Sign In
                   </button>
                 </>
               )}
               
               <div className="text-sm text-gray-500">
-                Étape {appState.currentStep} sur 8
+                Step {appState.currentStep} of 8
               </div>
             </div>
           </div>
@@ -811,7 +811,7 @@ function App() {
                   onClick={() => isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
                   className="text-sm text-red-600 hover:text-red-800 underline ml-2"
                 >
-                  Configurer une nouvelle clé API
+                  Configure new API key
                 </button>
               </div>
             </div>
@@ -823,13 +823,13 @@ function App() {
               <div className="flex items-center space-x-2">
                 <Play className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm text-yellow-700">
-                  Mode démonstration activé - Toutes les fonctionnalités sont simulées
+                  Demo mode enabled - All features are simulated
                 </span>
                 <button
                   onClick={toggleDemoMode}
                   className="text-sm text-yellow-600 hover:text-yellow-800 underline ml-2"
                 >
-                  Passer en mode production
+                  Switch to production mode
                 </button>
               </div>
             </div>
@@ -845,14 +845,14 @@ function App() {
       />
 
       {/* Main Content */}
-      <main className="py-8">
+      <main className="flex-1">
         {renderCurrentStep()}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-6">
+      <footer className="bg-white border-t border-gray-200 py-4">
         <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-500">
-          <p>© 2025 Twitter Space Synthesizer. Transformez les discussions en contenu.</p>
+          <p>© 2025 Content Synthesizer. Transform discussions into content.</p>
         </div>
       </footer>
 

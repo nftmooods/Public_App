@@ -27,23 +27,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     const newErrors: Record<string, string> = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email requis';
+      newErrors.email = 'Email required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = 'Invalid email';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Mot de passe requis';
+      newErrors.password = 'Password required';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Minimum 6 caractères';
+      newErrors.password = 'Minimum 6 characters';
     }
 
     if (isSignUp) {
       if (!formData.name) {
-        newErrors.name = 'Nom requis';
+        newErrors.name = 'Name required';
       }
       if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+        newErrors.confirmPassword = 'Passwords do not match';
       }
     }
 
@@ -66,7 +66,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
       onClose();
     } catch (error: any) {
       setErrors({ 
-        general: error.message || 'Erreur de connexion. Veuillez réessayer.' 
+        general: error.message || 'Connection error. Please try again.' 
       });
     }
   };
@@ -87,7 +87,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {isSignUp ? 'Créer un compte' : 'Se connecter'}
+              {isSignUp ? 'Create Account' : 'Sign In'}
             </h2>
           </div>
           <button
@@ -104,11 +104,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
               <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Utilisez vos propres clés API
+                  Use Your Own API Keys
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Connectez-vous pour configurer vos clés API personnelles et utiliser l'outil gratuitement 
-                  avec vos propres quotas Google AI, OpenAI, etc.
+                  Sign in to configure your personal API keys and use the tool for free 
+                  with your own Google AI, OpenAI, etc. quotas.
                 </p>
               </div>
             </div>
@@ -127,7 +127,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             {isSignUp && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom complet
+                  Full Name
                 </label>
                 <div className="relative">
                   <input
@@ -137,7 +137,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-12 ${
                       errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
-                    placeholder="Votre nom"
+                    placeholder="Your name"
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 </div>
@@ -159,7 +159,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pl-12 ${
                     errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
                   }`}
-                  placeholder="votre@email.com"
+                  placeholder="your@email.com"
                 />
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
@@ -170,7 +170,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mot de passe
+                Password
               </label>
               <div className="relative">
                 <input
@@ -199,7 +199,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             {isSignUp && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirmer le mot de passe
+                  Confirm Password
                 </label>
                 <div className="relative">
                   <input
@@ -235,7 +235,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
               ) : (
                 <LogIn className="w-5 h-5 mr-2" />
               )}
-              {isLoading ? 'Connexion...' : isSignUp ? 'Créer le compte' : 'Se connecter'}
+              {isLoading ? 'Connecting...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
@@ -249,20 +249,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               {isSignUp 
-                ? 'Déjà un compte ? Se connecter' 
-                : 'Pas de compte ? Créer un compte'
+                ? 'Already have an account? Sign in' 
+                : 'No account? Create one'
               }
             </button>
           </div>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Avantages du compte :</h4>
+            <h4 className="font-medium text-gray-900 mb-2">Account Benefits:</h4>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Configuration de vos propres clés API</li>
-              <li>• Utilisation gratuite avec vos quotas</li>
-              <li>• Sauvegarde de vos projets</li>
-              <li>• Historique des transcriptions</li>
-              <li>• Support prioritaire</li>
+              <li>• Configure your own API keys</li>
+              <li>• Free usage with your quotas</li>
+              <li>• Save your projects</li>
+              <li>• Transcription history</li>
+              <li>• Priority support</li>
             </ul>
           </div>
         </div>

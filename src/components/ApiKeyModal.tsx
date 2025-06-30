@@ -46,7 +46,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Configuration Gemini 1.5 Pro
+              Gemini 1.5 Pro Configuration
             </h2>
           </div>
           <button
@@ -64,11 +64,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                 <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-800 mb-1">
-                    Problème avec la clé API
+                    API Key Issue
                   </h3>
                   <p className="text-sm text-red-700">
-                    Votre clé API a dépassé son quota ou n'est plus valide. 
-                    Veuillez configurer une nouvelle clé API ou continuer en mode démo.
+                    Your API key has exceeded its quota or is no longer valid. 
+                    Please configure a new API key or continue in demo mode.
                   </p>
                 </div>
               </div>
@@ -80,11 +80,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
               <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Transcription avancée avec Gemini 1.5 Pro
+                  Advanced Transcription with Gemini 1.5 Pro
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Gemini 1.5 Pro offre une transcription multimodale de haute qualité avec détection automatique 
-                  des intervenants, extraction de points clés et support de nombreuses langues.
+                  Gemini 1.5 Pro offers high-quality multimodal transcription with automatic 
+                  speaker detection, key point extraction, and support for many languages.
                 </p>
               </div>
             </div>
@@ -92,7 +92,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Clé API Google AI
+              Google AI API Key
             </label>
             <div className="relative">
               <input
@@ -116,18 +116,18 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             </div>
             {apiKey && !isValidApiKey(apiKey) && (
               <p className="text-sm text-red-600 mt-1">
-                La clé API doit commencer par "AIza" et faire plus de 20 caractères
+                API key must start with "AIza" and be more than 20 characters
               </p>
             )}
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Comment obtenir votre clé API :</h4>
+            <h4 className="font-medium text-gray-900 mb-2">How to get your API key:</h4>
             <ol className="text-sm text-gray-600 space-y-1">
-              <li>1. Visitez <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center">Google AI Studio <ExternalLink className="w-3 h-3 ml-1" /></a></li>
-              <li>2. Connectez-vous avec votre compte Google</li>
-              <li>3. Créez une nouvelle clé API</li>
-              <li>4. Copiez et collez la clé ici</li>
+              <li>1. Visit <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center">Google AI Studio <ExternalLink className="w-3 h-3 ml-1" /></a></li>
+              <li>2. Sign in with your Google account</li>
+              <li>3. Create a new API key</li>
+              <li>4. Copy and paste the key here</li>
             </ol>
           </div>
 
@@ -135,13 +135,13 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div className="flex items-start space-x-3">
               <Sparkles className="w-5 h-5 text-green-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-green-800 mb-1">Avantages Gemini 1.5 Pro</h4>
+                <h4 className="font-medium text-green-800 mb-1">Gemini 1.5 Pro Benefits</h4>
                 <ul className="text-sm text-green-700 space-y-1">
-                  <li>• Transcription multimodale haute précision</li>
-                  <li>• Détection automatique des intervenants</li>
-                  <li>• Extraction intelligente des points clés</li>
-                  <li>• Support de plus de 100 langues</li>
-                  <li>• Analyse contextuelle avancée</li>
+                  <li>• High-precision multimodal transcription</li>
+                  <li>• Automatic speaker detection</li>
+                  <li>• Intelligent key point extraction</li>
+                  <li>• Support for 100+ languages</li>
+                  <li>• Advanced contextual analysis</li>
                 </ul>
               </div>
             </div>
@@ -151,10 +151,10 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             <div className="flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-yellow-800 mb-1">Mode démonstration</h4>
+                <h4 className="font-medium text-yellow-800 mb-1">Demo Mode</h4>
                 <p className="text-sm text-yellow-700">
-                  Vous pouvez continuer sans clé API pour tester l'application avec des données de démonstration.
-                  Le mode démo simule toutes les fonctionnalités de l'application.
+                  You can continue without an API key to test the application with demo data.
+                  Demo mode simulates all application features.
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
             onClick={handleSkip}
             className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
-            Continuer en mode démo
+            Continue in Demo Mode
           </button>
           <button
             onClick={handleSave}
@@ -177,7 +177,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Configurer Gemini
+            Configure Gemini
           </button>
         </div>
       </div>
