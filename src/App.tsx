@@ -119,6 +119,37 @@ function App() {
     }
   }, []);
 
+  // Écouter les événements de navigation directe en mode démo
+  useEffect(() => {
+    const handleNavigateToStep = (event: CustomEvent) => {
+      if (demoMode) {
+        const targetStep = event.detail;
+        
+        // Marquer toutes les étapes précédentes comme complétées
+        setSteps(prevSteps => 
+          prevSteps.map(step => ({
+            ...step,
+            completed: step.id < targetStep,
+            active: step.id === targetStep
+          }))
+        );
+        
+        // Mettre à jour l'état de l'application
+        setAppState(prev => ({ 
+          ...prev, 
+          currentStep: targetStep,
+          // Ajouter des données de démonstration si nécessaire
+          transcription: targetStep >= 2 ? generateMockTranscription() : null,
+          keyPoints: targetStep >= 4 ? generateMockKeyPoints() : [],
+          generatedContent: targetStep >= 7 ? generateMockContent('article', 'professional') : ''
+        }));
+      }
+    };
+
+    window.addEventListener('navigateToStep', handleNavigateToStep as EventListener);
+    return () => window.removeEventListener('navigateToStep', handleNavigateToStep as EventListener);
+  }, [demoMode]);
+
   const toggleDemoMode = () => {
     const newDemoMode = !demoMode;
     setDemoMode(newDemoMode);
@@ -141,11 +172,22 @@ function App() {
 
   const handleStepClick = (stepId: number) => {
     const canNavigate = steps.find(s => s.id === stepId)?.completed || 
-                       stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
+                       stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1 ||
+                       demoMode; // Permettre la navigation libre en mode démo
     
     if (canNavigate) {
       setAppState(prev => ({ ...prev, currentStep: stepId }));
       updateStepStatus(stepId, false, true);
+      
+      // En mode démo, ajouter des données simulées si nécessaire
+      if (demoMode) {
+        setAppState(prev => ({
+          ...prev,
+          transcription: stepId >= 2 ? generateMockTranscription() : prev.transcription,
+          keyPoints: stepId >= 4 ? generateMockKeyPoints() : prev.keyPoints,
+          generatedContent: stepId >= 7 ? generateMockContent('article', 'professional') : prev.generatedContent
+        }));
+      }
     }
   };
 
@@ -225,26 +267,21 @@ function App() {
         };
         
         console.log('✅ Contenu texte traité');
-      } else {
-        // Utiliser l'API Gemini si configurée et en mode production
+      } else if (appState.audioFile) {
+        // Traitement des fichiers audio
+        console.log('🎵 Traitement du fichier audio:', appState.audioFile.name);
+        
+        // Vérifier les APIs disponibles
         const geminiKey = getApiKeyByProvider('googleAI');
+        const openAIKey = getApiKeyByProvider('openAI');
+        const whisperAvailable = openAIKey && openAIKey.enabled;
+        
         if (!demoMode && geminiKey && geminiKey.enabled) {
           try {
-            console.log('🚀 Utilisation de l\'API Gemini pour la transcription...');
+            console.log('🚀 Utilisation de Gemini 1.5 Pro pour la transcription audio...');
             
             const transcriptionService = TranscriptionServiceFactory.create(geminiKey.api_key);
-            let transcriptionText = '';
-            
-            if (appState.audioFile) {
-              console.log('🎵 Transcription du fichier audio:', appState.audioFile.name);
-              transcriptionText = await transcriptionService.transcribe(appState.audioFile);
-            } else if (appState.audioUrl) {
-              console.log('🔗 Transcription depuis URL audio:', appState.audioUrl);
-              transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
-            } else if (appState.youtubeUrl) {
-              console.log('📺 Transcription depuis YouTube:', appState.youtubeUrl);
-              transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
-            }
+            const transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             
             if (transcriptionText) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
@@ -280,8 +317,24 @@ function App() {
               setApiKeyError(`Erreur API: ${(error as Error).message}`);
             }
             
-            // Fallback vers les données de démonstration
-            console.log('🔄 Fallback vers les données de démonstration');
+            // Fallback vers Whisper si disponible
+            if (whisperAvailable) {
+              console.log('🔄 Fallback vers Whisper API...');
+              // TODO: Implémenter l'appel à Whisper
+              transcriptionResult = generateMockTranscription();
+            } else {
+              console.log('🔄 Fallback vers les données de démonstration');
+              transcriptionResult = generateMockTranscription();
+            }
+          }
+        } else if (!demoMode && whisperAvailable) {
+          try {
+            console.log('🎤 Utilisation de Whisper API pour la transcription...');
+            // TODO: Implémenter l'appel à Whisper
+            transcriptionResult = generateMockTranscription();
+          } catch (error) {
+            console.error('❌ Erreur Whisper:', error);
+            setApiKeyError(`Erreur Whisper: ${(error as Error).message}`);
             transcriptionResult = generateMockTranscription();
           }
         } else {
@@ -290,6 +343,9 @@ function App() {
           await simulateDelay(2000);
           transcriptionResult = generateMockTranscription();
         }
+      } else {
+        // Aucun contenu fourni
+        throw new Error('Aucun contenu fourni pour l\'analyse');
       }
       
       setAppState(prev => ({ 
@@ -389,43 +445,65 @@ function App() {
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
-      // Utiliser l'API Gemini si configurée et en mode production
+      // Utiliser l'API configurée selon les préférences utilisateur
       const geminiKey = getApiKeyByProvider('googleAI');
+      const openAIKey = getApiKeyByProvider('openAI');
+      const anthropicKey = getApiKeyByProvider('anthropic');
+      const mistralKey = getApiKeyByProvider('mistral');
+      
+      let generatedContent = '';
+      
       if (!demoMode && geminiKey && geminiKey.enabled && appState.transcription) {
         console.log('🚀 Génération de contenu avec Gemini...');
         
         const geminiService = GeminiServiceFactory.create(geminiKey.api_key);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
         
-        const generatedContent = await geminiService.generateContent(
+        generatedContent = await geminiService.generateContent(
           appState.transcription.text,
           keyPointsText,
           appState.contentSettings
         );
         
-        setAppState(prev => ({ 
-          ...prev, 
-          generatedContent,
-          isProcessing: false 
-        }));
-        
         console.log('✅ Contenu généré avec Gemini');
+      } else if (!demoMode && openAIKey && openAIKey.enabled) {
+        console.log('🤖 Génération de contenu avec OpenAI...');
+        // TODO: Implémenter l'appel à OpenAI
+        generatedContent = generateMockContent(
+          appState.contentSettings.format, 
+          appState.contentSettings.tone
+        );
+      } else if (!demoMode && anthropicKey && anthropicKey.enabled) {
+        console.log('🎭 Génération de contenu avec Claude...');
+        // TODO: Implémenter l'appel à Claude
+        generatedContent = generateMockContent(
+          appState.contentSettings.format, 
+          appState.contentSettings.tone
+        );
+      } else if (!demoMode && mistralKey && mistralKey.enabled) {
+        console.log('🇫🇷 Génération de contenu avec Mistral...');
+        // TODO: Implémenter l'appel à Mistral
+        generatedContent = generateMockContent(
+          appState.contentSettings.format, 
+          appState.contentSettings.tone
+        );
       } else {
         // Mode démonstration
         console.log('🎭 Génération de contenu en mode démonstration');
         await simulateDelay(2000);
         
-        const content = generateMockContent(
+        generatedContent = generateMockContent(
           appState.contentSettings.format, 
           appState.contentSettings.tone
         );
-        
-        setAppState(prev => ({ 
-          ...prev, 
-          generatedContent: content,
-          isProcessing: false 
-        }));
       }
+      
+      setAppState(prev => ({ 
+        ...prev, 
+        generatedContent,
+        isProcessing: false 
+      }));
+      
     } catch (error) {
       console.error('❌ Erreur lors de la génération:', error);
       setApiKeyError(`Erreur génération: ${(error as Error).message}`);

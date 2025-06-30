@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Link, Mic, ArrowRight, AlertCircle, Sparkles, Youtube, FileText, Type, Loader2, CheckCircle } from 'lucide-react';
+import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Link, Youtube } from 'lucide-react';
 
 interface Step1Props {
   audioUrl: string;
@@ -42,6 +42,10 @@ const Step1: React.FC<Step1Props> = ({
   const [error, setError] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
+  const [activeTab, setActiveTab] = useState<'audio' | 'url' | 'text'>('audio');
+
+  // Vérifier le mode démo
+  const demoMode = localStorage.getItem('demoMode') === 'true';
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -119,57 +123,19 @@ const Step1: React.FC<Step1Props> = ({
     }
   };
 
-  const validateUrl = (url: string) => {
-    if (!url) return true;
-    
-    const twitterSpaceRegex = /^https?:\/\/(twitter\.com|x\.com)\/i\/spaces\/[a-zA-Z0-9]+/;
-    const audioUrlRegex = /^https?:\/\/.+\.(mp3|wav|m4a|mp4)(\?.*)?$/i;
-    
-    return twitterSpaceRegex.test(url) || audioUrlRegex.test(url);
-  };
-
-  const validateYoutubeUrl = (url: string) => {
-    if (!url) return true;
-    
-    const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]+/;
-    return youtubeRegex.test(url);
-  };
-
-  const handleUrlChange = (url: string) => {
-    setError('');
-    onUrlChange(url);
-    
-    if (url && !validateUrl(url)) {
-      setError('Veuillez entrer une URL Twitter Space valide ou un lien direct vers un fichier audio');
-    }
-  };
-
-  const handleYoutubeChange = (url: string) => {
-    setError('');
-    onYoutubeUrlChange(url);
-    
-    if (url && !validateYoutubeUrl(url)) {
-      setError('Veuillez entrer une URL YouTube valide');
-    }
-  };
-
   const handleTextChange = (text: string) => {
     setError('');
     onTextContentChange(text);
   };
 
-  const canProceed = (audioUrl.trim() !== '' && validateUrl(audioUrl)) || 
-                    (youtubeUrl.trim() !== '' && validateYoutubeUrl(youtubeUrl)) || 
-                    audioFile !== null ||
-                    textContent.trim() !== '';
+  const canProceed = audioFile !== null || textContent.trim() !== '';
 
   const handleNextWithProgress = async () => {
     if (!canProceed) return;
 
     setIsProcessing(true);
     
-    // Déterminer les étapes selon le type de contenu
-    const demoMode = localStorage.getItem('demoMode') === 'true';
+    // Déterminer les étapes selon le type de contenu et les APIs configurées
     const hasGemini = !demoMode && geminiConfigured;
     
     let steps: ProcessingStep[] = [];
@@ -184,16 +150,8 @@ const Step1: React.FC<Step1Props> = ({
     } else if (audioFile) {
       steps = [
         { id: 'file-validation', label: 'Validation du fichier audio', status: 'pending', api: 'Traitement local' },
-        { id: 'audio-processing', label: 'Préparation pour transcription', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Mode démonstration' },
-        { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
-        { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
-      ];
-    } else if (audioUrl || youtubeUrl) {
-      const sourceType = youtubeUrl ? 'YouTube' : 'URL audio';
-      steps = [
-        { id: 'url-validation', label: `Validation de l'URL ${sourceType}`, status: 'pending', api: 'Traitement local' },
-        { id: 'download', label: `Téléchargement depuis ${sourceType}`, status: 'pending', api: 'Traitement local' },
-        { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Données simulées' },
+        { id: 'audio-processing', label: 'Préparation pour transcription', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Whisper (si configuré)' },
+        { id: 'transcription', label: 'Transcription audio vers texte', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Whisper API' },
         { id: 'speaker-analysis', label: 'Analyse des intervenants', status: 'pending', api: hasGemini ? 'Gemini 1.5 Pro' : 'Traitement local' }
       ];
     }
@@ -291,6 +249,7 @@ const Step1: React.FC<Step1Props> = ({
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
+                        step.api.includes('Whisper') ? 'bg-blue-100 text-blue-700' :
                         step.api.includes('démonstration') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
@@ -316,18 +275,18 @@ const Step1: React.FC<Step1Props> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Importez votre contenu
-        </h2>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Import Your Content
+        </h1>
         <p className="text-lg text-gray-600">
-          Choisissez votre source : Twitter Space, YouTube, fichier audio/vidéo ou texte
+          Choose your content source to get started with transforming it into structured summaries
         </p>
       </div>
 
       {/* Gemini Status */}
-      {geminiConfigured && (
+      {geminiConfigured && !demoMode && (
         <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
           <div className="flex items-center">
             <Sparkles className="w-5 h-5 text-blue-600 mr-2" />
@@ -347,187 +306,244 @@ const Step1: React.FC<Step1Props> = ({
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Twitter Space URL */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Link className="w-6 h-6 text-blue-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Twitter Space</h3>
-          </div>
-          <div className="space-y-4">
-            <input
-              type="url"
-              placeholder="https://twitter.com/i/spaces/..."
-              value={audioUrl}
-              onChange={(e) => handleUrlChange(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
-                error && audioUrl ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>• URL d'un Twitter Space enregistré</p>
-              <p>• Lien direct vers fichier audio</p>
-            </div>
-          </div>
-        </div>
-
-        {/* YouTube URL */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Youtube className="w-6 h-6 text-red-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">YouTube</h3>
-          </div>
-          <div className="space-y-4">
-            <input
-              type="url"
-              placeholder="https://youtube.com/watch?v=..."
-              value={youtubeUrl}
-              onChange={(e) => handleYoutubeChange(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all ${
-                error && youtubeUrl ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>• Vidéo YouTube publique</p>
-              <p>• Extraction audio automatique</p>
-            </div>
-          </div>
-        </div>
-
-        {/* File Upload */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Upload className="w-6 h-6 text-green-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Fichier audio</h3>
-          </div>
-          <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
-              dragActive 
-                ? 'border-green-500 bg-green-50' 
-                : audioFile
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+      {/* Tabs Navigation */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('audio')}
+            className={`flex-1 flex items-center justify-center px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'audio'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => document.getElementById('file-upload')?.click()}
           >
-            <input
-              id="file-upload"
-              type="file"
-              accept="audio/*,video/mp4"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div className="space-y-2">
-              <Mic className={`w-10 h-10 mx-auto ${
-                audioFile ? 'text-green-600' : 'text-gray-400'
-              }`} />
-              {audioFile ? (
-                <>
-                  <p className="text-sm font-medium text-green-700">
-                    {audioFile.name}
-                  </p>
-                  <p className="text-xs text-green-600">
-                    {(audioFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-600">
-                    Glissez-déposez ou cliquez
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    MP3, WAV, M4A, MP4
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
+            <Upload className="w-4 h-4 mr-2" />
+            Audio File
+          </button>
+          
+          <button
+            disabled
+            className="flex-1 flex items-center justify-center px-6 py-4 text-sm font-medium text-gray-300 bg-gray-50 cursor-not-allowed relative"
+          >
+            <Link className="w-4 h-4 mr-2" />
+            URL Import
+            <span className="absolute top-1 right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+              In Dev
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('text')}
+            className={`flex-1 flex items-center justify-center px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'text'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Text Content
+          </button>
         </div>
 
-        {/* Text Input */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <Type className="w-6 h-6 text-purple-600 mr-3" />
-            <h3 className="text-lg font-semibold text-gray-900">Texte</h3>
-          </div>
-          <div className="space-y-4">
-            {/* File upload for text */}
-            <div
-              className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
-                textDragActive 
-                  ? 'border-purple-500 bg-purple-50' 
-                  : textFile
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
-              }`}
-              onDragEnter={handleTextDrag}
-              onDragLeave={handleTextDrag}
-              onDragOver={handleTextDrag}
-              onDrop={handleTextDrop}
-              onClick={() => document.getElementById('text-file-upload')?.click()}
-            >
-              <input
-                id="text-file-upload"
-                type="file"
-                accept=".txt,.md,text/plain"
-                onChange={handleTextFileChange}
-                className="hidden"
-              />
-              <div className="space-y-1">
-                <FileText className={`w-6 h-6 mx-auto ${
-                  textFile ? 'text-purple-600' : 'text-gray-400'
-                }`} />
-                {textFile ? (
-                  <p className="text-xs font-medium text-purple-700">
-                    {textFile.name}
-                  </p>
+        {/* Tab Content */}
+        <div className="p-8">
+          {activeTab === 'audio' && (
+            <div>
+              <div className="flex items-center mb-4">
+                <Upload className="w-5 h-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Upload Audio File</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Supported formats: MP3, WAV, M4A, MP4 (max 100MB)
+              </p>
+              
+              <div
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer ${
+                  dragActive 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : audioFile
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept="audio/*,video/mp4"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                
+                {audioFile ? (
+                  <div className="space-y-3">
+                    <CheckCircle className="w-12 h-12 text-green-600 mx-auto" />
+                    <div>
+                      <p className="text-lg font-medium text-green-700 mb-1">
+                        {audioFile.name}
+                      </p>
+                      <p className="text-sm text-green-600">
+                        {(audioFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
                 ) : (
-                  <p className="text-xs text-gray-600">
-                    Fichier TXT/MD
-                  </p>
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                      <Upload className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-gray-700 mb-2">
+                        Drop your audio file here
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        or click to browse
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-            
-            {/* Text area */}
-            <textarea
-              placeholder="Ou collez votre texte ici..."
-              value={textContent}
-              onChange={(e) => handleTextChange(e.target.value)}
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm"
-            />
-            
-            {textContent && (
-              <div className="text-xs text-purple-600">
-                {textContent.length} caractères • {textContent.split(' ').length} mots
+          )}
+
+          {activeTab === 'text' && (
+            <div>
+              <div className="flex items-center mb-4">
+                <Type className="w-5 h-5 text-gray-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Text Content</h3>
               </div>
-            )}
-          </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Paste your text content or upload a text file
+              </p>
+              
+              <div className="space-y-4">
+                {/* File upload for text */}
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer ${
+                    textDragActive 
+                      ? 'border-purple-500 bg-purple-50' 
+                      : textFile
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                  }`}
+                  onDragEnter={handleTextDrag}
+                  onDragLeave={handleTextDrag}
+                  onDragOver={handleTextDrag}
+                  onDrop={handleTextDrop}
+                  onClick={() => document.getElementById('text-file-upload')?.click()}
+                >
+                  <input
+                    id="text-file-upload"
+                    type="file"
+                    accept=".txt,.md,text/plain"
+                    onChange={handleTextFileChange}
+                    className="hidden"
+                  />
+                  <div className="space-y-2">
+                    <FileText className={`w-8 h-8 mx-auto ${
+                      textFile ? 'text-purple-600' : 'text-gray-400'
+                    }`} />
+                    {textFile ? (
+                      <p className="text-sm font-medium text-purple-700">
+                        {textFile.name}
+                      </p>
+                    ) : (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          Drop text file here or click to browse
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          TXT, MD files supported
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Text area */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Or paste your text content
+                  </label>
+                  <textarea
+                    placeholder="Paste your text content here..."
+                    value={textContent}
+                    onChange={(e) => handleTextChange(e.target.value)}
+                    rows={8}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                  
+                  {textContent && (
+                    <div className="mt-2 text-sm text-purple-600">
+                      {textContent.length} caractères • {textContent.split(' ').length} mots
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Information Notice */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-800 mb-1">Prochaines étapes</h4>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>• Analyse préliminaire et estimation des coûts</p>
-              <p>• Détection automatique des intervenants (pour audio/vidéo)</p>
-              <p>• Extraction des points clés principaux</p>
-              <p>• Calcul du nombre de tokens et du prix</p>
+      {/* Mode démo - Navigation directe */}
+      {demoMode && (
+        <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-yellow-800 mb-2">Mode démonstration</h4>
+              <p className="text-sm text-yellow-700 mb-4">
+                En mode démo, vous pouvez naviguer directement vers n'importe quelle étape pour explorer l'interface.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { step: 2, label: 'Analyse' },
+                  { step: 3, label: 'Paiement' },
+                  { step: 4, label: 'Points clés' },
+                  { step: 5, label: 'Structure' },
+                  { step: 6, label: 'Format' },
+                  { step: 7, label: 'Génération' },
+                  { step: 8, label: 'Export' }
+                ].map(({ step, label }) => (
+                  <button
+                    key={step}
+                    onClick={() => {
+                      // Simuler les données pour la navigation directe
+                      if (step >= 2) {
+                        // Ajouter des données de transcription simulées
+                        localStorage.setItem('demoTranscription', JSON.stringify({
+                          text: "Transcription de démonstration...",
+                          language: "Français",
+                          speakers: [
+                            { id: 'speaker1', name: 'Alex Chen', color: '#3B82F6', speakingTime: 420 },
+                            { id: 'speaker2', name: 'Sarah Johnson', color: '#10B981', speakingTime: 380 }
+                          ],
+                          duration: 1800,
+                          tokenCount: 1500,
+                          estimatedCost: 0.15
+                        }));
+                      }
+                      
+                      // Naviguer vers l'étape
+                      window.dispatchEvent(new CustomEvent('navigateToStep', { detail: step }));
+                    }}
+                    className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex justify-center">
+      {/* Action Button */}
+      <div className="flex justify-center mt-8">
         <button
           onClick={handleNextWithProgress}
           disabled={!canProceed}
