@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Sparkles } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, LogIn, UserPlus, Sparkles, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (user: any) => void;
+  onLogin?: (user: any) => void;
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => {
+  const { signIn, signUp } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,31 +57,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
     try {
-      // Simuler l'authentification
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const user = {
-        id: Date.now().toString(),
-        email: formData.email,
-        name: isSignUp ? formData.name : formData.email.split('@')[0],
-        createdAt: new Date().toISOString(),
-        apiKeys: {},
-        subscription: {
-          plan: 'free' as const,
-          status: 'active' as const
+      if (isSignUp) {
+        await signUp(formData.email, formData.password, formData.name);
+        // Afficher un message de confirmation d'email si nécessaire
+        alert('Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.');
+      } else {
+        const { user } = await signIn(formData.email, formData.password);
+        if (onLogin && user) {
+          onLogin(user);
         }
-      };
-
-      // Sauvegarder dans localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isAuthenticated', 'true');
-
-      onLogin(user);
+      }
       onClose();
-    } catch (error) {
-      setErrors({ general: 'Erreur de connexion. Veuillez réessayer.' });
+    } catch (error: any) {
+      console.error('Erreur d\'authentification:', error);
+      setErrors({ 
+        general: error.message || 'Erreur de connexion. Veuillez réessayer.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +126,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
           {errors.general && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">{errors.general}</p>
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+                <p className="text-sm text-red-700">{errors.general}</p>
+              </div>
             </div>
           )}
 

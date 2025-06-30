@@ -1,18 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Key, Eye, EyeOff, Save, Plus, Trash2, ExternalLink, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
-import { UserApiKeys, ApiKeyConfig } from '../types';
+import { useApiKeys } from '../hooks/useApiKeys';
+import { UserApiKey } from '../lib/supabase';
 
 interface ApiKeysModalProps {
   isOpen: boolean;
   onClose: () => void;
-  apiKeys: UserApiKeys;
-  onSave: (apiKeys: UserApiKeys) => void;
 }
 
-const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, onSave }) => {
-  const [localApiKeys, setLocalApiKeys] = useState<UserApiKeys>(apiKeys);
+const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose }) => {
+  const { apiKeys, loading, saveApiKey, updateApiKey, deleteApiKey } = useApiKeys();
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, 'success' | 'error' | 'testing'>>({});
+  const [newApiKey, setNewApiKey] = useState({
+    name: '',
+    provider: 'googleAI',
+    usage_type: 'transcription',
+    api_key: '',
+    enabled: true
+  });
 
   if (!isOpen) return null;
 
@@ -25,7 +31,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       helpUrl: 'https://aistudio.google.com/app/apikey',
       validation: (key: string) => key.startsWith('AIza') && key.length > 20,
       icon: '🤖',
-      type: 'single' as const
+      usageTypes: ['transcription', 'content_generation', 'key_extraction']
     },
     {
       id: 'openAI',
@@ -35,7 +41,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       helpUrl: 'https://platform.openai.com/api-keys',
       validation: (key: string) => key.startsWith('sk-') && key.length > 20,
       icon: '🧠',
-      type: 'single' as const
+      usageTypes: ['content_generation', 'key_extraction']
     },
     {
       id: 'anthropic',
@@ -45,7 +51,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       helpUrl: 'https://console.anthropic.com/',
       validation: (key: string) => key.startsWith('sk-ant-') && key.length > 20,
       icon: '🎭',
-      type: 'single' as const
+      usageTypes: ['content_generation', 'key_extraction']
     },
     {
       id: 'mistral',
@@ -55,7 +61,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       helpUrl: 'https://console.mistral.ai/',
       validation: (key: string) => key.length > 10,
       icon: '🇫🇷',
-      type: 'single' as const
+      usageTypes: ['content_generation']
     },
     {
       id: 'elevenLabs',
@@ -65,176 +71,84 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       helpUrl: 'https://elevenlabs.io/app/speech-synthesis',
       validation: (key: string) => key.length > 10,
       icon: '🎵',
-      type: 'single' as const
-    },
-    {
-      id: 'twitterAPI',
-      name: 'Twitter API',
-      description: 'Pour accéder aux Twitter Spaces et publier',
-      placeholder: 'API Key / API Secret',
-      helpUrl: 'https://developer.twitter.com/en/portal/dashboard',
-      validation: (key: string) => key.length > 10,
-      icon: '🐦',
-      type: 'dual' as const
+      usageTypes: ['voice_synthesis']
     }
   ];
 
-  const handleKeyChange = (provider: string, value: string, field?: string) => {
-    setLocalApiKeys(prev => {
-      const providerConfig = apiProviders.find(p => p.id === provider);
-      
-      if (providerConfig?.type === 'dual' && provider === 'twitterAPI') {
-        const currentTwitter = prev.twitterAPI || { apiKey: '', apiSecret: '', enabled: false };
-        return {
-          ...prev,
-          twitterAPI: {
-            ...currentTwitter,
-            [field || 'apiKey']: value
-          }
-        };
-      } else {
-        const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
-        return {
-          ...prev,
-          [provider]: {
-            ...currentConfig,
-            key: value
-          }
-        };
-      }
-    });
+  const usageTypeLabels = {
+    transcription: 'Transcription',
+    content_generation: 'Génération de contenu',
+    key_extraction: 'Extraction de points clés',
+    voice_synthesis: 'Synthèse vocale'
   };
 
-  const toggleEnabled = (provider: string) => {
-    setLocalApiKeys(prev => {
-      if (provider === 'twitterAPI') {
-        const currentTwitter = prev.twitterAPI || { apiKey: '', apiSecret: '', enabled: false };
-        return {
-          ...prev,
-          twitterAPI: {
-            ...currentTwitter,
-            enabled: !currentTwitter.enabled
-          }
-        };
-      } else {
-        const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
-        return {
-          ...prev,
-          [provider]: {
-            ...currentConfig,
-            enabled: !currentConfig.enabled
-          }
-        };
-      }
-    });
+  const handleSaveApiKey = async () => {
+    if (!newApiKey.name.trim() || !newApiKey.api_key.trim()) return;
+
+    try {
+      await saveApiKey(newApiKey);
+      setNewApiKey({
+        name: '',
+        provider: 'googleAI',
+        usage_type: 'transcription',
+        api_key: '',
+        enabled: true
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      alert('Erreur lors de la sauvegarde de la clé API');
+    }
   };
 
-  const toggleShowKey = (provider: string, field?: string) => {
-    const key = field ? `${provider}_${field}` : provider;
+  const handleToggleEnabled = async (apiKey: UserApiKey) => {
+    try {
+      await updateApiKey(apiKey.id, { enabled: !apiKey.enabled });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+    }
+  };
+
+  const handleDeleteApiKey = async (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette clé API ?')) {
+      try {
+        await deleteApiKey(id);
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+      }
+    }
+  };
+
+  const toggleShowKey = (keyId: string) => {
     setShowKeys(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [keyId]: !prev[keyId]
     }));
   };
 
-  const testApiKey = async (provider: string) => {
-    const config = localApiKeys[provider as keyof UserApiKeys];
-    if (!config) return;
-
-    setTestResults(prev => ({ ...prev, [provider]: 'testing' }));
+  const testApiKey = async (apiKey: UserApiKey) => {
+    setTestResults(prev => ({ ...prev, [apiKey.id]: 'testing' }));
 
     try {
       // Simuler le test de la clé API
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Validation basique
-      const providerConfig = apiProviders.find(p => p.id === provider);
-      let isValid = false;
-
-      if (provider === 'twitterAPI' && 'apiKey' in config) {
-        isValid = config.apiKey.length > 10 && config.apiSecret.length > 10;
-      } else if ('key' in config) {
-        isValid = providerConfig ? providerConfig.validation(config.key) : false;
-      }
+      const provider = apiProviders.find(p => p.id === apiKey.provider);
+      const isValid = provider ? provider.validation(apiKey.api_key) : false;
 
       if (isValid) {
-        setTestResults(prev => ({ ...prev, [provider]: 'success' }));
+        setTestResults(prev => ({ ...prev, [apiKey.id]: 'success' }));
+        await updateApiKey(apiKey.id, { is_valid: true, last_tested: new Date().toISOString() });
       } else {
-        setTestResults(prev => ({ ...prev, [provider]: 'error' }));
+        setTestResults(prev => ({ ...prev, [apiKey.id]: 'error' }));
+        await updateApiKey(apiKey.id, { is_valid: false, last_tested: new Date().toISOString() });
       }
     } catch (error) {
-      setTestResults(prev => ({ ...prev, [provider]: 'error' }));
+      setTestResults(prev => ({ ...prev, [apiKey.id]: 'error' }));
+      await updateApiKey(apiKey.id, { is_valid: false, last_tested: new Date().toISOString() });
     }
   };
 
-  const handleSave = () => {
-    // Filtrer les clés vides et nettoyer
-    const filteredKeys = Object.entries(localApiKeys).reduce((acc, [key, value]) => {
-      if (value) {
-        if (key === 'twitterAPI' && 'apiKey' in value) {
-          if (value.apiKey.trim() && value.apiSecret.trim()) {
-            acc[key as keyof UserApiKeys] = {
-              ...value,
-              apiKey: value.apiKey.trim(),
-              apiSecret: value.apiSecret.trim()
-            } as any;
-          }
-        } else if ('key' in value && value.key.trim()) {
-          acc[key as keyof UserApiKeys] = {
-            ...value,
-            key: value.key.trim()
-          } as any;
-        }
-      }
-      return acc;
-    }, {} as UserApiKeys);
-
-    onSave(filteredKeys);
-    onClose();
-  };
-
-  const removeKey = (provider: string) => {
-    setLocalApiKeys(prev => {
-      const updated = { ...prev };
-      delete updated[provider as keyof UserApiKeys];
-      return updated;
-    });
-    setTestResults(prev => {
-      const updated = { ...prev };
-      delete updated[provider];
-      return updated;
-    });
-  };
-
-  const getKeyValue = (provider: string, field?: string) => {
-    const config = localApiKeys[provider as keyof UserApiKeys];
-    if (!config) return '';
-    
-    if (provider === 'twitterAPI' && 'apiKey' in config) {
-      return field === 'apiSecret' ? config.apiSecret : config.apiKey;
-    } else if ('key' in config) {
-      return config.key;
-    }
-    return '';
-  };
-
-  const isEnabled = (provider: string) => {
-    const config = localApiKeys[provider as keyof UserApiKeys];
-    return config ? config.enabled : false;
-  };
-
-  const isValidKey = (provider: string) => {
-    const providerConfig = apiProviders.find(p => p.id === provider);
-    if (!providerConfig) return false;
-
-    if (provider === 'twitterAPI') {
-      const config = localApiKeys.twitterAPI;
-      return config ? config.apiKey.length > 10 && config.apiSecret.length > 10 : false;
-    } else {
-      const config = localApiKeys[provider as keyof UserApiKeys] as ApiKeyConfig;
-      return config ? providerConfig.validation(config.key) : false;
-    }
-  };
+  const selectedProvider = apiProviders.find(p => p.id === newApiKey.provider);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -266,203 +180,220 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                 </h3>
                 <p className="text-sm text-blue-700">
                   Configurez vos clés API personnelles pour utiliser l'outil avec vos propres quotas. 
-                  Vos clés sont stockées localement et ne sont jamais partagées. Vous pouvez activer/désactiver chaque API individuellement.
+                  Vos clés sont stockées de manière sécurisée et ne sont jamais partagées.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6">
-            {apiProviders.map((provider) => {
-              const testResult = testResults[provider.id];
-              const enabled = isEnabled(provider.id);
-              const valid = isValidKey(provider.id);
+          {/* Formulaire d'ajout */}
+          <div className="mb-8 p-6 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Ajouter une nouvelle clé API</h3>
+            
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de la clé
+                </label>
+                <input
+                  type="text"
+                  value={newApiKey.name}
+                  onChange={(e) => setNewApiKey(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ex: Gemini Production"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fournisseur
+                </label>
+                <select
+                  value={newApiKey.provider}
+                  onChange={(e) => setNewApiKey(prev => ({ 
+                    ...prev, 
+                    provider: e.target.value,
+                    usage_type: apiProviders.find(p => p.id === e.target.value)?.usageTypes[0] || 'transcription'
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  {apiProviders.map(provider => (
+                    <option key={provider.id} value={provider.id}>
+                      {provider.icon} {provider.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              return (
-                <div key={provider.id} className="bg-gray-50 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{provider.icon}</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{provider.name}</h3>
-                        <p className="text-sm text-gray-600">{provider.description}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => toggleEnabled(provider.id)}
-                        className={`flex items-center transition-colors ${
-                          enabled ? 'text-green-600' : 'text-gray-400'
-                        }`}
-                        title={enabled ? 'Désactiver' : 'Activer'}
-                      >
-                        {enabled ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
-                        <span className="ml-1 text-sm">
-                          {enabled ? 'Activé' : 'Désactivé'}
-                        </span>
-                      </button>
-                      <a
-                        href={provider.helpUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center text-sm text-blue-600 hover:text-blue-700"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        Obtenir une clé
-                      </a>
-                    </div>
-                  </div>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type d'utilisation
+                </label>
+                <select
+                  value={newApiKey.usage_type}
+                  onChange={(e) => setNewApiKey(prev => ({ ...prev, usage_type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  {selectedProvider?.usageTypes.map(type => (
+                    <option key={type} value={type}>
+                      {usageTypeLabels[type as keyof typeof usageTypeLabels]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Clé API
+                  <a
+                    href={selectedProvider?.helpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 text-blue-600 hover:text-blue-700"
+                  >
+                    <ExternalLink className="w-3 h-3 inline" />
+                  </a>
+                </label>
+                <input
+                  type="password"
+                  value={newApiKey.api_key}
+                  onChange={(e) => setNewApiKey(prev => ({ ...prev, api_key: e.target.value }))}
+                  placeholder={selectedProvider?.placeholder}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
 
-                  <div className="space-y-3">
-                    {provider.type === 'dual' ? (
-                      // Twitter API avec deux champs
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="relative">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            API Key
-                          </label>
-                          <input
-                            type={showKeys[`${provider.id}_apiKey`] ? 'text' : 'password'}
-                            value={getKeyValue(provider.id, 'apiKey')}
-                            onChange={(e) => handleKeyChange(provider.id, e.target.value, 'apiKey')}
-                            placeholder="API Key"
-                            disabled={!enabled}
-                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
-                              !enabled ? 'bg-gray-100 text-gray-400' :
-                              getKeyValue(provider.id, 'apiKey') && !valid 
-                                ? 'border-red-300 bg-red-50' 
-                                : getKeyValue(provider.id, 'apiKey') && valid
-                                  ? 'border-green-300 bg-green-50'
-                                  : 'border-gray-300'
-                            }`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleShowKey(provider.id, 'apiKey')}
-                            className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            {showKeys[`${provider.id}_apiKey`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
+            <button
+              onClick={handleSaveApiKey}
+              disabled={!newApiKey.name.trim() || !newApiKey.api_key.trim()}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter la clé API
+            </button>
+          </div>
+
+          {/* Liste des clés existantes */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Clés API configurées</h3>
+            
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-2">Chargement...</p>
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Key className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Aucune clé API configurée</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {apiKeys.map((apiKey) => {
+                  const provider = apiProviders.find(p => p.id === apiKey.provider);
+                  const testResult = testResults[apiKey.id];
+                  
+                  return (
+                    <div key={apiKey.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{provider?.icon}</span>
+                          <div>
+                            <h4 className="font-medium text-gray-900">{apiKey.name}</h4>
+                            <p className="text-sm text-gray-600">
+                              {provider?.name} • {usageTypeLabels[apiKey.usage_type as keyof typeof usageTypeLabels]}
+                            </p>
+                          </div>
                         </div>
                         
-                        <div className="relative">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            API Secret
-                          </label>
-                          <input
-                            type={showKeys[`${provider.id}_apiSecret`] ? 'text' : 'password'}
-                            value={getKeyValue(provider.id, 'apiSecret')}
-                            onChange={(e) => handleKeyChange(provider.id, e.target.value, 'apiSecret')}
-                            placeholder="API Secret"
-                            disabled={!enabled}
-                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
-                              !enabled ? 'bg-gray-100 text-gray-400' :
-                              getKeyValue(provider.id, 'apiSecret') && !valid 
-                                ? 'border-red-300 bg-red-50' 
-                                : getKeyValue(provider.id, 'apiSecret') && valid
-                                  ? 'border-green-300 bg-green-50'
-                                  : 'border-gray-300'
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => toggleShowKey(apiKey.id)}
+                            className="p-2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showKeys[apiKey.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          
+                          <button
+                            onClick={() => testApiKey(apiKey)}
+                            disabled={testResult === 'testing'}
+                            className={`p-2 rounded transition-colors ${
+                              testResult === 'testing' 
+                                ? 'text-yellow-500' 
+                                : testResult === 'success'
+                                  ? 'text-green-500'
+                                  : testResult === 'error'
+                                    ? 'text-red-500'
+                                    : 'text-gray-400 hover:text-gray-600'
                             }`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleShowKey(provider.id, 'apiSecret')}
-                            className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 transition-colors"
                           >
-                            {showKeys[`${provider.id}_apiSecret`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {testResult === 'testing' ? (
+                              <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+                            ) : testResult === 'success' ? (
+                              <CheckCircle className="w-4 h-4" />
+                            ) : testResult === 'error' ? (
+                              <AlertTriangle className="w-4 h-4" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleToggleEnabled(apiKey)}
+                            className={`transition-colors ${
+                              apiKey.enabled ? 'text-green-600' : 'text-gray-400'
+                            }`}
+                          >
+                            {apiKey.enabled ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteApiKey(apiKey.id)}
+                            className="p-2 text-red-400 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                    ) : (
-                      // API simple avec un seul champ
-                      <div className="relative">
-                        <input
-                          type={showKeys[provider.id] ? 'text' : 'password'}
-                          value={getKeyValue(provider.id)}
-                          onChange={(e) => handleKeyChange(provider.id, e.target.value)}
-                          placeholder={provider.placeholder}
-                          disabled={!enabled}
-                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24 ${
-                            !enabled ? 'bg-gray-100 text-gray-400' :
-                            getKeyValue(provider.id) && !valid 
-                              ? 'border-red-300 bg-red-50' 
-                              : getKeyValue(provider.id) && valid
-                                ? 'border-green-300 bg-green-50'
-                                : 'border-gray-300'
-                          }`}
-                        />
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                          {getKeyValue(provider.id) && enabled && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => testApiKey(provider.id)}
-                                disabled={!valid || testResult === 'testing'}
-                                className={`p-1 rounded transition-colors ${
-                                  testResult === 'testing' 
-                                    ? 'text-yellow-500' 
-                                    : testResult === 'success'
-                                      ? 'text-green-500'
-                                      : testResult === 'error'
-                                        ? 'text-red-500'
-                                        : 'text-gray-400 hover:text-gray-600'
-                                }`}
-                                title="Tester la clé"
-                              >
-                                {testResult === 'testing' ? (
-                                  <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
-                                ) : testResult === 'success' ? (
-                                  <CheckCircle className="w-4 h-4" />
-                                ) : testResult === 'error' ? (
-                                  <AlertTriangle className="w-4 h-4" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeKey(provider.id)}
-                                className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                                title="Supprimer la clé"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => toggleShowKey(provider.id)}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                          >
-                            {showKeys[provider.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        </div>
+                      
+                      <div className="text-sm text-gray-600">
+                        <p>
+                          <strong>Clé:</strong> {showKeys[apiKey.id] ? apiKey.api_key : apiKey.masked_key}
+                        </p>
+                        <p>
+                          <strong>Statut:</strong> 
+                          <span className={`ml-1 ${apiKey.enabled ? 'text-green-600' : 'text-gray-500'}`}>
+                            {apiKey.enabled ? 'Activée' : 'Désactivée'}
+                          </span>
+                        </p>
+                        {apiKey.last_tested && (
+                          <p>
+                            <strong>Dernier test:</strong> {new Date(apiKey.last_tested).toLocaleString('fr-FR')}
+                          </p>
+                        )}
                       </div>
-                    )}
-
-                    {getKeyValue(provider.id) && !valid && enabled && (
-                      <p className="text-sm text-red-600">
-                        Format de clé invalide pour {provider.name}
-                      </p>
-                    )}
-
-                    {testResult === 'success' && (
-                      <p className="text-sm text-green-600 flex items-center">
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Clé API valide et fonctionnelle
-                      </p>
-                    )}
-
-                    {testResult === 'error' && (
-                      <p className="text-sm text-red-600 flex items-center">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Erreur lors du test de la clé API
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                      
+                      {testResult === 'success' && (
+                        <div className="mt-2 text-sm text-green-600 flex items-center">
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Clé API valide et fonctionnelle
+                        </div>
+                      )}
+                      
+                      {testResult === 'error' && (
+                        <div className="mt-2 text-sm text-red-600 flex items-center">
+                          <AlertTriangle className="w-4 h-4 mr-1" />
+                          Erreur lors du test de la clé API
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -471,10 +402,9 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
               <div>
                 <h4 className="font-medium text-yellow-800 mb-1">Sécurité et confidentialité</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Vos clés API sont stockées uniquement dans votre navigateur</li>
-                  <li>• Elles ne sont jamais transmises à nos serveurs</li>
+                  <li>• Vos clés API sont stockées de manière sécurisée dans votre compte</li>
+                  <li>• Elles ne sont jamais partagées avec des tiers</li>
                   <li>• Utilisez des clés avec des permissions limitées quand possible</li>
-                  <li>• Vous pouvez activer/désactiver chaque API individuellement</li>
                   <li>• Vous pouvez révoquer vos clés à tout moment depuis les plateformes respectives</li>
                 </ul>
               </div>
@@ -487,14 +417,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
-            Annuler
-          </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Sauvegarder
+            Fermer
           </button>
         </div>
       </div>

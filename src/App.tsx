@@ -12,7 +12,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import LoginModal from './components/LoginModal';
 import UserMenu from './components/UserMenu';
 import ApiKeysModal from './components/ApiKeysModal';
-import { Step, AppState, User, UserApiKeys } from './types';
+import { Step, AppState, KeyPoint } from './types';
 import { 
   generateMockTranscription,
   generateMockKeyPoints, 
@@ -26,6 +26,8 @@ import {
 } from './utils/audioTranscription';
 import { GeminiServiceFactory } from './utils/geminiService';
 import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause } from 'lucide-react';
+import { useAuth } from './hooks/useAuth';
+import { useApiKeys } from './hooks/useApiKeys';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/YouTube/URL/Texte', completed: false, active: true },
@@ -69,51 +71,51 @@ const initialAppState: AppState = {
 };
 
 function App() {
+  const { user, loading: authLoading } = useAuth();
+  const { getApiKeyByProvider } = useApiKeys();
   const [steps, setSteps] = useState<Step[]>(initialSteps);
   const [appState, setAppState] = useState<AppState>(initialAppState);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
-  const [apiKey, setApiKey] = useState<string>('');
-  const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
   const [demoMode, setDemoMode] = useState(true);
 
-  // Initialiser l'authentification et les clés API
+  // Mettre à jour l'état d'authentification
   useEffect(() => {
-    // Vérifier l'authentification
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    const userData = localStorage.getItem('user');
-    const savedDemoMode = localStorage.getItem('demoMode');
-    
-    if (savedDemoMode !== null) {
-      setDemoMode(savedDemoMode === 'true');
-    }
-    
-    if (isAuthenticated && userData) {
-      const user = JSON.parse(userData);
+    if (!authLoading) {
       setAppState(prev => ({ 
         ...prev, 
-        user, 
-        isAuthenticated: true 
+        user: user ? {
+          id: user.id,
+          email: user.email || '',
+          name: user.profile?.name || user.email?.split('@')[0] || '',
+          createdAt: user.profile?.created_at || new Date().toISOString(),
+          apiKeys: {},
+          subscription: {
+            plan: user.profile?.subscription_plan || 'free',
+            status: user.profile?.subscription_status || 'active'
+          }
+        } : null,
+        isAuthenticated: !!user 
       }));
 
-      // Charger les clés API de l'utilisateur
-      if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-        setApiKey(user.apiKeys.googleAI.key);
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
+      // Vérifier les clés API configurées
+      if (user) {
+        const geminiKey = getApiKeyByProvider('googleAI');
+        if (geminiKey && geminiKey.enabled) {
+          setDemoMode(false);
+          setApiKeyError('');
+        }
       }
-    } else {
-      // Fallback vers l'ancienne méthode pour la compatibilité
-      const storedApiKey = localStorage.getItem('google_ai_api_key');
-      if (storedApiKey && storedApiKey.startsWith('AIza')) {
-        setApiKey(storedApiKey);
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
-      }
+    }
+  }, [user, authLoading, getApiKeyByProvider]);
+
+  // Initialiser le mode démo depuis localStorage
+  useEffect(() => {
+    const savedDemoMode = localStorage.getItem('demoMode');
+    if (savedDemoMode !== null) {
+      setDemoMode(savedDemoMode === 'true');
     }
   }, []);
 
@@ -123,10 +125,7 @@ function App() {
     localStorage.setItem('demoMode', newDemoMode.toString());
     
     if (newDemoMode) {
-      setGeminiConfigured(false);
       setApiKeyError('');
-    } else if (apiKey) {
-      setGeminiConfigured(true);
     }
   };
 
@@ -156,75 +155,6 @@ function App() {
       updateStepStatus(appState.currentStep, true, false);
       setAppState(prev => ({ ...prev, currentStep: nextStep }));
       updateStepStatus(nextStep, false, true);
-    }
-  };
-
-  const handleLogin = (user: User) => {
-    setAppState(prev => ({ 
-      ...prev, 
-      user, 
-      isAuthenticated: true 
-    }));
-
-    // Charger les clés API de l'utilisateur
-    if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-      setApiKey(user.apiKeys.googleAI.key);
-      setGeminiConfigured(true);
-      setApiKeyError('');
-      setDemoMode(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    setAppState(prev => ({ 
-      ...prev, 
-      user: null, 
-      isAuthenticated: false 
-    }));
-    setApiKey('');
-    setGeminiConfigured(false);
-    setApiKeyError('');
-    setDemoMode(true);
-  };
-
-  const handleApiKeySave = (newApiKey: string) => {
-    setApiKey(newApiKey);
-    setApiKeyError('');
-    
-    if (newApiKey && newApiKey.startsWith('AIza')) {
-      localStorage.setItem('google_ai_api_key', newApiKey);
-      setGeminiConfigured(true);
-      setDemoMode(false);
-    } else {
-      localStorage.removeItem('google_ai_api_key');
-      setGeminiConfigured(false);
-      setDemoMode(true);
-    }
-  };
-
-  const handleApiKeysSave = (apiKeys: UserApiKeys) => {
-    if (appState.user) {
-      const updatedUser = {
-        ...appState.user,
-        apiKeys
-      };
-      
-      setAppState(prev => ({ ...prev, user: updatedUser }));
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      // Mettre à jour la configuration Gemini
-      if (apiKeys.googleAI && apiKeys.googleAI.enabled) {
-        setApiKey(apiKeys.googleAI.key);
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
-      } else {
-        setApiKey('');
-        setGeminiConfigured(false);
-        setDemoMode(true);
-      }
     }
   };
 
@@ -297,11 +227,12 @@ function App() {
         console.log('✅ Contenu texte traité');
       } else {
         // Utiliser l'API Gemini si configurée et en mode production
-        if (!demoMode && geminiConfigured && apiKey) {
+        const geminiKey = getApiKeyByProvider('googleAI');
+        if (!demoMode && geminiKey && geminiKey.enabled) {
           try {
             console.log('🚀 Utilisation de l\'API Gemini pour la transcription...');
             
-            const transcriptionService = TranscriptionServiceFactory.create(apiKey);
+            const transcriptionService = TranscriptionServiceFactory.create(geminiKey.api_key);
             let transcriptionText = '';
             
             if (appState.audioFile) {
@@ -345,7 +276,6 @@ function App() {
             if (isQuotaError(error as Error)) {
               setApiKeyError('Quota API dépassé. Veuillez vérifier votre clé API ou passer en mode démo.');
               setDemoMode(true);
-              setGeminiConfigured(false);
             } else {
               setApiKeyError(`Erreur API: ${(error as Error).message}`);
             }
@@ -399,17 +329,18 @@ function App() {
     setAppState(prev => ({ ...prev, transcription }));
   };
 
-  const handleUpdateKeyPoints = (keyPoints: any[]) => {
+  const handleUpdateKeyPoints = (keyPoints: KeyPoint[]) => {
     setAppState(prev => ({ ...prev, keyPoints }));
   };
 
   const handleStep4Next = async () => {
     // Si on n'a pas encore de points clés et qu'on a Gemini configuré, les extraire automatiquement
-    if (appState.keyPoints.length === 0 && !demoMode && geminiConfigured && apiKey && appState.transcription) {
+    const geminiKey = getApiKeyByProvider('googleAI');
+    if (appState.keyPoints.length === 0 && !demoMode && geminiKey && geminiKey.enabled && appState.transcription) {
       try {
         console.log('🎯 Extraction automatique des points clés avec Gemini...');
         
-        const geminiService = GeminiServiceFactory.create(apiKey);
+        const geminiService = GeminiServiceFactory.create(geminiKey.api_key);
         const extractedKeyPoints = await geminiService.extractKeyPoints(appState.transcription.text);
         
         if (extractedKeyPoints.length > 0) {
@@ -459,10 +390,11 @@ function App() {
     
     try {
       // Utiliser l'API Gemini si configurée et en mode production
-      if (!demoMode && geminiConfigured && apiKey && appState.transcription) {
+      const geminiKey = getApiKeyByProvider('googleAI');
+      if (!demoMode && geminiKey && geminiKey.enabled && appState.transcription) {
         console.log('🚀 Génération de contenu avec Gemini...');
         
-        const geminiService = GeminiServiceFactory.create(apiKey);
+        const geminiService = GeminiServiceFactory.create(geminiKey.api_key);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
         
         const generatedContent = await geminiService.generateContent(
@@ -517,6 +449,9 @@ function App() {
   };
 
   const renderCurrentStep = () => {
+    const geminiKey = getApiKeyByProvider('googleAI');
+    const geminiConfigured = !demoMode && geminiKey && geminiKey.enabled;
+
     switch (appState.currentStep) {
       case 1:
         return (
@@ -532,7 +467,7 @@ function App() {
             onTextContentChange={handleTextContentChange}
             onTextFileUpload={handleTextFileUpload}
             onNext={handleStep1Next}
-            geminiConfigured={geminiConfigured && !demoMode}
+            geminiConfigured={!!geminiConfigured}
           />
         );
       case 2:
@@ -559,8 +494,8 @@ function App() {
             onUpdateKeyPoints={handleUpdateKeyPoints}
             onNext={handleStep4Next}
             demoMode={demoMode}
-            geminiConfigured={geminiConfigured}
-            apiKey={apiKey}
+            geminiConfigured={!!geminiConfigured}
+            apiKey={geminiKey?.api_key || ''}
           />
         );
       case 5:
@@ -610,23 +545,37 @@ function App() {
   const getGeminiStatusColor = () => {
     if (demoMode) return 'text-yellow-600';
     if (apiKeyError) return 'text-red-600';
-    if (geminiConfigured) return 'text-green-600';
+    const geminiKey = getApiKeyByProvider('googleAI');
+    if (geminiKey && geminiKey.enabled) return 'text-green-600';
     return 'text-yellow-600';
   };
 
   const getGeminiStatusIcon = () => {
     if (demoMode) return <Play className="w-4 h-4" />;
     if (apiKeyError) return <AlertTriangle className="w-4 h-4" />;
-    if (geminiConfigured) return <Sparkles className="w-4 h-4" />;
+    const geminiKey = getApiKeyByProvider('googleAI');
+    if (geminiKey && geminiKey.enabled) return <Sparkles className="w-4 h-4" />;
     return <Sparkles className="w-4 h-4" />;
   };
 
   const getGeminiStatusText = () => {
     if (demoMode) return 'Mode démo';
     if (apiKeyError) return 'Erreur API';
-    if (geminiConfigured) return 'Gemini 1.5 Pro';
+    const geminiKey = getApiKeyByProvider('googleAI');
+    if (geminiKey && geminiKey.enabled) return 'Gemini 1.5 Pro';
     return 'Mode démo';
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -664,7 +613,7 @@ function App() {
                 <div className={`w-2 h-2 rounded-full ${
                   demoMode ? 'bg-yellow-500' : 
                   apiKeyError ? 'bg-red-500' : 
-                  geminiConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                  getApiKeyByProvider('googleAI')?.enabled ? 'bg-green-500' : 'bg-yellow-500'
                 }`}></div>
                 <div className={getGeminiStatusColor()}>
                   {getGeminiStatusIcon()}
@@ -674,10 +623,9 @@ function App() {
                 </span>
               </div>
               
-              {appState.isAuthenticated && appState.user ? (
+              {user ? (
                 <UserMenu
-                  user={appState.user}
-                  onLogout={handleLogout}
+                  onLogout={() => {}}
                   onOpenApiKeys={() => setShowApiKeysModal(true)}
                   onOpenProfile={() => {}}
                 />
@@ -715,7 +663,7 @@ function App() {
                 <AlertTriangle className="w-4 h-4 text-red-600" />
                 <span className="text-sm text-red-700">{apiKeyError}</span>
                 <button
-                  onClick={() => appState.isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
+                  onClick={() => user ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
                   className="text-sm text-red-600 hover:text-red-800 underline ml-2"
                 >
                   Configurer une nouvelle clé API
@@ -767,25 +715,22 @@ function App() {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
       />
 
-      {!demoMode && (
+      {!demoMode && !user && (
         <ApiKeyModal
           isOpen={showApiKeyModal}
           onClose={() => setShowApiKeyModal(false)}
-          onSave={handleApiKeySave}
-          currentApiKey={apiKey}
+          onSave={() => {}}
+          currentApiKey=""
           hasError={!!apiKeyError}
         />
       )}
 
-      {appState.isAuthenticated && appState.user && (
+      {user && (
         <ApiKeysModal
           isOpen={showApiKeysModal}
           onClose={() => setShowApiKeysModal(false)}
-          apiKeys={appState.user.apiKeys}
-          onSave={handleApiKeysSave}
         />
       )}
     </div>
