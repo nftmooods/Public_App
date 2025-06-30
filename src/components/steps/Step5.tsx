@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, Sparkles, FileText } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, FileText, GripVertical, Tag } from 'lucide-react';
 import { ContentSettings, KeyPoint } from '../../types';
 
 interface Step5Props {
@@ -13,7 +13,7 @@ interface ArticleSection {
   id: string;
   title: string;
   content: string;
-  keyPoints: string[];
+  keyPointIds: string[];
   order: number;
 }
 
@@ -29,7 +29,10 @@ const Step5: React.FC<Step5Props> = ({
   const [introduction, setIntroduction] = useState('');
   const [articleSections, setArticleSections] = useState<ArticleSection[]>([]);
   const [newSection, setNewSection] = useState({ title: '', content: '' });
-  const [isCompletingWithAI, setIsCompletingWithAI] = useState(false);
+  const [draggedKeyPoint, setDraggedKeyPoint] = useState<string | null>(null);
+  const [draggedSection, setDraggedSection] = useState<string | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<string | null>(null);
+  const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
 
   const handleChange = (field: keyof ContentSettings, value: string) => {
     const updated = { ...localSettings, [field]: value };
@@ -85,7 +88,7 @@ const Step5: React.FC<Step5Props> = ({
           id: `section_${index}`,
           title: categoryTitles[category as keyof typeof categoryTitles] || category,
           content: `This section develops the aspects related to ${category} discussed during the conversation.`,
-          keyPoints: points.map(p => p.text.split(':')[0] || p.text.substring(0, 100)),
+          keyPointIds: points.map(p => p.id),
           order: index
         };
       });
@@ -100,7 +103,7 @@ const Step5: React.FC<Step5Props> = ({
         id: `section_${Date.now()}`,
         title: newSection.title,
         content: newSection.content || 'Content to be developed...',
-        keyPoints: [],
+        keyPointIds: [],
         order: articleSections.length
       };
       setArticleSections([...articleSections, section]);
@@ -120,34 +123,106 @@ const Step5: React.FC<Step5Props> = ({
     );
   };
 
-  const completeWithAI = async () => {
-    setIsCompletingWithAI(true);
+  // Drag and drop for key points
+  const handleKeyPointDragStart = (e: React.DragEvent, keyPointId: string) => {
+    setDraggedKeyPoint(keyPointId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleSectionDragOver = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSection(sectionId);
+  };
+
+  const handleSectionDragLeave = () => {
+    setDragOverSection(null);
+  };
+
+  const handleSectionDrop = (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
     
-    try {
-      // Simulate AI enrichment
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Enrich existing sections
-      const enrichedSections = articleSections.map(section => ({
-        ...section,
-        content: section.content === 'Content to be developed...' 
-          ? `This section explores in detail ${section.title.toLowerCase()}. The analysis reveals important trends and significant implications for the future of the field. Experts agree on the importance of these developments and their potential impacts on the ecosystem.`
-          : section.content
-      }));
-      
-      setArticleSections(enrichedSections);
-      
-      // Enrich introduction if it's basic
-      if (introduction.includes('This comprehensive analysis explores')) {
-        const enrichedIntro = `${introduction}\n\nThis discussion reveals crucial insights about the sector's evolution and highlights the challenges and opportunities that are emerging. The shared perspectives offer an enlightened vision of ongoing transformations and strategies to adopt for navigating this changing landscape.`;
-        setIntroduction(enrichedIntro);
-      }
-      
-    } catch (error) {
-      console.error('Error during AI enrichment:', error);
-    } finally {
-      setIsCompletingWithAI(false);
+    if (!draggedKeyPoint) return;
+    
+    // Add key point to section if not already there
+    setArticleSections(sections => 
+      sections.map(section => {
+        if (section.id === sectionId && !section.keyPointIds.includes(draggedKeyPoint)) {
+          return {
+            ...section,
+            keyPointIds: [...section.keyPointIds, draggedKeyPoint]
+          };
+        }
+        return section;
+      })
+    );
+    
+    setDraggedKeyPoint(null);
+    setDragOverSection(null);
+  };
+
+  // Remove key point from section
+  const removeKeyPointFromSection = (sectionId: string, keyPointId: string) => {
+    setArticleSections(sections => 
+      sections.map(section => 
+        section.id === sectionId 
+          ? { ...section, keyPointIds: section.keyPointIds.filter(id => id !== keyPointId) }
+          : section
+      )
+    );
+  };
+
+  // Drag and drop for sections reordering
+  const handleSectionDragStart = (e: React.DragEvent, sectionId: string) => {
+    setDraggedSection(sectionId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleSectionOrderDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSectionIndex(index);
+  };
+
+  const handleSectionOrderDragLeave = () => {
+    setDragOverSectionIndex(null);
+  };
+
+  const handleSectionOrderDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    
+    if (!draggedSection) return;
+    
+    const draggedIndex = articleSections.findIndex(s => s.id === draggedSection);
+    
+    if (draggedIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedSection(null);
+      setDragOverSectionIndex(null);
+      return;
     }
+    
+    const newSections = [...articleSections];
+    const [draggedSectionObj] = newSections.splice(draggedIndex, 1);
+    newSections.splice(targetIndex, 0, draggedSectionObj);
+    
+    // Update order property
+    const updatedSections = newSections.map((section, index) => ({
+      ...section,
+      order: index
+    }));
+    
+    setArticleSections(updatedSections);
+    setDraggedSection(null);
+    setDragOverSectionIndex(null);
+  };
+
+  const getKeyPointById = (id: string) => {
+    return keyPoints.find(kp => kp.id === id);
+  };
+
+  const getUnassignedKeyPoints = () => {
+    const assignedIds = articleSections.flatMap(section => section.keyPointIds);
+    return keyPoints.filter(kp => !assignedIds.includes(kp.id));
   };
 
   const formatPreview = () => {
@@ -174,12 +249,32 @@ const Step5: React.FC<Step5Props> = ({
         )}
 
         {/* Article sections */}
-        {articleSections.map((section, index) => (
-          <div key={section.id} className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{section.content}</p>
-          </div>
-        ))}
+        {articleSections
+          .sort((a, b) => a.order - b.order)
+          .map((section, index) => (
+            <div key={section.id} className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{section.title}</h3>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">{section.content}</p>
+              
+              {/* Key points in this section */}
+              {section.keyPointIds.length > 0 && (
+                <div className="mt-4 pl-4 border-l-2 border-blue-200">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">Key Points:</h4>
+                  <ul className="space-y-1">
+                    {section.keyPointIds.map(keyPointId => {
+                      const keyPoint = getKeyPointById(keyPointId);
+                      if (!keyPoint) return null;
+                      return (
+                        <li key={keyPointId} className="text-sm text-blue-700">
+                          • {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
 
         <div className="text-gray-500 text-sm italic mt-8 pt-4 border-t border-gray-200">
           [Structure preview - Final content will be generated in the following steps]
@@ -189,13 +284,13 @@ const Step5: React.FC<Step5Props> = ({
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Article Structure
         </h2>
         <p className="text-lg text-gray-600">
-          Define the complete structure of your article with title, introduction and sections
+          Define the complete structure of your article with title, introduction and sections. Drag key points into sections to organize your content.
         </p>
       </div>
 
@@ -210,9 +305,52 @@ const Step5: React.FC<Step5Props> = ({
         </button>
       </div>
 
-      <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-        {/* Structure form - Always visible */}
-        <div className="space-y-6">
+      <div className={`grid gap-8 ${showPreview ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
+        {/* Available Key Points */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Tag className="w-5 h-5 mr-2 text-blue-600" />
+            Available Key Points ({getUnassignedKeyPoints().length})
+          </h3>
+          
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {getUnassignedKeyPoints().map((keyPoint) => (
+              <div
+                key={keyPoint.id}
+                draggable
+                onDragStart={(e) => handleKeyPointDragStart(e, keyPoint.id)}
+                className={`p-3 border border-gray-200 rounded-lg cursor-move hover:border-blue-300 hover:bg-blue-50 transition-all ${
+                  draggedKeyPoint === keyPoint.id ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    keyPoint.category === 'theme' ? 'bg-blue-100 text-blue-700' :
+                    keyPoint.category === 'quote' ? 'bg-green-100 text-green-700' :
+                    keyPoint.category === 'insight' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-purple-100 text-purple-700'
+                  }`}>
+                    {keyPoint.category}
+                  </span>
+                  <span className="text-xs text-gray-500">{keyPoint.speaker}</span>
+                </div>
+                <p className="text-sm text-gray-700 line-clamp-2">
+                  {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 80)}...
+                </p>
+              </div>
+            ))}
+            
+            {getUnassignedKeyPoints().length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">All key points have been assigned to sections</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Structure form */}
+        <div className={`space-y-6 ${showPreview ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
           {/* Title and subtitle */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Title and Subtitle</h3>
@@ -303,84 +441,149 @@ const Step5: React.FC<Step5Props> = ({
               placeholder="Write your article introduction..."
             />
           </div>
+        </div>
 
-          {/* Article sections */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
-              <button
-                onClick={completeWithAI}
-                disabled={isCompletingWithAI}
-                className="flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
-              >
-                {isCompletingWithAI ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <Sparkles className="w-4 h-4 mr-2" />
-                )}
-                {isCompletingWithAI ? 'Enriching...' : 'Complete with AI'}
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {articleSections.map((section, index) => (
-                <div key={section.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                        {index + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={section.title}
-                        onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                        className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
-                        placeholder="Section title"
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeSection(section.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <textarea
-                    value={section.content}
-                    onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                    placeholder="Section content..."
+        {/* Article sections */}
+        <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${showPreview ? 'lg:col-span-1' : 'lg:col-span-1'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
+          </div>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {articleSections
+              .sort((a, b) => a.order - b.order)
+              .map((section, index) => (
+                <React.Fragment key={section.id}>
+                  {/* Drop zone for section reordering */}
+                  <div
+                    className={`h-2 transition-all duration-200 ${
+                      dragOverSectionIndex === index 
+                        ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
+                        : 'h-1'
+                    }`}
+                    onDragOver={(e) => handleSectionOrderDragOver(e, index)}
+                    onDragLeave={handleSectionOrderDragLeave}
+                    onDrop={(e) => handleSectionOrderDrop(e, index)}
                   />
-                </div>
-              ))}
-              
-              {/* Add new section */}
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={newSection.title}
-                    onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="New section title..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <textarea
-                    value={newSection.content}
-                    onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Section content (optional)..."
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                  />
-                  <button
-                    onClick={addSection}
-                    disabled={!newSection.title.trim()}
-                    className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                  
+                  <div 
+                    className={`border border-gray-200 rounded-lg p-4 transition-all ${
+                      dragOverSection === section.id ? 'border-blue-400 bg-blue-50' : ''
+                    } ${draggedSection === section.id ? 'opacity-50' : ''}`}
+                    onDragOver={(e) => handleSectionDragOver(e, section.id)}
+                    onDragLeave={handleSectionDragLeave}
+                    onDrop={(e) => handleSectionDrop(e, section.id)}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Section
-                  </button>
-                </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <GripVertical 
+                          className="w-4 h-4 text-gray-400 cursor-move"
+                          draggable
+                          onDragStart={(e) => handleSectionDragStart(e, section.id)}
+                        />
+                        <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
+                          {index + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={section.title}
+                          onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                          className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 flex-1"
+                          placeholder="Section title"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeSection(section.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <textarea
+                      value={section.content}
+                      onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-3"
+                      placeholder="Section content..."
+                    />
+                    
+                    {/* Key points in this section */}
+                    <div className="space-y-2">
+                      <h5 className="text-xs font-medium text-gray-600">Key Points ({section.keyPointIds.length})</h5>
+                      {section.keyPointIds.map(keyPointId => {
+                        const keyPoint = getKeyPointById(keyPointId);
+                        if (!keyPoint) return null;
+                        return (
+                          <div key={keyPointId} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                            <div className="flex items-center space-x-2 flex-1">
+                              <span className={`w-2 h-2 rounded-full ${
+                                keyPoint.category === 'theme' ? 'bg-blue-500' :
+                                keyPoint.category === 'quote' ? 'bg-green-500' :
+                                keyPoint.category === 'insight' ? 'bg-yellow-500' :
+                                'bg-purple-500'
+                              }`}></span>
+                              <span className="text-xs text-gray-700 truncate">
+                                {keyPoint.text.split(':')[0] || keyPoint.text.substring(0, 40)}...
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => removeKeyPointFromSection(section.id, keyPointId)}
+                              className="text-red-400 hover:text-red-600 ml-2"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      
+                      {section.keyPointIds.length === 0 && (
+                        <div className="text-xs text-gray-500 italic p-2 border-2 border-dashed border-gray-200 rounded text-center">
+                          Drag key points here
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
+            
+            {/* Final drop zone for section reordering */}
+            <div
+              className={`h-2 transition-all duration-200 ${
+                dragOverSectionIndex === articleSections.length 
+                  ? 'bg-purple-200 border-2 border-dashed border-purple-400 rounded' 
+                  : 'h-1'
+              }`}
+              onDragOver={(e) => handleSectionOrderDragOver(e, articleSections.length)}
+              onDragLeave={handleSectionOrderDragLeave}
+              onDrop={(e) => handleSectionOrderDrop(e, articleSections.length)}
+            />
+            
+            {/* Add new section */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={newSection.title}
+                  onChange={(e) => setNewSection(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="New section title..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <textarea
+                  value={newSection.content}
+                  onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Section content (optional)..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                />
+                <button
+                  onClick={addSection}
+                  disabled={!newSection.title.trim()}
+                  className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Section
+                </button>
               </div>
             </div>
           </div>
@@ -404,16 +607,16 @@ const Step5: React.FC<Step5Props> = ({
       </div>
 
       {/* Tips */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-8 mb-8">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8 mb-8">
         <div className="flex items-start space-x-3">
-          <Sparkles className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-yellow-800 mb-1">Tips for an effective structure</h4>
-            <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Organize your sections in a logical and progressive order</li>
+            <h4 className="font-medium text-blue-800 mb-1">Tips for an effective structure</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• Drag key points from the left panel into sections to organize your content</li>
+              <li>• Use the grip handle to reorder sections by dragging them up or down</li>
               <li>• Each section should have a clear and distinct objective</li>
-              <li>• The introduction should present the context and issues</li>
-              <li>• Use AI to automatically enrich section content</li>
+              <li>• The introduction should present the context and main themes</li>
               <li>• You can refine the content in the following steps</li>
             </ul>
           </div>
