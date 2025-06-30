@@ -45,6 +45,7 @@ const Step4: React.FC<Step4Props> = ({
     api: ''
   });
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [newSpeaker, setNewSpeaker] = useState({ name: '', color: '#3B82F6' });
   const [showAddSpeaker, setShowAddSpeaker] = useState(false);
 
@@ -402,26 +403,34 @@ ${keyPoints.map((kp, index) =>
     return colonIndex > 0 ? text.substring(colonIndex + 1).trim() : text;
   };
 
-  // Gestion du drag and drop pour réorganiser les points clés
+  // Gestion du drag and drop améliorée
   const handleDragStart = (e: React.DragEvent, keyPointId: string) => {
     setDraggedItem(keyPointId);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
     
-    if (!draggedItem || draggedItem === targetId) return;
+    if (!draggedItem) return;
     
     const draggedIndex = keyPoints.findIndex(kp => kp.id === draggedItem);
-    const targetIndex = keyPoints.findIndex(kp => kp.id === targetId);
     
-    if (draggedIndex === -1 || targetIndex === -1) return;
+    if (draggedIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedItem(null);
+      setDragOverIndex(null);
+      return;
+    }
     
     const newKeyPoints = [...keyPoints];
     const [draggedKeyPoint] = newKeyPoints.splice(draggedIndex, 1);
@@ -429,6 +438,7 @@ ${keyPoints.map((kp, index) =>
     
     onUpdateKeyPoints(newKeyPoints);
     setDraggedItem(null);
+    setDragOverIndex(null);
   };
 
   // Affichage de l'extraction en cours
@@ -539,7 +549,7 @@ ${keyPoints.map((kp, index) =>
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Points clés et intervenants
@@ -602,64 +612,20 @@ ${keyPoints.map((kp, index) =>
         </div>
       )}
 
-      {/* Actions principales en haut */}
+      {/* Header avec actions principales */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex space-x-3">
-          <button
-            onClick={handleCompleteWithAI}
-            disabled={isCompleting}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
-          >
-            {isCompleting ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 mr-2" />
-            )}
-            {isCompleting ? 'Analyse en cours...' : 'Compléter avec l\'IA'}
-          </button>
+        <div className="flex items-center space-x-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Users className="w-5 h-5 mr-2" />
+            Intervenants ({transcription.speakers.length})
+          </h3>
           
-          <button
-            onClick={downloadTranscription}
-            className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Télécharger
-          </button>
-        </div>
-
-        {/* Indicateur API */}
-        <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
-          <div className={`w-2 h-2 rounded-full ${
-            extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
-          }`}></div>
-          <span className="text-sm font-medium text-gray-700">
-            {extractionProgress.api || (demoMode ? 'Mode démonstration' : 'Non définie')}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-4 gap-8">
-        {/* Panneau des intervenants */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Users className="w-5 h-5 mr-2" />
-              Intervenants ({transcription.speakers.length})
-            </h3>
-            <button
-              onClick={() => setShowAddSpeaker(true)}
-              className="p-1 text-blue-600 hover:text-blue-700"
-              title="Ajouter un intervenant"
-            >
-              <UserPlus className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="space-y-3">
+          {/* Gestion des intervenants inline */}
+          <div className="flex items-center space-x-2">
             {transcription.speakers.map((speaker) => (
-              <div key={speaker.id} className="flex items-center space-x-3 p-3 border rounded-lg group">
+              <div key={speaker.id} className="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-full text-sm">
                 <div 
-                  className="w-4 h-4 rounded-full"
+                  className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: speaker.color }}
                 ></div>
                 {editingSpeaker === speaker.id ? (
@@ -672,101 +638,136 @@ ${keyPoints.map((kp, index) =>
                         handleSpeakerNameChange(speaker.id, e.currentTarget.value);
                       }
                     }}
-                    className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="bg-white px-2 py-1 border border-gray-300 rounded text-xs w-24"
                     autoFocus
                   />
                 ) : (
-                  <>
-                    <span className="flex-1 font-medium text-sm">{speaker.name}</span>
-                    <div className="opacity-0 group-hover:opacity-100 flex space-x-1 transition-opacity">
-                      <button
-                        onClick={() => setEditingSpeaker(speaker.id)}
-                        className="p-1 text-gray-400 hover:text-blue-600"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </button>
-                      {transcription.speakers.length > 1 && (
-                        <button
-                          onClick={() => handleDeleteSpeaker(speaker.id)}
-                          className="p-1 text-gray-400 hover:text-red-600"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </>
+                  <span 
+                    className="font-medium cursor-pointer hover:text-blue-600"
+                    onClick={() => setEditingSpeaker(speaker.id)}
+                  >
+                    {speaker.name}
+                  </span>
+                )}
+                {transcription.speakers.length > 1 && (
+                  <button
+                    onClick={() => handleDeleteSpeaker(speaker.id)}
+                    className="text-red-400 hover:text-red-600 ml-1"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 )}
               </div>
             ))}
             
-            {/* Formulaire d'ajout d'intervenant */}
-            {showAddSpeaker && (
-              <div className="p-3 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={newSpeaker.name}
-                    onChange={(e) => setNewSpeaker(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nom de l'intervenant"
-                    className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                    autoFocus
-                  />
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="color"
-                      value={newSpeaker.color}
-                      onChange={(e) => setNewSpeaker(prev => ({ ...prev, color: e.target.value }))}
-                      className="w-8 h-6 border border-gray-300 rounded"
-                    />
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={handleAddSpeaker}
-                        disabled={!newSpeaker.name.trim()}
-                        className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        <Check className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowAddSpeaker(false);
-                          setNewSpeaker({ name: '', color: '#3B82F6' });
-                        }}
-                        className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                </div>
+            {/* Bouton d'ajout d'intervenant */}
+            {!showAddSpeaker ? (
+              <button
+                onClick={() => setShowAddSpeaker(true)}
+                className="flex items-center px-3 py-1 text-blue-600 border border-blue-300 rounded-full text-sm hover:bg-blue-50"
+              >
+                <UserPlus className="w-3 h-3 mr-1" />
+                Ajouter
+              </button>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newSpeaker.name}
+                  onChange={(e) => setNewSpeaker(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Nom"
+                  className="px-2 py-1 border border-gray-300 rounded text-xs w-20"
+                  autoFocus
+                />
+                <input
+                  type="color"
+                  value={newSpeaker.color}
+                  onChange={(e) => setNewSpeaker(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-6 h-6 border border-gray-300 rounded"
+                />
+                <button
+                  onClick={handleAddSpeaker}
+                  disabled={!newSpeaker.name.trim()}
+                  className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddSpeaker(false);
+                    setNewSpeaker({ name: '', color: '#3B82F6' });
+                  }}
+                  className="px-2 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600"
+                >
+                  ✕
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Points clés principaux */}
-        <div className="lg:col-span-3 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Points clés ({keyPoints.length})</h3>
-          </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleCompleteWithAI}
+            disabled={isCompleting}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
+          >
+            {isCompleting ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4 mr-2" />
+            )}
+            {isCompleting ? 'Analyse en cours...' : 'Compléter avec l\'IA'}
+          </button>
 
-          {keyPoints.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <Sparkles className="w-12 h-12 mx-auto" />
-              </div>
-              <h4 className="text-lg font-medium text-gray-900 mb-2">Extraction en cours...</h4>
-              <p className="text-gray-600 mb-6">Les points clés sont en cours d'extraction automatique avec l'IA.</p>
+          {/* Indicateur API */}
+          <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
+            <div className={`w-2 h-2 rounded-full ${
+              extractionProgress.api.includes('Gemini') ? 'bg-purple-500' : 'bg-yellow-500'
+            }`}></div>
+            <span className="text-sm font-medium text-gray-700">
+              {extractionProgress.api || (demoMode ? 'Mode démonstration' : 'Non définie')}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Points clés avec zones de drop améliorées */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900">Points clés ({keyPoints.length})</h3>
+        </div>
+
+        {keyPoints.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <Sparkles className="w-12 h-12 mx-auto" />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {keyPoints.map((keyPoint, index) => (
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Extraction en cours...</h4>
+            <p className="text-gray-600 mb-6">Les points clés sont en cours d'extraction automatique avec l'IA.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {keyPoints.map((keyPoint, index) => (
+              <React.Fragment key={keyPoint.id}>
+                {/* Zone de drop avant chaque élément */}
+                <div
+                  className={`h-2 transition-all duration-200 ${
+                    dragOverIndex === index 
+                      ? 'bg-blue-200 border-2 border-dashed border-blue-400 rounded' 
+                      : 'h-1'
+                  }`}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                />
+                
                 <div 
-                  key={keyPoint.id} 
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 group"
+                  className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 group transition-all duration-200 ${
+                    draggedItem === keyPoint.id ? 'opacity-50 scale-95' : ''
+                  }`}
                   draggable
                   onDragStart={(e) => handleDragStart(e, keyPoint.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, keyPoint.id)}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
@@ -785,15 +786,24 @@ ${keyPoints.map((kp, index) =>
                         }`}>
                           {keyPoint.category}
                         </span>
+                        
+                        {/* Menu déroulant des intervenants avec possibilité d'ajout */}
                         <select
                           value={keyPoint.speaker}
-                          onChange={(e) => handleKeyPointSpeakerChange(keyPoint.id, e.target.value)}
+                          onChange={(e) => {
+                            if (e.target.value === 'ADD_NEW') {
+                              setShowAddSpeaker(true);
+                            } else {
+                              handleKeyPointSpeakerChange(keyPoint.id, e.target.value);
+                            }
+                          }}
                           className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
                         >
                           {transcription.speakers.map(speaker => (
                             <option key={speaker.id} value={speaker.name}>{speaker.name}</option>
                           ))}
                           <option value="IA Analysis">IA Analysis</option>
+                          <option value="ADD_NEW">+ Ajouter intervenant</option>
                         </select>
                       </div>
                     </div>
@@ -906,35 +916,56 @@ ${keyPoints.map((kp, index) =>
                     )}
                   </div>
                 </div>
-              ))}
-              
-              {/* Bouton d'ajout de point clé entre les éléments */}
-              <div className="flex justify-center">
-                <button
-                  onClick={() => {
-                    const newKP: KeyPoint = {
-                      id: Date.now().toString(),
-                      text: 'Nouveau point clé: Décrivez votre point clé ici',
-                      timestamp: 0,
-                      speaker: transcription.speakers[0]?.name || 'Utilisateur',
-                      category: 'insight',
-                      editable: true,
-                      webLinks: []
-                    };
-                    onUpdateKeyPoints([...keyPoints, newKP]);
-                  }}
-                  className="flex items-center px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un point clé
-                </button>
-              </div>
+              </React.Fragment>
+            ))}
+            
+            {/* Zone de drop finale */}
+            <div
+              className={`h-2 transition-all duration-200 ${
+                dragOverIndex === keyPoints.length 
+                  ? 'bg-blue-200 border-2 border-dashed border-blue-400 rounded' 
+                  : 'h-1'
+              }`}
+              onDragOver={(e) => handleDragOver(e, keyPoints.length)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, keyPoints.length)}
+            />
+            
+            {/* Bouton d'ajout de point clé */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => {
+                  const newKP: KeyPoint = {
+                    id: Date.now().toString(),
+                    text: 'Nouveau point clé: Décrivez votre point clé ici',
+                    timestamp: 0,
+                    speaker: transcription.speakers[0]?.name || 'Utilisateur',
+                    category: 'insight',
+                    editable: true,
+                    webLinks: []
+                  };
+                  onUpdateKeyPoints([...keyPoints, newKP]);
+                }}
+                className="flex items-center px-4 py-2 border-2 border-dashed border-gray-300 text-gray-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter un point clé
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex justify-center mt-8">
+      {/* Actions en bas */}
+      <div className="flex justify-between items-center mt-8">
+        <button
+          onClick={downloadTranscription}
+          className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Télécharger
+        </button>
+
         <button
           onClick={onNext}
           disabled={keyPoints.length === 0}
