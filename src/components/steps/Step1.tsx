@@ -142,7 +142,38 @@ const Step1: React.FC<Step1Props> = ({
 
   const getAnalysisSteps = () => {
     const demoMode = localStorage.getItem('demoMode') === 'true';
-    const hasGemini = !demoMode && geminiConfigured;
+    console.log('🔍 Demo mode status:', demoMode);
+    console.log('🔍 Gemini configured:', geminiConfigured);
+    
+    // Check for API key more thoroughly
+    let hasValidApiKey = false;
+    
+    // Check if user is authenticated and has API keys
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    if (isAuthenticated) {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled && user.apiKeys.googleAI.key) {
+            hasValidApiKey = user.apiKeys.googleAI.key.startsWith('AIza');
+            console.log('🔍 User has valid Google AI key:', hasValidApiKey);
+          }
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+        }
+      }
+    }
+    
+    // Fallback to localStorage API key
+    if (!hasValidApiKey) {
+      const storedApiKey = localStorage.getItem('google_ai_api_key');
+      hasValidApiKey = !!(storedApiKey && storedApiKey.startsWith('AIza'));
+      console.log('🔍 Stored API key valid:', hasValidApiKey);
+    }
+    
+    const useGemini = !demoMode && geminiConfigured && hasValidApiKey;
+    console.log('🔍 Will use Gemini:', useGemini);
     
     if (textContent.trim() || textFile) {
       return [
@@ -164,15 +195,15 @@ const Step1: React.FC<Step1Props> = ({
           id: 'text-analysis', 
           label: 'Advanced semantic analysis', 
           status: 'pending' as const, 
-          api: hasGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
-          duration: hasGemini ? 4000 : 2500
+          api: useGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
+          duration: useGemini ? 4000 : 2500
         },
         { 
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: hasGemini ? 'Gemini 1.5 Pro' : 'Local algorithm',
-          duration: hasGemini ? 3000 : 2000
+          api: useGemini ? 'Gemini 1.5 Pro' : 'Local algorithm',
+          duration: useGemini ? 3000 : 2000
         },
         { 
           id: 'cost-calculation', 
@@ -198,21 +229,21 @@ const Step1: React.FC<Step1Props> = ({
           id: 'audio-preprocessing', 
           label: 'Transcription preparation', 
           status: 'pending' as const, 
-          api: hasGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
+          api: useGemini ? 'Gemini 1.5 Pro' : 'Demo mode',
           duration: 2000
         },
         { 
           id: 'transcription', 
           label: 'Audio to text transcription', 
           status: 'pending' as const, 
-          api: hasGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Simulated data',
+          api: useGemini ? 'Gemini 1.5 Pro (Multimodal)' : 'Simulated data',
           duration: baseTranscriptionTime
         },
         { 
           id: 'speaker-analysis', 
           label: 'Speaker analysis', 
           status: 'pending' as const, 
-          api: hasGemini ? 'Gemini 1.5 Pro' : 'Local processing',
+          api: useGemini ? 'Gemini 1.5 Pro' : 'Local processing',
           duration: 2500
         },
         { 
@@ -239,49 +270,59 @@ const Step1: React.FC<Step1Props> = ({
 
     console.log('🚀 Starting detailed analysis with', steps.length, 'steps');
 
-    // Execute each step with its specific duration
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-      
-      // Mark step as processing
-      setProcessingSteps(prev => prev.map((s, index) => ({
-        ...s,
-        status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
-      })));
-      
-      setCurrentStepIndex(i);
-      
-      console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms)`);
-      
-      // Simulate step progress with micro-updates
-      const stepDuration = step.duration || 2000;
-      const updateInterval = 100; // Update every 100ms
-      const updates = stepDuration / updateInterval;
-      
-      for (let j = 0; j <= updates; j++) {
-        const stepProgress = j / updates;
-        const globalProgress = ((i + stepProgress) / steps.length) * 100;
-        setAnalysisProgress(globalProgress);
+    try {
+      // Execute each step with its specific duration
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
         
-        if (j < updates) {
-          await new Promise(resolve => setTimeout(resolve, updateInterval));
+        // Mark step as processing
+        setProcessingSteps(prev => prev.map((s, index) => ({
+          ...s,
+          status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
+        })));
+        
+        setCurrentStepIndex(i);
+        
+        console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms)`);
+        
+        // Simulate step progress with micro-updates
+        const stepDuration = step.duration || 2000;
+        const updateInterval = 100; // Update every 100ms
+        const updates = stepDuration / updateInterval;
+        
+        for (let j = 0; j <= updates; j++) {
+          const stepProgress = j / updates;
+          const globalProgress = ((i + stepProgress) / steps.length) * 100;
+          setAnalysisProgress(globalProgress);
+          
+          if (j < updates) {
+            await new Promise(resolve => setTimeout(resolve, updateInterval));
+          }
         }
+        
+        // Mark step as completed
+        setProcessingSteps(prev => prev.map((s, index) => ({
+          ...s,
+          status: index <= i ? 'completed' : 'pending'
+        })));
       }
-      
-      // Mark step as completed
-      setProcessingSteps(prev => prev.map((s, index) => ({
-        ...s,
-        status: index <= i ? 'completed' : 'pending'
-      })));
-    }
 
-    console.log('✅ Analysis completed, moving to next step');
-    
-    // Wait a bit then move to next step
-    setTimeout(() => {
+      console.log('✅ Analysis completed, calling onNext()');
+      
+      // Complete the progress
+      setAnalysisProgress(100);
+      
+      // Wait a bit then move to next step
+      setTimeout(() => {
+        setIsProcessing(false);
+        onNext(); // This should trigger the move to step 2
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error during analysis:', error);
+      setError('Analysis failed. Please try again.');
       setIsProcessing(false);
-      onNext();
-    }, 1000);
+    }
   };
 
   if (isProcessing) {

@@ -119,6 +119,7 @@ function App() {
 
     // Configure Gemini if Google AI API key is available
     if (user && apiKeys.googleAI && apiKeys.googleAI.enabled && apiKeys.googleAI.key) {
+      console.log('🔧 Configuring Gemini with user API key');
       setApiKey(apiKeys.googleAI.key);
       setGeminiConfigured(true);
       setApiKeyError('');
@@ -127,11 +128,13 @@ function App() {
       // Fallback to old method for compatibility
       const storedApiKey = localStorage.getItem('google_ai_api_key');
       if (storedApiKey && storedApiKey.startsWith('AIza')) {
+        console.log('🔧 Configuring Gemini with stored API key');
         setApiKey(storedApiKey);
         setGeminiConfigured(true);
         setApiKeyError('');
         setDemoMode(false);
       } else {
+        console.log('🎭 No valid API key found, using demo mode');
         setGeminiConfigured(false);
         setDemoMode(true);
       }
@@ -152,6 +155,7 @@ function App() {
   };
 
   const updateStepStatus = (stepId: number, completed: boolean = false, active: boolean = false) => {
+    console.log(`📊 Updating step ${stepId}: completed=${completed}, active=${active}`);
     setSteps(prevSteps => 
       prevSteps.map(step => ({
         ...step,
@@ -166,6 +170,7 @@ function App() {
                        stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
     
     if (canNavigate) {
+      console.log(`🔄 Navigating to step ${stepId}`);
       setAppState(prev => ({ ...prev, currentStep: stepId }));
       updateStepStatus(stepId, false, true);
     }
@@ -173,6 +178,8 @@ function App() {
 
   const goToNextStep = () => {
     const nextStep = appState.currentStep + 1;
+    console.log(`➡️ Moving to next step: ${nextStep}`);
+    
     if (nextStep <= 8) {
       updateStepStatus(appState.currentStep, true, false);
       setAppState(prev => ({ ...prev, currentStep: nextStep }));
@@ -311,7 +318,7 @@ function App() {
   };
 
   const handleStep1Next = async () => {
-    console.log('🚀 Starting analysis - Session ID:', analysisSessionId);
+    console.log('🚀 Step1 Next called - Session ID:', analysisSessionId);
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     // More realistic analysis duration based on content type
@@ -430,6 +437,7 @@ function App() {
         }
       }
       
+      console.log('💾 Setting transcription result and moving to next step');
       setAppState(prev => ({ 
         ...prev, 
         transcription: transcriptionResult,
@@ -437,6 +445,7 @@ function App() {
       }));
       
       // Automatically move to next step after analysis
+      console.log('➡️ Calling goToNextStep()');
       setTimeout(() => {
         goToNextStep();
       }, 500);
