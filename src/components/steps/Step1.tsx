@@ -647,7 +647,7 @@ const Step1: React.FC<Step1Props> = ({
                     </p>
                     <div className="text-xs text-gray-400 space-y-1">
                       <p>• Files ≤20MB: Fast inline processing</p>
-                      <p>• Files >20MB: Files API processing</p>
+                      <p>• Files &gt;20MB: Files API processing</p>
                       <p>• Maximum size: 2GB</p>
                     </div>
                   </div>
