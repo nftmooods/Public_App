@@ -92,7 +92,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <User className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">Profil</span>
+                <span className="text-sm text-gray-700">Profil et paramètres</span>
               </button>
 
               <button
@@ -116,7 +116,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <Settings className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">Paramètres</span>
+                <span className="text-sm text-gray-700">Préférences</span>
               </button>
             </div>
 

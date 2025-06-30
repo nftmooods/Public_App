@@ -12,6 +12,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import LoginModal from './components/LoginModal';
 import UserMenu from './components/UserMenu';
 import ApiKeysModal from './components/ApiKeysModal';
+import ProfileModal from './components/ProfileModal';
 import { Step, AppState, User, UserApiKeys } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useApiKeys } from './hooks/useApiKeys';
@@ -76,6 +77,7 @@ function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
@@ -829,7 +831,7 @@ function App() {
                   user={user}
                   onLogout={handleLogout}
                   onOpenApiKeys={() => setShowApiKeysModal(true)}
-                  onOpenProfile={() => {}}
+                  onOpenProfile={() => setShowProfileModal(true)}
                 />
               ) : (
                 <>
@@ -932,13 +934,21 @@ function App() {
       )}
 
       {isAuthenticated && user && (
-        <ApiKeysModal
-          isOpen={showApiKeysModal}
-          onClose={() => setShowApiKeysModal(false)}
-          apiKeys={apiKeys}
-          onSave={handleApiKeysSave}
-          userId={user.id}
-        />
+        <>
+          <ApiKeysModal
+            isOpen={showApiKeysModal}
+            onClose={() => setShowApiKeysModal(false)}
+            apiKeys={apiKeys}
+            onSave={handleApiKeysSave}
+            userId={user.id}
+          />
+          
+          <ProfileModal
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+            user={user}
+          />
+        </>
       )}
     </div>
   );
