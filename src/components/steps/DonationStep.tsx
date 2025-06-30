@@ -1,47 +1,60 @@
 import React, { useState } from 'react';
-import { Heart, Star, MessageSquare, Copy, CheckCircle, RotateCcw, ExternalLink, Wallet, Coffee, Gift } from 'lucide-react';
+import { Heart, Star, MessageSquare, Copy, CheckCircle, RotateCcw, ExternalLink, Coffee } from 'lucide-react';
+import { FeedbackService } from '../../lib/supabase';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface DonationStepProps {
   onNewAnalysis: () => void;
 }
 
 const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
+  const { user, analysisSessionId } = useAppContext();
   const [rating, setRating] = useState<number>(0);
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Wallet addresses for donations
-  const walletAddresses = {
-    bitcoin: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
-    ethereum: '0x742d35Cc6634C0532925a3b8D4C9db96590b5c8e',
-    usdc: '0x742d35Cc6634C0532925a3b8D4C9db96590b5c8e',
-    apechain: '0x1247083EEEbdbb2EEE6950b1D9D2038a4e69595b1D9f9'
-  };
+  // Adresse de donation Build"On" project
+  const donationAddress = '0x1247083EEEbdbb2EEE6950b1D9D2038a4e69595b1D9f9';
 
-  const handleFeedbackSubmit = () => {
+  const handleFeedbackSubmit = async () => {
     if (feedback.trim() || rating > 0) {
-      setFeedbackSubmitted(true);
-      // Here you could send the feedback to your backend
-      console.log('Feedback submitted:', { rating, feedback });
+      setIsSubmitting(true);
+      
+      try {
+        const feedbackData = {
+          rating,
+          comment: feedback.trim() || undefined,
+          userId: user?.id,
+          sessionId: analysisSessionId || Date.now().toString()
+        };
+
+        const result = await FeedbackService.submitFeedback(feedbackData);
+        
+        if (result) {
+          setFeedbackSubmitted(true);
+          console.log('✅ Feedback soumis avec succès:', result);
+        } else {
+          console.error('❌ Erreur lors de la soumission du feedback');
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la soumission du feedback:', error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const copyWalletAddress = async (address: string) => {
+  const copyWalletAddress = async () => {
     try {
-      await navigator.clipboard.writeText(address);
+      await navigator.clipboard.writeText(donationAddress);
       setWalletCopied(true);
       setTimeout(() => setWalletCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy wallet address:', err);
     }
   };
-
-  const donationAmounts = [
-    { amount: '$5', description: 'Buy us a coffee ☕', icon: Coffee },
-    { amount: '$15', description: 'Support development 🚀', icon: Heart },
-    { amount: '$50', description: 'Sponsor new features ✨', icon: Gift }
-  ];
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -114,11 +127,15 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
 
               <button
                 onClick={handleFeedbackSubmit}
-                disabled={!feedback.trim() && rating === 0}
+                disabled={(!feedback.trim() && rating === 0) || isSubmitting}
                 className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Submit Feedback
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                ) : (
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                )}
+                {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
             </div>
           ) : (
@@ -136,7 +153,7 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center space-x-3 mb-6">
             <Heart className="w-6 h-6 text-pink-600" />
-            <h3 className="text-xl font-semibold text-gray-900">Support via ApeCoin on ApeChain</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Support the Build"On" Project</h3>
           </div>
 
           <p className="text-gray-600 mb-6">
@@ -146,37 +163,22 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
           {/* Suggested Amounts */}
           <div className="space-y-3 mb-6">
             <h4 className="font-medium text-gray-900">Suggested amounts:</h4>
-            {donationAmounts.map((donation, index) => {
-              const Icon = donation.icon;
-              return (
-                <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-pink-300 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <Icon className="w-5 h-5 text-pink-600" />
-                    <div>
-                      <span className="font-medium text-gray-900">{donation.amount}</span>
-                      <p className="text-sm text-gray-600">{donation.description}</p>
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-pink-300 transition-colors">
+              <div className="flex items-center space-x-3">
+                <Coffee className="w-5 h-5 text-pink-600" />
+                <div>
+                  <span className="font-medium text-gray-900">$5</span>
+                  <p className="text-sm text-gray-600">Buy us a coffee ☕</p>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Network Information */}
-          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4 mb-6">
-            <h4 className="font-medium text-orange-900 mb-2">Network Information</h4>
-            <div className="space-y-2 text-sm text-orange-800">
-              <div className="flex justify-between">
-                <span>Network:</span>
-                <span className="font-medium">ApeChain</span>
               </div>
-              <div className="flex justify-between">
-                <span>Chain ID:</span>
-                <span className="font-medium">33139</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Project:</span>
-                <span className="font-medium">Build"On"</span>
+            </div>
+            <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-pink-300 transition-colors">
+              <div className="flex items-center space-x-3">
+                <Heart className="w-5 h-5 text-pink-600" />
+                <div>
+                  <span className="font-medium text-gray-900">$15</span>
+                  <p className="text-sm text-gray-600">Support development 🚀</p>
+                </div>
               </div>
             </div>
           </div>
@@ -184,14 +186,17 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
           {/* Donation Address */}
           <div className="space-y-4">
             <h4 className="font-medium text-gray-900">Donation Address</h4>
+            <p className="text-sm text-gray-600">
+              <strong>Note:</strong> Donation EVM Address for Build"On" project wallet
+            </p>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <code className="text-sm text-gray-800 break-all">
-                  {walletAddresses.apechain}
+                  {donationAddress}
                 </code>
                 <div className="flex space-x-2 ml-4">
                   <button
-                    onClick={() => copyWalletAddress(walletAddresses.apechain)}
+                    onClick={copyWalletAddress}
                     className={`p-2 rounded-lg transition-colors ${
                       walletCopied 
                         ? 'bg-green-100 text-green-600' 
@@ -202,11 +207,11 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
                     {walletCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   </button>
                   <a
-                    href={`https://apescan.io/address/${walletAddresses.apechain}`}
+                    href={`https://etherscan.io/address/${donationAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="View on ApeScan"
+                    title="View on Etherscan"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -222,29 +227,6 @@ const DonationStep: React.FC<DonationStepProps> = ({ onNewAnalysis }) => {
               Donations are completely optional and will <strong>not affect your access</strong> to Rekapp's demo features. 
               All demo functionality remains free and unlimited.
             </p>
-          </div>
-
-          {/* Your support helps us */}
-          <div className="mt-6">
-            <h4 className="font-medium text-gray-900 mb-3">Your support helps us:</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
-                <span>Maintain and improve the platform</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
-                <span>Add new features and integrations</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
-                <span>Keep the demo mode free for everyone</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
-                <span>Support the Build"On" project development</span>
-              </li>
-            </ul>
           </div>
         </div>
       </div>

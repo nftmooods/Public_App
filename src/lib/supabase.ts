@@ -34,6 +34,15 @@ export interface UserApiKey {
   updated_at: string;
 }
 
+export interface Feedback {
+  id: string;
+  user_id?: string;
+  rating: number;
+  comment?: string;
+  session_id?: string;
+  created_at: string;
+}
+
 // Service pour gérer les profils utilisateurs
 export class ProfileService {
   static async getProfile(userId: string): Promise<Profile | null> {
@@ -228,6 +237,59 @@ export class ApiKeyService {
     } catch (error) {
       console.error('Erreur lors de la modification de l\'état de la clé API:', error);
       return false;
+    }
+  }
+}
+
+// Service pour gérer les feedbacks
+export class FeedbackService {
+  static async submitFeedback(feedback: {
+    rating: number;
+    comment?: string;
+    userId?: string;
+    sessionId?: string;
+  }): Promise<Feedback | null> {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: feedback.userId || null,
+          rating: feedback.rating,
+          comment: feedback.comment || null,
+          session_id: feedback.sessionId || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erreur lors de la soumission du feedback:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erreur lors de la soumission du feedback:', error);
+      return null;
+    }
+  }
+
+  static async getUserFeedbacks(userId: string): Promise<Feedback[]> {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Erreur lors de la récupération des feedbacks:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Erreur lors de la récupération des feedbacks:', error);
+      return [];
     }
   }
 }
