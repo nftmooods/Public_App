@@ -49,11 +49,20 @@ export class GeminiService {
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
       
-      // Validate file size - use Files API for files > 20MB
+      // Validate file size - use Files API for files > 20MB only if available
       const maxInlineSizeBytes = 20 * 1024 * 1024; // 20MB
       if (audioFile.size > maxInlineSizeBytes) {
-        console.log('📁 File too large for inline data, using Files API...');
-        return await this.transcribeFileWithFilesAPI(audioFile, options);
+        console.log('📁 File too large for inline data, checking Files API availability...');
+        
+        // Check if Files API is available
+        if (this.genAI.files && typeof this.genAI.files.upload === 'function') {
+          console.log('✅ Files API available, using Files API...');
+          return await this.transcribeFileWithFilesAPI(audioFile, options);
+        } else {
+          console.warn('⚠️ Files API not available, attempting inline transcription anyway...');
+          console.warn('⚠️ This may fail due to file size limitations');
+          // Continue with inline method despite size - let Gemini handle the error
+        }
       }
 
       // Validate file type
@@ -156,6 +165,11 @@ export class GeminiService {
   ): Promise<GeminiTranscriptionResult> {
     if (!this.genAI) {
       throw new Error('Gemini service not configured.');
+    }
+
+    // Check if Files API is available
+    if (!this.genAI.files || typeof this.genAI.files.upload !== 'function') {
+      throw new Error('Files API is not available in this version of @google/generative-ai. Please update to version 0.12.0 or newer, or use smaller files (under 20MB).');
     }
 
     try {
@@ -267,7 +281,9 @@ export class GeminiService {
       
       // Enhanced error handling for Files API
       if (error instanceof Error) {
-        if (error.message.includes('quota') || error.message.includes('429')) {
+        if (error.message.includes('Files API is not available')) {
+          throw error; // Re-throw our custom error message
+        } else if (error.message.includes('quota') || error.message.includes('429')) {
           throw new Error('API quota exceeded. Check your API key or increase your quota.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
           throw new Error('Invalid API key or insufficient permissions for Files API.');
