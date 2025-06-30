@@ -23,66 +23,66 @@ const Step6: React.FC<Step6Props> = ({ contentSettings, keyPoints = [], onUpdate
   const formats = [
     { 
       id: 'article', 
-      name: 'Article web', 
+      name: 'Web Article', 
       icon: FileText, 
-      description: 'Article long avec sections et sous-titres',
-      features: ['Structure hiérarchique', 'Optimisé SEO', 'Lecture approfondie'],
-      example: 'Introduction → Thèmes principaux → Insights détaillés → Conclusion'
+      description: 'Long article with sections and subheadings',
+      features: ['Hierarchical structure', 'SEO optimized', 'In-depth reading'],
+      example: 'Introduction → Main themes → Detailed insights → Conclusion'
     },
     { 
       id: 'bullets', 
-      name: 'Points clés', 
+      name: 'Key Points', 
       icon: List, 
-      description: 'Liste structurée et synthétique',
-      features: ['Lecture rapide', 'Format scannable', 'Résumé efficace'],
+      description: 'Structured and concise list',
+      features: ['Quick reading', 'Scannable format', 'Effective summary'],
       example: '• Point 1 → • Point 2 → • Point 3 → • Conclusion'
     },
     { 
       id: 'thread', 
-      name: 'Thread Twitter', 
+      name: 'Twitter Thread', 
       icon: MessageSquare, 
-      description: 'Série de tweets connectés',
-      features: ['Format social', 'Engagement élevé', 'Partage viral'],
-      example: '1/n Introduction → 2/n Point clé → 3/n Insight → n/n Conclusion'
+      description: 'Series of connected tweets',
+      features: ['Social format', 'High engagement', 'Viral sharing'],
+      example: '1/n Introduction → 2/n Key point → 3/n Insight → n/n Conclusion'
     },
     { 
       id: 'faq', 
       name: 'FAQ', 
       icon: HelpCircle, 
-      description: 'Questions-réponses structurées',
-      features: ['Format interactif', 'Recherche facile', 'Clarté maximale'],
-      example: 'Q: Question 1? → R: Réponse → Q: Question 2? → R: Réponse'
+      description: 'Structured questions and answers',
+      features: ['Interactive format', 'Easy search', 'Maximum clarity'],
+      example: 'Q: Question 1? → A: Answer → Q: Question 2? → A: Answer'
     }
   ];
 
   const tones = [
     { 
       id: 'professional', 
-      name: 'Professionnel', 
-      description: 'Ton formel et expert',
-      characteristics: ['Vocabulaire technique', 'Style soutenu', 'Crédibilité'],
-      example: '"Cette analyse révèle des tendances significatives dans l\'écosystème..."'
+      name: 'Professional', 
+      description: 'Formal and expert tone',
+      characteristics: ['Technical vocabulary', 'Formal style', 'Credibility'],
+      example: '"This analysis reveals significant trends in the ecosystem..."'
     },
     { 
       id: 'casual', 
-      name: 'Décontracté', 
-      description: 'Ton conversationnel et accessible',
-      characteristics: ['Langage simple', 'Approche amicale', 'Accessibilité'],
-      example: '"On a découvert des trucs vraiment intéressants dans cette discussion..."'
+      name: 'Casual', 
+      description: 'Conversational and accessible tone',
+      characteristics: ['Simple language', 'Friendly approach', 'Accessibility'],
+      example: '"We discovered some really interesting things in this discussion..."'
     },
     { 
       id: 'neutral', 
-      name: 'Neutre', 
-      description: 'Ton équilibré et informatif',
-      characteristics: ['Objectivité', 'Clarté', 'Factuel'],
-      example: '"Les points suivants ont été abordés lors de cette conversation..."'
+      name: 'Neutral', 
+      description: 'Balanced and informative tone',
+      characteristics: ['Objectivity', 'Clarity', 'Factual'],
+      example: '"The following points were discussed during this conversation..."'
     },
     { 
       id: 'engaging', 
-      name: 'Engageant', 
-      description: 'Ton dynamique et captivant',
-      characteristics: ['Style accrocheur', 'Émotion', 'Interaction'],
-      example: '"Préparez-vous à découvrir des insights qui vont changer votre vision..."'
+      name: 'Engaging', 
+      description: 'Dynamic and captivating tone',
+      characteristics: ['Catchy style', 'Emotion', 'Interaction'],
+      example: '"Get ready to discover insights that will change your vision..."'
     }
   ];
 
@@ -105,54 +105,54 @@ const Step6: React.FC<Step6Props> = ({ contentSettings, keyPoints = [], onUpdate
 
 ${description}
 
-Cette section développerait en détail les implications de ce point, avec des exemples concrets et des références aux sources mentionnées. L'analyse inclurait également les perspectives des différents intervenants et les liens avec les autres thèmes abordés.
+This section would develop in detail the implications of this point, with concrete examples and references to mentioned sources. The analysis would also include perspectives from different speakers and links to other themes discussed.
 
-### Points clés à retenir :
-- Aspect technique et implications
-- Impact sur l'écosystème
-- Perspectives d'évolution`,
+### Key takeaways:
+- Technical aspects and implications
+- Impact on the ecosystem
+- Evolution perspectives`,
 
       bullets: `• **${title}**
   ${description}
   
-• **Implications principales :**
-  - Impact technique et pratique
-  - Conséquences pour les utilisateurs
-  - Évolutions attendues
+• **Main implications:**
+  - Technical and practical impact
+  - Consequences for users
+  - Expected developments
   
-• **Sources et références :**
-  - Liens vers documentation
-  - Études de cas pertinentes`,
+• **Sources and references:**
+  - Links to documentation
+  - Relevant case studies`,
 
-      thread: `🧵 THREAD : ${title}
+      thread: `🧵 THREAD: ${title}
 
 1/5 ${description.substring(0, 200)}...
 
-2/5 Les implications de ce point sont multiples. D'abord, l'impact technique qui transforme la façon dont nous approchons le problème.
+2/5 The implications of this point are multiple. First, the technical impact that transforms how we approach the problem.
 
-3/5 Ensuite, les conséquences pratiques pour les utilisateurs finaux, qui bénéficient directement de ces améliorations.
+3/5 Then, the practical consequences for end users, who directly benefit from these improvements.
 
-4/5 Les experts s'accordent sur l'importance de cette évolution pour l'avenir du secteur.
+4/5 Experts agree on the importance of this evolution for the future of the sector.
 
-5/5 En conclusion, ce point illustre parfaitement les tendances actuelles et les défis à venir. Qu'en pensez-vous ? 💭`,
+5/5 In conclusion, this point perfectly illustrates current trends and upcoming challenges. What do you think? 💭`,
 
-      faq: `**Q : ${title} - Pouvez-vous expliquer ce concept ?**
+      faq: `**Q: ${title} - Can you explain this concept?**
 
-R : ${description}
+A: ${description}
 
-**Q : Quelles sont les implications pratiques ?**
+**Q: What are the practical implications?**
 
-R : Ce point a plusieurs implications importantes : l'amélioration de l'expérience utilisateur, l'optimisation des performances, et l'ouverture de nouvelles possibilités d'innovation.
+A: This point has several important implications: improving user experience, optimizing performance, and opening new possibilities for innovation.
 
-**Q : Comment cela affecte-t-il l'écosystème ?**
+**Q: How does this affect the ecosystem?**
 
-R : L'impact se ressent à plusieurs niveaux : technique, économique et social, créant un effet d'entraînement positif sur l'ensemble du secteur.`
+A: The impact is felt at several levels: technical, economic and social, creating a positive ripple effect throughout the sector.`
     };
 
     const toneAdjustments = {
-      professional: (text: string) => text.replace(/trucs/g, 'éléments').replace(/super/g, 'remarquable'),
-      casual: (text: string) => text.replace(/révèle/g, 'montre').replace(/significatives/g, 'importantes'),
-      engaging: (text: string) => text.replace(/Cette/g, 'Cette incroyable').replace(/important/g, 'révolutionnaire'),
+      professional: (text: string) => text.replace(/things/g, 'elements').replace(/super/g, 'remarkable'),
+      casual: (text: string) => text.replace(/reveals/g, 'shows').replace(/significant/g, 'important'),
+      engaging: (text: string) => text.replace(/This/g, 'This incredible').replace(/important/g, 'revolutionary'),
       neutral: (text: string) => text
     };
 
@@ -173,18 +173,18 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
     <div className="max-w-6xl mx-auto p-6">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Format et ton du contenu
+          Content Format and Tone
         </h2>
         <p className="text-lg text-gray-600">
-          Choisissez le type de contenu et le ton qui correspondent à vos objectifs
+          Choose the content type and tone that match your objectives
         </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Sélection du format */}
+        {/* Format selection */}
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Type de contenu</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Content Type</h3>
             <div className="space-y-4">
               {formats.map((format) => {
                 const Icon = format.icon;
@@ -228,7 +228,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
                         </div>
                         
                         <div className="text-xs text-gray-500 italic">
-                          Structure : {format.example}
+                          Structure: {format.example}
                         </div>
                       </div>
                     </div>
@@ -239,10 +239,10 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
           </div>
         </div>
 
-        {/* Sélection du ton */}
+        {/* Tone selection */}
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Ton et style</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Tone and Style</h3>
             <div className="space-y-4">
               {tones.map((tone) => {
                 const isSelected = localSettings.tone === tone.id;
@@ -277,7 +277,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
                       </div>
                       
                       <div className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded">
-                        Exemple : {tone.example}
+                        Example: {tone.example}
                       </div>
                     </div>
                   </div>
@@ -288,11 +288,11 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
         </div>
       </div>
 
-      {/* Aperçu de la combinaison */}
+      {/* Preview of the combination */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mt-8 mb-8">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-blue-900">
-            Aperçu de votre sélection
+            Your Selection Preview
           </h3>
           {keyPoints.length > 0 && (
             <button
@@ -300,14 +300,14 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
               className="flex items-center px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200"
             >
               <Eye className="w-4 h-4 mr-2" />
-              Voir un aperçu
+              View Preview
             </button>
           )}
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-blue-800 mb-2">Format sélectionné</h4>
+            <h4 className="font-medium text-blue-800 mb-2">Selected Format</h4>
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center space-x-3">
                 {(() => {
@@ -331,7 +331,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
           </div>
           
           <div>
-            <h4 className="font-medium text-blue-800 mb-2">Ton sélectionné</h4>
+            <h4 className="font-medium text-blue-800 mb-2">Selected Tone</h4>
             <div className="bg-white rounded-lg p-4">
               <div className="flex items-center space-x-3">
                 {(() => {
@@ -352,16 +352,16 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
         </div>
         
         <div className="mt-4 p-4 bg-white rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-2">Résultat attendu</h4>
+          <h4 className="font-medium text-gray-900 mb-2">Expected Result</h4>
           <p className="text-sm text-gray-700">
-            Votre contenu sera généré au format <strong>{formats.find(f => f.id === localSettings.format)?.name}</strong> 
-            {' '}avec un ton <strong>{tones.find(t => t.id === localSettings.tone)?.name}</strong>, 
-            optimisé pour votre audience et vos objectifs de communication.
+            Your content will be generated in <strong>{formats.find(f => f.id === localSettings.format)?.name}</strong> 
+            {' '}format with a <strong>{tones.find(t => t.id === localSettings.tone)?.name}</strong> tone, 
+            optimized for your audience and communication objectives.
           </p>
         </div>
       </div>
 
-      {/* Modal d'aperçu */}
+      {/* Preview modal */}
       {showPreview && previewKeyPoint && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -371,7 +371,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Aperçu du format et du ton
+                  Format and Tone Preview
                 </h2>
               </div>
               <button
@@ -385,11 +385,11 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
             <div className="p-6">
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Exemple basé sur : "{previewKeyPoint.text.split(':')[0] || previewKeyPoint.text.substring(0, 50)}..."
+                  Example based on: "{previewKeyPoint.text.split(':')[0] || previewKeyPoint.text.substring(0, 50)}..."
                 </h3>
                 <p className="text-sm text-blue-700">
                   Format: {formats.find(f => f.id === localSettings.format)?.name} • 
-                  Ton: {tones.find(t => t.id === localSettings.tone)?.name}
+                  Tone: {tones.find(t => t.id === localSettings.tone)?.name}
                 </p>
               </div>
 
@@ -403,8 +403,8 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
 
               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-800">
-                  <strong>Note :</strong> Ceci est un aperçu basé sur un de vos points clés. 
-                  Le contenu final sera généré en utilisant tous vos points clés et sera plus riche et détaillé.
+                  <strong>Note:</strong> This is a preview based on one of your key points. 
+                  The final content will be generated using all your key points and will be richer and more detailed.
                 </p>
               </div>
             </div>
@@ -414,7 +414,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
                 onClick={() => setShowPreview(false)}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Fermer l'aperçu
+                Close Preview
               </button>
             </div>
           </div>
@@ -426,7 +426,7 @@ R : L'impact se ressent à plusieurs niveaux : technique, économique et social,
           onClick={onNext}
           className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
         >
-          Générer le contenu
+          Generate Content
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>

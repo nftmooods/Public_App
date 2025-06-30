@@ -92,7 +92,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <User className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">Profil et paramètres</span>
+                <span className="text-sm text-gray-700">Profile and Settings</span>
               </button>
 
               <button
@@ -103,7 +103,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <Key className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">Clés API</span>
+                <span className="text-sm text-gray-700">API Keys</span>
                 <div className="ml-auto">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
@@ -116,7 +116,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <Settings className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-700">Préférences</span>
+                <span className="text-sm text-gray-700">Preferences</span>
               </button>
             </div>
 
@@ -129,7 +129,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onOpenApiKeys, onOp
                 className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-red-50 rounded-lg transition-colors text-red-600"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="text-sm">Se déconnecter</span>
+                <span className="text-sm">Sign Out</span>
               </button>
             </div>
           </div>

@@ -12,49 +12,49 @@ export const generateMockTranscription = (): TranscriptionData => {
     {
       start: 0,
       end: 25,
-      text: "Bienvenue dans ce Twitter Space sur l'avenir de la finance décentralisée. Je suis ravi d'avoir des invités exceptionnels aujourd'hui.",
+      text: "Welcome to this Twitter Space on the future of decentralized finance. I'm excited to have exceptional guests today.",
       speaker: 'host'
     },
     {
       start: 26,
       end: 58,
-      text: "Merci de m'avoir invité. Je pense que la DeFi est à un point d'inflexion vraiment intéressant. L'adoption institutionnelle s'accélère.",
+      text: "Thanks for having me. I think DeFi is at a really interesting inflection point. Institutional adoption is accelerating.",
       speaker: 'speaker1'
     },
     {
       start: 59,
       end: 92,
-      text: "Absolument. Ce qui est fascinant, c'est la façon dont le paysage réglementaire commence à se cristalliser. Cette clarté stimule l'innovation.",
+      text: "Absolutely. What's fascinating is how the regulatory landscape is starting to crystallize. This clarity is driving innovation.",
       speaker: 'speaker2'
     },
     {
       start: 93,
       end: 127,
-      text: "D'un point de vue technique, les solutions de scalabilité que nous voyons maintenant changent la donne. L'adoption de la Layer 2 a augmenté de 300% cette année.",
+      text: "From a technical perspective, the scalability solutions we're seeing now are game-changing. Layer 2 adoption has increased 300% this year.",
       speaker: 'speaker3'
     },
     {
       start: 128,
       end: 165,
-      text: "C'est un excellent point. Approfondissons la question de la scalabilité. Sarah, que pensez-vous des solutions actuelles ?",
+      text: "That's an excellent point. Let's dive deeper into scalability. Sarah, what are your thoughts on current solutions?",
       speaker: 'host'
     },
     {
       start: 166,
       end: 203,
-      text: "La clé n'est pas seulement le débit, mais le maintien de la décentralisation. Nous ne pouvons pas sacrifier les principes fondamentaux pour la vitesse. C'est là que les ZK-rollups brillent vraiment.",
+      text: "The key isn't just throughput, but maintaining decentralization. We can't sacrifice core principles for speed. That's where ZK-rollups really shine.",
       speaker: 'speaker2'
     },
     {
       start: 204,
       end: 240,
-      text: "L'expérience utilisateur est tout aussi importante. La personne moyenne ne devrait pas avoir besoin de comprendre les frais de gas ou le bridging. L'infrastructure devrait être invisible.",
+      text: "User experience is equally important. The average person shouldn't need to understand gas fees or bridging. Infrastructure should be invisible.",
       speaker: 'speaker1'
     },
     {
       start: 241,
       end: 275,
-      text: "En parlant d'expérience utilisateur, l'interopérabilité cross-chain est là où je vois la plus grande opportunité. Mouvement d'actifs transparent entre les chaînes.",
+      text: "Speaking of user experience, cross-chain interoperability is where I see the biggest opportunity. Seamless asset movement between chains.",
       speaker: 'speaker3'
     }
   ];
@@ -65,7 +65,7 @@ export const generateMockTranscription = (): TranscriptionData => {
 
   return {
     text: fullText,
-    language: 'Français',
+    language: 'English',
     speakers,
     timestamps,
     duration: 1800, // 30 minutes
@@ -78,7 +78,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
   return [
     {
       id: '1',
-      text: 'La DeFi connaît une adoption institutionnelle accélérée, marquant un point d\'inflexion significatif dans l\'industrie.',
+      text: 'DeFi is experiencing accelerated institutional adoption, marking a significant inflection point in the industry.',
       timestamp: 26,
       speaker: 'Alex Chen',
       category: 'insight',
@@ -87,7 +87,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
     },
     {
       id: '2',
-      text: 'La clarté réglementaire stimule l\'innovation plutôt que de l\'étouffer, contrairement aux préoccupations communes.',
+      text: 'Regulatory clarity is driving innovation rather than stifling it, contrary to common concerns.',
       timestamp: 59,
       speaker: 'Sarah Johnson',
       category: 'theme',
@@ -96,7 +96,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
     },
     {
       id: '3',
-      text: 'L\'adoption de la Layer 2 a augmenté de 300% cette année, représentant des améliorations massives de scalabilité.',
+      text: 'Layer 2 adoption has increased 300% this year, representing massive scalability improvements.',
       timestamp: 93,
       speaker: 'Mike Rodriguez',
       category: 'quote',
@@ -105,7 +105,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
     },
     {
       id: '4',
-      text: 'Les ZK-rollups offrent la scalabilité tout en maintenant les principes de décentralisation, contrairement à d\'autres solutions.',
+      text: 'ZK-rollups offer scalability while maintaining decentralization principles, unlike other solutions.',
       timestamp: 166,
       speaker: 'Sarah Johnson',
       category: 'insight',
@@ -114,7 +114,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
     },
     {
       id: '5',
-      text: 'L\'expérience utilisateur devrait prioriser l\'invisibilité de l\'infrastructure complexe comme les frais de gas et le bridging.',
+      text: 'User experience should prioritize invisible infrastructure complexity like gas fees and bridging.',
       timestamp: 204,
       speaker: 'Alex Chen',
       category: 'theme',
@@ -123,7 +123,7 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
     },
     {
       id: '6',
-      text: 'L\'interopérabilité cross-chain représente la plus grande opportunité pour un mouvement d\'actifs transparent.',
+      text: 'Cross-chain interoperability represents the biggest opportunity for seamless asset movement.',
       timestamp: 241,
       speaker: 'Mike Rodriguez',
       category: 'insight',
@@ -135,123 +135,123 @@ export const generateMockKeyPoints = (): KeyPoint[] => {
 
 export const generateMockContent = (format: string, tone: string): string => {
   const baseContent = {
-    article: `# L'Avenir de la Finance Décentralisée : Analyse Approfondie
+    article: `# The Future of Decentralized Finance: In-Depth Analysis
 
 ## Introduction
 
-Le paysage de la finance décentralisée (DeFi) traverse une période de transformation majeure, avec une adoption institutionnelle qui s'accélère et des cadres réglementaires qui commencent à se cristalliser. Cette analyse complète explore les tendances clés qui façonnent l'avenir de la DeFi, basée sur les insights d'experts de l'industrie.
+The decentralized finance (DeFi) landscape is undergoing a major transformation period, with institutional adoption accelerating and regulatory frameworks beginning to crystallize. This comprehensive analysis explores the key trends shaping DeFi's future, based on insights from industry experts.
 
-## Thèmes Principaux
+## Main Themes
 
-### Adoption Institutionnelle
-La DeFi a atteint un point d'inflexion significatif avec les investisseurs institutionnels qui embrassent de plus en plus les protocoles financiers décentralisés. Ce changement représente une évolution fondamentale dans la façon dont la finance traditionnelle perçoit les solutions basées sur la blockchain.
+### Institutional Adoption
+DeFi has reached a significant inflection point with institutional investors increasingly embracing decentralized financial protocols. This shift represents a fundamental evolution in how traditional finance perceives blockchain-based solutions.
 
-### Clarté Réglementaire Stimulant l'Innovation
-Contrairement aux préoccupations répandues concernant les répression réglementaires étouffant l'innovation, les cadres réglementaires émergents fournissent en réalité la clarté nécessaire pour une croissance et un développement soutenus dans l'espace DeFi.
+### Regulatory Clarity Driving Innovation
+Contrary to widespread concerns about regulatory crackdowns stifling innovation, emerging regulatory frameworks are actually providing the clarity needed for sustained growth and development in the DeFi space.
 
-### Percées en Scalabilité
-L'infrastructure technique supportant la DeFi a connu des améliorations remarquables, avec les solutions Layer 2 connaissant une croissance de 300% en adoption au cours de l'année passée. Ces développements répondent aux préoccupations de longue date concernant le débit des transactions et les coûts.
+### Scalability Breakthroughs
+The technical infrastructure supporting DeFi has seen remarkable improvements, with Layer 2 solutions experiencing 300% growth in adoption over the past year. These developments address long-standing concerns about transaction throughput and costs.
 
-## Innovations Techniques
+## Technical Innovations
 
-### ZK-Rollups et Décentralisation
-Les rollups à connaissance zéro représentent une percée dans la résolution du trilemme de la blockchain, offrant des améliorations de scalabilité tout en maintenant les principes de décentralisation qui sont au cœur de la proposition de valeur de la DeFi.
+### ZK-Rollups and Decentralization
+Zero-knowledge rollups represent a breakthrough in solving the blockchain trilemma, offering scalability improvements while maintaining the decentralization principles that are core to DeFi's value proposition.
 
-### Évolution de l'Expérience Utilisateur
-L'accent s'est déplacé des capacités purement techniques vers l'optimisation de l'expérience utilisateur. L'objectif est de rendre les opérations blockchain complexes invisibles aux utilisateurs finaux, éliminant les points de friction comme les calculs de frais de gas et les complexités de bridging cross-chain.
+### User Experience Evolution
+The focus has shifted from purely technical capabilities to optimizing user experience. The goal is to make complex blockchain operations invisible to end users, eliminating friction points like gas fee calculations and cross-chain bridging complexities.
 
-### Interopérabilité Cross-Chain
-L'avenir de la DeFi réside dans l'interopérabilité transparente entre différents réseaux blockchain, permettant un mouvement d'actifs sans friction et des expériences utilisateur unifiées à travers plusieurs protocoles.
+### Cross-Chain Interoperability
+The future of DeFi lies in seamless interoperability between different blockchain networks, enabling frictionless asset movement and unified user experiences across multiple protocols.
 
 ## Conclusion
 
-L'écosystème DeFi mûrit rapidement, avec des innovations techniques répondant aux préoccupations de scalabilité tandis que la clarté réglementaire fournit une base stable pour une croissance continue. L'accent sur l'expérience utilisateur et l'adoption institutionnelle suggère un avenir prometteur pour la finance décentralisée.`,
+The DeFi ecosystem is rapidly maturing, with technical innovations addressing scalability concerns while regulatory clarity provides a stable foundation for continued growth. The focus on user experience and institutional adoption suggests a promising future for decentralized finance.`,
 
-    bullets: `# Points Clés : L'Avenir de la Finance Décentralisée
+    bullets: `# Key Points: The Future of Decentralized Finance
 
-## Tendances Principales
+## Main Trends
 
-• **Adoption Institutionnelle Accélérée** : La DeFi a atteint un point d'inflexion avec les investisseurs institutionnels embrassant de plus en plus les protocoles décentralisés
+• **Accelerated Institutional Adoption**: DeFi has reached an inflection point with institutional investors increasingly embracing decentralized protocols
 
-• **Clarté Réglementaire Stimule l'Innovation** : Les cadres réglementaires émergents fournissent la clarté qui permet plutôt que de restreindre le développement DeFi
+• **Regulatory Clarity Drives Innovation**: Emerging regulatory frameworks provide clarity that enables rather than restricts DeFi development
 
-• **Améliorations Massives de Scalabilité** : L'adoption Layer 2 a augmenté de 300% cette année, répondant aux préoccupations de débit et de coût des transactions
+• **Massive Scalability Improvements**: Layer 2 adoption increased 300% this year, addressing transaction throughput and cost concerns
 
-• **ZK-Rollups Maintiennent la Décentralisation** : Les rollups à connaissance zéro offrent la scalabilité tout en préservant les principes de décentralisation fondamentaux
+• **ZK-Rollups Maintain Decentralization**: Zero-knowledge rollups offer scalability while preserving fundamental decentralization principles
 
-• **Focus sur l'Expérience Utilisateur** : La complexité de l'infrastructure devrait être invisible aux utilisateurs, éliminant les frictions de frais de gas et de bridging
+• **Focus on User Experience**: Infrastructure complexity should be invisible to users, eliminating gas fee and bridging friction
 
-• **Priorité à l'Interopérabilité Cross-Chain** : Le mouvement transparent d'actifs entre réseaux blockchain représente la plus grande opportunité de croissance
+• **Cross-Chain Interoperability Priority**: Seamless asset movement between blockchain networks represents the biggest growth opportunity
 
-• **Infrastructure Technique Mature** : Les solutions de scalabilité sont maintenant révolutionnaires plutôt qu'expérimentales
+• **Mature Technical Infrastructure**: Scalability solutions are now production-ready rather than experimental
 
-• **Paysage Réglementaire se Cristallise** : Des régulations claires fournissent la stabilité pour le développement DeFi à long terme`,
+• **Crystallizing Regulatory Landscape**: Clear regulations provide stability for long-term DeFi development`,
 
-    thread: `🧵 THREAD : L'Avenir de la DeFi - Insights Clés d'Aujourd'hui
+    thread: `🧵 THREAD: The Future of DeFi - Key Insights from Today
 
-1/8 La DeFi est à un point d'inflexion majeur. L'adoption institutionnelle s'accélère plus vite que jamais, marquant un changement fondamental dans la façon dont la finance traditionnelle perçoit les protocoles décentralisés. 🏦
+1/8 DeFi is at a major inflection point. Institutional adoption is accelerating faster than ever, marking a fundamental shift in how traditional finance perceives decentralized protocols. 🏦
 
-2/8 Plot twist : La clarté réglementaire STIMULE en fait l'innovation, ne la tue pas. Des cadres clairs donnent aux constructeurs la confiance pour créer des solutions durables et conformes. 📋
+2/8 Plot twist: Regulatory clarity is actually DRIVING innovation, not killing it. Clear frameworks give builders confidence to create sustainable, compliant solutions. 📋
 
-3/8 Les chiffres ne mentent pas : L'adoption Layer 2 a explosé de 300% cette année. La scalabilité n'est pas un problème futur—elle est résolue maintenant. ⚡
+3/8 The numbers don't lie: Layer 2 adoption exploded 300% this year. Scalability isn't a future problem—it's solved now. ⚡
 
-4/8 Les ZK-rollups sont les vrais MVP ici. Ils résolvent le trilemme blockchain en livrant une scalabilité massive SANS sacrifier la décentralisation. C'est énorme. 🔐
+4/8 ZK-rollups are the real MVPs here. They solve the blockchain trilemma by delivering massive scalability WITHOUT sacrificing decentralization. That's huge. 🔐
 
-5/8 L'expérience utilisateur est tout. Les meilleurs produits DeFi rendent la complexité blockchain invisible. Plus de frais de gas confus ou de cauchemars de bridging. 🎯
+5/8 User experience is everything. The best DeFi products make blockchain complexity invisible. No more confusing gas fees or bridging nightmares. 🎯
 
-6/8 L'interopérabilité cross-chain est là où la magie opère. Le mouvement transparent d'actifs entre chaînes va débloquer le vrai potentiel de la DeFi. 🌉
+6/8 Cross-chain interoperability is where the magic happens. Seamless asset movement between chains will unlock DeFi's true potential. 🌉
 
-7/8 L'infrastructure technique a atteint un point de basculement. Nous passons de solutions expérimentales à des solutions prêtes pour l'entreprise. 🚀
+7/8 Technical infrastructure has reached a tipping point. We're moving from experimental solutions to enterprise-ready ones. 🚀
 
-8/8 Conclusion : La DeFi mûrit rapidement. Avec la clarté réglementaire, les percées techniques et l'adoption institutionnelle, nous entrons dans une nouvelle ère de finance décentralisée. 🌟`,
+8/8 Bottom line: DeFi is maturing rapidly. With regulatory clarity, technical breakthroughs, and institutional adoption, we're entering a new era of decentralized finance. 🌟`,
 
-    faq: `# FAQ : L'Avenir de la Finance Décentralisée
+    faq: `# FAQ: The Future of Decentralized Finance
 
-## Questions Fréquemment Posées
+## Frequently Asked Questions
 
-**Q : Qu'est-ce qui fait de ce moment un "point d'inflexion" pour la DeFi ?**
-R : L'adoption institutionnelle s'accélère rapidement tandis que les cadres réglementaires fournissent la clarté tant nécessaire. Cette combinaison crée des conditions idéales pour une croissance durable et une adoption mainstream.
+**Q: What makes this moment an "inflection point" for DeFi?**
+A: Institutional adoption is accelerating rapidly while regulatory frameworks provide much-needed clarity. This combination creates ideal conditions for sustainable growth and mainstream adoption.
 
-**Q : Comment la clarté réglementaire affecte-t-elle l'innovation DeFi ?**
-R : Contrairement aux préoccupations concernant les répression réglementaires, des cadres clairs stimulent en fait l'innovation en donnant aux développeurs la confiance pour construire des solutions conformes et à long terme.
+**Q: How does regulatory clarity affect DeFi innovation?**
+A: Contrary to concerns about regulatory crackdowns, clear frameworks actually drive innovation by giving developers confidence to build compliant, long-term solutions.
 
-**Q : Que signifient vraiment les chiffres d'adoption Layer 2 ?**
-R : La croissance de 300% en adoption Layer 2 cette année démontre que les solutions de scalabilité passent d'expérimentales à prêtes pour la production, répondant aux barrières majeures à l'utilisation DeFi.
+**Q: What do the Layer 2 adoption numbers really mean?**
+A: The 300% growth in Layer 2 adoption this year demonstrates that scalability solutions are moving from experimental to production-ready, addressing major barriers to DeFi usage.
 
-**Q : Pourquoi les ZK-rollups sont-ils considérés supérieurs aux autres solutions de scaling ?**
-R : Les ZK-rollups résolvent le trilemme blockchain en fournissant des améliorations massives de scalabilité tout en maintenant les principes de décentralisation qui sont au cœur de la proposition de valeur DeFi.
+**Q: Why are ZK-rollups considered superior to other scaling solutions?**
+A: ZK-rollups solve the blockchain trilemma by providing massive scalability improvements while maintaining the decentralization principles that are core to DeFi's value proposition.
 
-**Q : Que signifie "infrastructure invisible" pour les utilisateurs DeFi ?**
-R : L'objectif est d'éliminer les frictions utilisateur en gérant automatiquement les opérations complexes comme l'optimisation des frais de gas et le bridging cross-chain, rendant la DeFi aussi facile à utiliser que les apps financières traditionnelles.
+**Q: What does "invisible infrastructure" mean for DeFi users?**
+A: The goal is to eliminate user friction by automatically handling complex operations like gas fee optimization and cross-chain bridging, making DeFi as easy to use as traditional financial apps.
 
-**Q : Qu'est-ce que l'interopérabilité cross-chain et pourquoi est-ce important ?**
-R : L'interopérabilité cross-chain permet le mouvement transparent d'actifs entre différents réseaux blockchain, créant des expériences utilisateur unifiées et débloquant de nouvelles possibilités pour les protocoles DeFi.
+**Q: What is cross-chain interoperability and why is it important?**
+A: Cross-chain interoperability enables seamless asset movement between different blockchain networks, creating unified user experiences and unlocking new possibilities for DeFi protocols.
 
-**Q : À quel point l'infrastructure technique de la DeFi est-elle mature ?**
-R : L'infrastructure a atteint un point de basculement, passant de solutions expérimentales à des plateformes prêtes pour l'entreprise capables de supporter des applications de niveau institutionnel.`
+**Q: How mature is DeFi's technical infrastructure?**
+A: The infrastructure has reached a tipping point, moving from experimental solutions to enterprise-ready platforms capable of supporting institutional-grade applications.`
   };
 
   let content = baseContent[format as keyof typeof baseContent] || baseContent.article;
 
-  // Ajuster le ton
+  // Adjust tone
   switch (tone) {
     case 'casual':
-      content = content.replace(/démontre/g, 'montre')
-                    .replace(/représente/g, 'est')
-                    .replace(/significatif/g, 'énorme')
-                    .replace(/Cependant,/g, 'Mais,')
-                    .replace(/De plus,/g, 'En plus,');
+      content = content.replace(/demonstrates/g, 'shows')
+                    .replace(/represents/g, 'is')
+                    .replace(/significant/g, 'huge')
+                    .replace(/However,/g, 'But,')
+                    .replace(/Furthermore,/g, 'Plus,');
       break;
     case 'engaging':
-      content = content.replace(/Le/g, 'L\'excitant')
-                    .replace(/Cette/g, 'Cette révolutionnaire')
-                    .replace(/important/g, 'révolutionnaire')
-                    .replace(/montre/g, 'révèle');
+      content = content.replace(/The/g, 'The exciting')
+                    .replace(/This/g, 'This revolutionary')
+                    .replace(/important/g, 'revolutionary')
+                    .replace(/shows/g, 'reveals');
       break;
     case 'professional':
-      content = content.replace(/énorme/g, 'significatif')
-                    .replace(/montre/g, 'démontre')
-                    .replace(/gros/g, 'substantiel');
+      content = content.replace(/huge/g, 'significant')
+                    .replace(/shows/g, 'demonstrates')
+                    .replace(/big/g, 'substantial');
       break;
   }
 

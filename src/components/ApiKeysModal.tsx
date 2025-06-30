@@ -28,7 +28,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'googleAI',
       name: 'Google AI (Gemini)',
-      description: 'Pour la transcription et génération de contenu',
+      description: 'For transcription and content generation',
       placeholder: 'AIza...',
       helpUrl: 'https://aistudio.google.com/app/apikey',
       validation: (key: string) => key.startsWith('AIza') && key.length > 20,
@@ -38,7 +38,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'openAI',
       name: 'OpenAI',
-      description: 'Alternative pour la génération de contenu',
+      description: 'Alternative for content generation',
       placeholder: 'sk-...',
       helpUrl: 'https://platform.openai.com/api-keys',
       validation: (key: string) => key.startsWith('sk-') && key.length > 20,
@@ -48,7 +48,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'anthropic',
       name: 'Anthropic (Claude)',
-      description: 'Alternative pour la génération de contenu',
+      description: 'Alternative for content generation',
       placeholder: 'sk-ant-...',
       helpUrl: 'https://console.anthropic.com/',
       validation: (key: string) => key.startsWith('sk-ant-') && key.length > 20,
@@ -58,7 +58,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'mistral',
       name: 'Mistral AI',
-      description: 'Alternative française pour la génération de contenu',
+      description: 'French alternative for content generation',
       placeholder: 'sk-...',
       helpUrl: 'https://console.mistral.ai/',
       validation: (key: string) => key.length > 10,
@@ -68,7 +68,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'elevenLabs',
       name: 'ElevenLabs',
-      description: 'Pour la synthèse vocale (optionnel)',
+      description: 'For voice synthesis (optional)',
       placeholder: 'el_...',
       helpUrl: 'https://elevenlabs.io/app/speech-synthesis',
       validation: (key: string) => key.length > 10,
@@ -78,7 +78,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     {
       id: 'twitterAPI',
       name: 'Twitter API',
-      description: 'Pour accéder aux Twitter Spaces et publier',
+      description: 'To access Twitter Spaces and publish',
       placeholder: 'API Key / API Secret',
       helpUrl: 'https://developer.twitter.com/en/portal/dashboard',
       validation: (key: string) => key.length > 10,
@@ -165,7 +165,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
       onSave(localApiKeys);
       onClose();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('Error saving API keys:', error);
     }
   };
 
@@ -221,7 +221,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
               <Key className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Gestion des clés API
+              API Keys Management
             </h2>
           </div>
           <button
@@ -238,11 +238,11 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
               <Key className="w-5 h-5 text-blue-600 mt-0.5" />
               <div>
                 <h3 className="font-medium text-blue-800 mb-1">
-                  Utilisez vos propres clés API
+                  Use your own API keys
                 </h3>
                 <p className="text-sm text-blue-700">
-                  Configurez vos clés API personnelles pour utiliser l'outil avec vos propres quotas. 
-                  Vos clés sont stockées de manière sécurisée et ne sont jamais partagées. Vous pouvez activer/désactiver chaque API individuellement.
+                  Configure your personal API keys to use the tool with your own quotas. 
+                  Your keys are stored securely and never shared. You can enable/disable each API individually.
                 </p>
               </div>
             </div>
@@ -270,11 +270,11 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                         className={`flex items-center transition-colors ${
                           enabled ? 'text-green-600' : 'text-gray-400'
                         }`}
-                        title={enabled ? 'Désactiver' : 'Activer'}
+                        title={enabled ? 'Disable' : 'Enable'}
                       >
                         {enabled ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
                         <span className="ml-1 text-sm">
-                          {enabled ? 'Activé' : 'Désactivé'}
+                          {enabled ? 'Enabled' : 'Disabled'}
                         </span>
                       </button>
                       <a
@@ -284,14 +284,14 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                         className="flex items-center text-sm text-blue-600 hover:text-blue-700"
                       >
                         <ExternalLink className="w-4 h-4 mr-1" />
-                        Obtenir une clé
+                        Get a key
                       </a>
                     </div>
                   </div>
 
                   <div className="space-y-3">
                     {provider.type === 'dual' ? (
-                      // Twitter API avec deux champs
+                      // Twitter API with two fields
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="relative">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -350,7 +350,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                         </div>
                       </div>
                     ) : (
-                      // API simple avec un seul champ
+                      // Simple API with single field
                       <div className="relative">
                         <input
                           type={showKeys[provider.id] ? 'text' : 'password'}
@@ -383,7 +383,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                                         ? 'text-red-500'
                                         : 'text-gray-400 hover:text-gray-600'
                                 }`}
-                                title="Tester la clé"
+                                title="Test key"
                               >
                                 {testResult === 'testing' ? (
                                   <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
@@ -399,7 +399,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                                 type="button"
                                 onClick={() => removeKey(provider.id)}
                                 className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                                title="Supprimer la clé"
+                                title="Remove key"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -418,21 +418,21 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
 
                     {getKeyValue(provider.id) && !valid && enabled && (
                       <p className="text-sm text-red-600">
-                        Format de clé invalide pour {provider.name}
+                        Invalid key format for {provider.name}
                       </p>
                     )}
 
                     {testResult === 'success' && (
                       <p className="text-sm text-green-600 flex items-center">
                         <CheckCircle className="w-4 h-4 mr-1" />
-                        Clé API valide et fonctionnelle
+                        Valid and functional API key
                       </p>
                     )}
 
                     {testResult === 'error' && (
                       <p className="text-sm text-red-600 flex items-center">
                         <AlertTriangle className="w-4 h-4 mr-1" />
-                        Erreur lors du test de la clé API
+                        Error testing API key
                       </p>
                     )}
                   </div>
@@ -445,13 +445,13 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
             <div className="flex items-start space-x-3">
               <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
               <div>
-                <h4 className="font-medium text-yellow-800 mb-1">Sécurité et confidentialité</h4>
+                <h4 className="font-medium text-yellow-800 mb-1">Security and Privacy</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Vos clés API sont stockées de manière sécurisée dans la base de données</li>
-                  <li>• Elles sont chiffrées et ne sont jamais transmises en clair</li>
-                  <li>• Utilisez des clés avec des permissions limitées quand possible</li>
-                  <li>• Vous pouvez activer/désactiver chaque API individuellement</li>
-                  <li>• Vous pouvez révoquer vos clés à tout moment depuis les plateformes respectives</li>
+                  <li>• Your API keys are stored securely in the database</li>
+                  <li>• They are encrypted and never transmitted in plain text</li>
+                  <li>• Use keys with limited permissions when possible</li>
+                  <li>• You can enable/disable each API individually</li>
+                  <li>• You can revoke your keys at any time from the respective platforms</li>
                 </ul>
               </div>
             </div>
@@ -463,7 +463,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
-            Annuler
+            Cancel
           </button>
           <button
             onClick={handleSave}
@@ -475,7 +475,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            Sauvegarder
+            Save
           </button>
         </div>
       </div>
