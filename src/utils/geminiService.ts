@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/generative-ai';
 
 export interface GeminiTranscriptionResult {
   text: string;
@@ -16,13 +16,13 @@ export interface GeminiSegment {
 }
 
 export class GeminiService {
-  private genAI: GoogleGenerativeAI | null = null;
+  private genAI: GoogleGenAI | null = null;
   private apiKey: string | null = null;
 
   constructor(apiKey?: string) {
     if (apiKey) {
       this.apiKey = apiKey;
-      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.genAI = new GoogleGenAI(apiKey);
       console.log('🔧 Gemini 2.5 Flash service initialized with API key');
     }
   }
@@ -88,10 +88,11 @@ export class GeminiService {
 
       console.log('🚀 Sending request to Gemini 2.5 Flash...');
       
-      // Create the request with proper MIME type
+      // Create the request with proper MIME type using the new API format
       const mimeType = this.detectMimeType(audioFile);
       console.log('🔍 Detected MIME type:', mimeType);
 
+      // Use the new API format for inline data
       const contents = [
         { text: transcriptionPrompt },
         {
@@ -164,17 +165,13 @@ export class GeminiService {
       // Step 1: Upload file using Files API
       console.log('⬆️ Uploading file to Gemini Files API...');
       
-      // Convert File to ArrayBuffer for upload
-      const arrayBuffer = await audioFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
       // Detect proper MIME type
       const mimeType = this.detectMimeType(audioFile);
       console.log('🔍 Using MIME type:', mimeType);
       
-      // Upload file using the Files API
+      // Upload file using the Files API with the new format
       const uploadResult = await this.genAI.files.upload({
-        file: uint8Array,
+        file: audioFile,
         config: { 
           mimeType: mimeType,
           displayName: audioFile.name
@@ -229,7 +226,7 @@ export class GeminiService {
       // Build transcription prompt
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       
-      // Create content request with file reference
+      // Create content request with file reference using the new API format
       const result = await model.generateContent([
         {
           fileData: {
