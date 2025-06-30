@@ -27,7 +27,7 @@ import {
   parseTranscriptionWithSpeakers 
 } from './utils/audioTranscription';
 import { GeminiServiceFactory } from './utils/geminiService';
-import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause } from 'lucide-react';
+import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap } from 'lucide-react';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/Text content', completed: false, active: true },
@@ -166,11 +166,47 @@ function App() {
   };
 
   const handleStepClick = (stepId: number) => {
+    if (demoMode) {
+      // En mode démo, navigation libre vers toutes les étapes
+      console.log(`🎭 Demo mode: Free navigation to step ${stepId}`);
+      setAppState(prev => ({ ...prev, currentStep: stepId }));
+      updateStepStatus(stepId, false, true);
+      
+      // Générer des données de démo si nécessaire pour les étapes avancées
+      if (stepId > 1 && !appState.transcription) {
+        console.log('🎭 Generating demo data for advanced step navigation');
+        const mockTranscription = generateMockTranscription();
+        const mockKeyPoints = generateMockKeyPoints();
+        const mockContent = generateMockContent('article', 'professional');
+        
+        setAppState(prev => ({
+          ...prev,
+          currentStep: stepId,
+          transcription: mockTranscription,
+          keyPoints: stepId >= 4 ? mockKeyPoints : prev.keyPoints,
+          generatedContent: stepId >= 7 ? mockContent : prev.generatedContent,
+          contentSettings: stepId >= 5 ? {
+            ...prev.contentSettings,
+            title: 'Analyse de démonstration',
+            subtitle: 'Contenu généré automatiquement pour la démonstration'
+          } : prev.contentSettings,
+          paymentInfo: stepId >= 3 ? {
+            accepted: true,
+            method: 'card',
+            amount: 15.99,
+            currency: 'EUR'
+          } : prev.paymentInfo
+        }));
+      }
+      return;
+    }
+    
+    // Mode production: navigation normale
     const canNavigate = steps.find(s => s.id === stepId)?.completed || 
                        stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
     
     if (canNavigate) {
-      console.log(`🔄 Navigating to step ${stepId}`);
+      console.log(`🔄 Production mode: Navigating to step ${stepId}`);
       setAppState(prev => ({ ...prev, currentStep: stepId }));
       updateStepStatus(stepId, false, true);
     }
@@ -746,21 +782,33 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Demo mode toggle */}
-              <button
-                onClick={toggleDemoMode}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
-                  demoMode 
-                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-                title={demoMode ? 'Enable production mode' : 'Enable demo mode'}
-              >
-                {demoMode ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                <span className="text-sm font-medium">
-                  {demoMode ? 'Demo' : 'Prod'}
-                </span>
-              </button>
+              {/* Mode indicator - Plus visible */}
+              <div className={`flex items-center space-x-3 px-4 py-2 rounded-lg border-2 transition-all ${
+                demoMode 
+                  ? 'bg-yellow-50 border-yellow-300 text-yellow-800' 
+                  : 'bg-green-50 border-green-300 text-green-800'
+              }`}>
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    demoMode ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}></div>
+                  <Zap className="w-4 h-4" />
+                  <span className="font-bold text-sm">
+                    {demoMode ? 'MODE DÉMO' : 'MODE PROD'}
+                  </span>
+                </div>
+                <button
+                  onClick={toggleDemoMode}
+                  className={`p-1 rounded transition-colors ${
+                    demoMode 
+                      ? 'hover:bg-yellow-200' 
+                      : 'hover:bg-green-200'
+                  }`}
+                  title={demoMode ? 'Passer en mode production' : 'Passer en mode démo'}
+                >
+                  {demoMode ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                </button>
+              </div>
 
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
@@ -832,13 +880,13 @@ function App() {
               <div className="flex items-center space-x-2">
                 <Play className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm text-yellow-700">
-                  Demo mode enabled - All features are simulated
+                  <strong>Mode démo activé</strong> - Navigation libre entre toutes les étapes • Toutes les fonctionnalités sont simulées
                 </span>
                 <button
                   onClick={toggleDemoMode}
                   className="text-sm text-yellow-600 hover:text-yellow-800 underline ml-2"
                 >
-                  Switch to production mode
+                  Passer en mode production
                 </button>
               </div>
             </div>
@@ -851,6 +899,7 @@ function App() {
         steps={steps} 
         currentStep={appState.currentStep}
         onStepClick={handleStepClick}
+        demoMode={demoMode}
       />
 
       {/* Main Content */}
