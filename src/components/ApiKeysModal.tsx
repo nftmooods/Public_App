@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Key, Eye, EyeOff, Save, Plus, Trash2, ExternalLink, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { UserApiKeys, ApiKeyConfig } from '../types';
+import { useApiKeys } from '../hooks/useApiKeys';
 
 interface ApiKeysModalProps {
   isOpen: boolean;
   onClose: () => void;
   apiKeys: UserApiKeys;
   onSave: (apiKeys: UserApiKeys) => void;
+  userId: string | null;
 }
 
-const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, onSave }) => {
+const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, onSave, userId }) => {
   const [localApiKeys, setLocalApiKeys] = useState<UserApiKeys>(apiKeys);
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [testResults, setTestResults] = useState<Record<string, 'success' | 'error' | 'testing'>>({});
+  
+  const { saveApiKeys, testApiKey, isLoading } = useApiKeys(userId);
+
+  useEffect(() => {
+    setLocalApiKeys(apiKeys);
+  }, [apiKeys]);
 
   if (!isOpen) return null;
 
@@ -137,60 +145,28 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
     }));
   };
 
-  const testApiKey = async (provider: string) => {
-    const config = localApiKeys[provider as keyof UserApiKeys];
-    if (!config) return;
-
+  const testApiKeyHandler = async (provider: string) => {
     setTestResults(prev => ({ ...prev, [provider]: 'testing' }));
 
     try {
-      // Simuler le test de la clé API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Validation basique
-      const providerConfig = apiProviders.find(p => p.id === provider);
-      let isValid = false;
-
-      if (provider === 'twitterAPI' && 'apiKey' in config) {
-        isValid = config.apiKey.length > 10 && config.apiSecret.length > 10;
-      } else if ('key' in config) {
-        isValid = providerConfig ? providerConfig.validation(config.key) : false;
-      }
-
-      if (isValid) {
-        setTestResults(prev => ({ ...prev, [provider]: 'success' }));
-      } else {
-        setTestResults(prev => ({ ...prev, [provider]: 'error' }));
-      }
+      const isValid = await testApiKey(provider);
+      setTestResults(prev => ({ 
+        ...prev, 
+        [provider]: isValid ? 'success' : 'error' 
+      }));
     } catch (error) {
       setTestResults(prev => ({ ...prev, [provider]: 'error' }));
     }
   };
 
-  const handleSave = () => {
-    // Filtrer les clés vides et nettoyer
-    const filteredKeys = Object.entries(localApiKeys).reduce((acc, [key, value]) => {
-      if (value) {
-        if (key === 'twitterAPI' && 'apiKey' in value) {
-          if (value.apiKey.trim() && value.apiSecret.trim()) {
-            acc[key as keyof UserApiKeys] = {
-              ...value,
-              apiKey: value.apiKey.trim(),
-              apiSecret: value.apiSecret.trim()
-            } as any;
-          }
-        } else if ('key' in value && value.key.trim()) {
-          acc[key as keyof UserApiKeys] = {
-            ...value,
-            key: value.key.trim()
-          } as any;
-        }
-      }
-      return acc;
-    }, {} as UserApiKeys);
-
-    onSave(filteredKeys);
-    onClose();
+  const handleSave = async () => {
+    try {
+      await saveApiKeys(localApiKeys);
+      onSave(localApiKeys);
+      onClose();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
   };
 
   const removeKey = (provider: string) => {
@@ -266,7 +242,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                 </h3>
                 <p className="text-sm text-blue-700">
                   Configurez vos clés API personnelles pour utiliser l'outil avec vos propres quotas. 
-                  Vos clés sont stockées localement et ne sont jamais partagées. Vous pouvez activer/désactiver chaque API individuellement.
+                  Vos clés sont stockées de manière sécurisée et ne sont jamais partagées. Vous pouvez activer/désactiver chaque API individuellement.
                 </p>
               </div>
             </div>
@@ -396,7 +372,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
                             <>
                               <button
                                 type="button"
-                                onClick={() => testApiKey(provider.id)}
+                                onClick={() => testApiKeyHandler(provider.id)}
                                 disabled={!valid || testResult === 'testing'}
                                 className={`p-1 rounded transition-colors ${
                                   testResult === 'testing' 
@@ -471,8 +447,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
               <div>
                 <h4 className="font-medium text-yellow-800 mb-1">Sécurité et confidentialité</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Vos clés API sont stockées uniquement dans votre navigateur</li>
-                  <li>• Elles ne sont jamais transmises à nos serveurs</li>
+                  <li>• Vos clés API sont stockées de manière sécurisée dans la base de données</li>
+                  <li>• Elles sont chiffrées et ne sont jamais transmises en clair</li>
                   <li>• Utilisez des clés avec des permissions limitées quand possible</li>
                   <li>• Vous pouvez activer/désactiver chaque API individuellement</li>
                   <li>• Vous pouvez révoquer vos clés à tout moment depuis les plateformes respectives</li>
@@ -491,9 +467,14 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({ isOpen, onClose, apiKeys, o
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all"
+            disabled={isLoading}
+            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
           >
-            <Save className="w-4 h-4 mr-2" />
+            {isLoading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
             Sauvegarder
           </button>
         </div>

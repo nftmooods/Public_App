@@ -13,6 +13,8 @@ import LoginModal from './components/LoginModal';
 import UserMenu from './components/UserMenu';
 import ApiKeysModal from './components/ApiKeysModal';
 import { Step, AppState, User, UserApiKeys } from './types';
+import { useAuth } from './hooks/useAuth';
+import { useApiKeys } from './hooks/useApiKeys';
 import { 
   generateMockTranscription,
   generateMockKeyPoints, 
@@ -79,32 +81,23 @@ function App() {
   const [apiKeyError, setApiKeyError] = useState<string>('');
   const [demoMode, setDemoMode] = useState(true);
 
-  // Initialiser l'authentification et les clés API
-  useEffect(() => {
-    // Vérifier l'authentification
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    const userData = localStorage.getItem('user');
-    const savedDemoMode = localStorage.getItem('demoMode');
-    
-    if (savedDemoMode !== null) {
-      setDemoMode(savedDemoMode === 'true');
-    }
-    
-    if (isAuthenticated && userData) {
-      const user = JSON.parse(userData);
-      setAppState(prev => ({ 
-        ...prev, 
-        user, 
-        isAuthenticated: true 
-      }));
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
 
-      // Charger les clés API de l'utilisateur
-      if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-        setApiKey(user.apiKeys.googleAI.key);
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
-      }
+  // Mettre à jour l'état de l'application avec les données d'authentification
+  useEffect(() => {
+    setAppState(prev => ({
+      ...prev,
+      user,
+      isAuthenticated
+    }));
+
+    // Configurer Gemini si une clé API Google AI est disponible
+    if (user && apiKeys.googleAI && apiKeys.googleAI.enabled && apiKeys.googleAI.key) {
+      setApiKey(apiKeys.googleAI.key);
+      setGeminiConfigured(true);
+      setApiKeyError('');
+      setDemoMode(false);
     } else {
       // Fallback vers l'ancienne méthode pour la compatibilité
       const storedApiKey = localStorage.getItem('google_ai_api_key');
@@ -113,9 +106,12 @@ function App() {
         setGeminiConfigured(true);
         setApiKeyError('');
         setDemoMode(false);
+      } else {
+        setGeminiConfigured(false);
+        setDemoMode(true);
       }
     }
-  }, []);
+  }, [user, isAuthenticated, apiKeys]);
 
   const toggleDemoMode = () => {
     const newDemoMode = !demoMode;
@@ -159,30 +155,12 @@ function App() {
     }
   };
 
-  const handleLogin = (user: User) => {
-    setAppState(prev => ({ 
-      ...prev, 
-      user, 
-      isAuthenticated: true 
-    }));
-
-    // Charger les clés API de l'utilisateur
-    if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled) {
-      setApiKey(user.apiKeys.googleAI.key);
-      setGeminiConfigured(true);
-      setApiKeyError('');
-      setDemoMode(false);
-    }
+  const handleLogin = (userData: User) => {
+    // La gestion de l'authentification est maintenant dans useAuth
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    setAppState(prev => ({ 
-      ...prev, 
-      user: null, 
-      isAuthenticated: false 
-    }));
+  const handleLogout = async () => {
+    // La gestion de la déconnexion est maintenant dans useAuth
     setApiKey('');
     setGeminiConfigured(false);
     setApiKeyError('');
@@ -204,19 +182,13 @@ function App() {
     }
   };
 
-  const handleApiKeysSave = (apiKeys: UserApiKeys) => {
-    if (appState.user) {
-      const updatedUser = {
-        ...appState.user,
-        apiKeys
-      };
+  const handleApiKeysSave = async (newApiKeys: UserApiKeys) => {
+    try {
+      await saveApiKeys(newApiKeys);
       
-      setAppState(prev => ({ ...prev, user: updatedUser }));
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
       // Mettre à jour la configuration Gemini
-      if (apiKeys.googleAI && apiKeys.googleAI.enabled) {
-        setApiKey(apiKeys.googleAI.key);
+      if (newApiKeys.googleAI && newApiKeys.googleAI.enabled) {
+        setApiKey(newApiKeys.googleAI.key);
         setGeminiConfigured(true);
         setApiKeyError('');
         setDemoMode(false);
@@ -225,6 +197,9 @@ function App() {
         setGeminiConfigured(false);
         setDemoMode(true);
       }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des clés API:', error);
+      setApiKeyError('Erreur lors de la sauvegarde des clés API');
     }
   };
 
@@ -628,6 +603,17 @@ function App() {
     return 'Mode démo';
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -674,9 +660,9 @@ function App() {
                 </span>
               </div>
               
-              {appState.isAuthenticated && appState.user ? (
+              {isAuthenticated && user ? (
                 <UserMenu
-                  user={appState.user}
+                  user={user}
                   onLogout={handleLogout}
                   onOpenApiKeys={() => setShowApiKeysModal(true)}
                   onOpenProfile={() => {}}
@@ -715,7 +701,7 @@ function App() {
                 <AlertTriangle className="w-4 h-4 text-red-600" />
                 <span className="text-sm text-red-700">{apiKeyError}</span>
                 <button
-                  onClick={() => appState.isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
+                  onClick={() => isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
                   className="text-sm text-red-600 hover:text-red-800 underline ml-2"
                 >
                   Configurer une nouvelle clé API
@@ -780,12 +766,13 @@ function App() {
         />
       )}
 
-      {appState.isAuthenticated && appState.user && (
+      {isAuthenticated && user && (
         <ApiKeysModal
           isOpen={showApiKeysModal}
           onClose={() => setShowApiKeysModal(false)}
-          apiKeys={appState.user.apiKeys}
+          apiKeys={apiKeys}
           onSave={handleApiKeysSave}
+          userId={user.id}
         />
       )}
     </div>
