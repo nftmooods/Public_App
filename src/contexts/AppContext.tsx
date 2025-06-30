@@ -22,7 +22,8 @@ const initialSteps: Step[] = [
   { id: 4, title: 'Structure', description: 'Title & overview', completed: false, active: false },
   { id: 5, title: 'Format', description: 'Type & tone', completed: false, active: false },
   { id: 6, title: 'Generation', description: 'Enriched content', completed: false, active: false },
-  { id: 7, title: 'Export', description: 'Publication & sharing', completed: false, active: false }
+  { id: 7, title: 'Export', description: 'Download & share', completed: false, active: false },
+  { id: 8, title: 'Support', description: 'Help us improve', completed: false, active: false }
 ];
 
 const initialAppState: AppState = {
@@ -99,6 +100,7 @@ interface AppContextType {
   handleContentChange: (content: string) => void;
   handleRegenerate: () => Promise<void>;
   handleStep6Next: () => void;
+  handleStep7Next: () => void;
   
   // Content handlers
   handleUrlChange: (url: string) => void;
@@ -246,7 +248,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const nextStep = appState.currentStep + 1;
     console.log(`➡️ Moving to next step: ${nextStep}`);
     
-    if (nextStep <= 7) {
+    if (nextStep <= 8) {
       updateStepStatus(appState.currentStep, true, false);
       setAppState(prev => ({ ...prev, currentStep: nextStep }));
       updateStepStatus(nextStep, false, true);
@@ -620,6 +622,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     goToNextStep();
   };
 
+  const handleStep7Next = () => {
+    goToNextStep();
+  };
+
   const contextValue: AppContextType = {
     // State
     steps,
@@ -664,6 +670,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     handleContentChange,
     handleRegenerate,
     handleStep6Next,
+    handleStep7Next,
     
     // Content handlers
     handleUrlChange,

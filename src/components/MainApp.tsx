@@ -7,6 +7,7 @@ import Step5 from './steps/Step5';
 import Step6 from './steps/Step6';
 import Step7 from './steps/Step7';
 import Step8 from './steps/Step8';
+import DonationStep from './steps/DonationStep';
 import ApiKeyModal from './ApiKeyModal';
 import LoginModal from './LoginModal';
 import UserMenu from './UserMenu';
@@ -55,6 +56,7 @@ export const MainApp: React.FC = () => {
     handleContentChange,
     handleRegenerate,
     handleStep6Next,
+    handleStep7Next,
     
     // Content handlers
     handleUrlChange,
@@ -161,6 +163,12 @@ export const MainApp: React.FC = () => {
           <Step8
             generatedContent={appState.generatedContent}
             contentSettings={appState.contentSettings}
+            onNext={handleStep7Next}
+          />
+        );
+      case 8:
+        return (
+          <DonationStep
             onNewAnalysis={resetAppState}
           />
         );
@@ -298,7 +306,7 @@ export const MainApp: React.FC = () => {
               )}
               
               <div className="text-sm text-gray-500">
-                Step {appState.currentStep} of 7
+                Step {appState.currentStep} of 8
               </div>
             </div>
           </div>

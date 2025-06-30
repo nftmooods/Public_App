@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Download, Copy, Globe, FileText, Hash, Share2, CheckCircle, RotateCcw } from 'lucide-react';
+import { Download, Copy, Globe, FileText, Hash, Share2, CheckCircle, ArrowRight } from 'lucide-react';
 
 interface Step8Props {
   generatedContent: string;
   contentSettings: any;
-  onNewAnalysis?: () => void;
+  onNext: () => void;
 }
 
-const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNewAnalysis }) => {
+const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext }) => {
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<string>('');
 
@@ -93,7 +93,7 @@ ${generatedContent}`
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `twitter-space-summary.${extensions[format.id as keyof typeof extensions]}`;
+    a.download = `rekapp-content.${extensions[format.id as keyof typeof extensions]}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -246,7 +246,7 @@ ${generatedContent}`
       </div>
 
       {/* Success Message */}
-      <div className="text-center p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+      <div className="text-center p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 mb-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-8 h-8 text-green-600" />
         </div>
@@ -254,23 +254,19 @@ ${generatedContent}`
         <p className="text-gray-600 mb-6">
           Your content has been transformed into professional material ready for publication.
         </p>
-        <div className="flex justify-center space-x-4">
-          {onNewAnalysis && (
-            <button
-              onClick={onNewAnalysis}
-              className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
-            >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              New Analysis
-            </button>
-          )}
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-all shadow-sm"
-          >
-            Restart Application
-          </button>
-        </div>
+        <p className="text-sm text-gray-500 mb-6">
+          If you found this tool helpful, please consider supporting our development in the next step.
+        </p>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          onClick={onNext}
+          className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
+        >
+          Continue to Support
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </button>
       </div>
     </div>
   );
