@@ -337,7 +337,7 @@ export class GeminiService {
     prompt?: string;
   }): string {
     // Build prompt following Google's best practices for audio transcription
-    let prompt = `You are an expert audio transcription AI using Gemini 2.5 Flash. Please transcribe this audio file with high accuracy.
+    let prompt = `Generate a transcript of the speech in this audio file.
 
 INSTRUCTIONS:
 - Provide a complete, word-for-word transcription
