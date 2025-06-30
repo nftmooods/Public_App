@@ -37,158 +37,198 @@ export interface UserApiKey {
 // Service pour gérer les profils utilisateurs
 export class ProfileService {
   static async getProfile(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la récupération du profil:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
       console.error('Erreur lors de la récupération du profil:', error);
       return null;
     }
-
-    return data;
   }
 
   static async updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la mise à jour du profil:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
       console.error('Erreur lors de la mise à jour du profil:', error);
       return null;
     }
-
-    return data;
   }
 
   static async createProfile(profile: Omit<Profile, 'created_at' | 'updated_at'>): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert(profile)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert(profile)
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la création du profil:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
       console.error('Erreur lors de la création du profil:', error);
       return null;
     }
-
-    return data;
   }
 }
 
 // Service pour gérer les clés API
 export class ApiKeyService {
   static async getUserApiKeys(userId: string): Promise<UserApiKey[]> {
-    const { data, error } = await supabase
-      .from('user_api_keys')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('user_api_keys')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la récupération des clés API:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
       console.error('Erreur lors de la récupération des clés API:', error);
       return [];
     }
-
-    return data || [];
   }
 
   static async saveApiKey(apiKey: Omit<UserApiKey, 'id' | 'created_at' | 'updated_at'>): Promise<UserApiKey | null> {
-    // Vérifier si une clé existe déjà pour ce provider
-    const { data: existing } = await supabase
-      .from('user_api_keys')
-      .select('id')
-      .eq('user_id', apiKey.user_id)
-      .eq('provider', apiKey.provider)
-      .single();
-
-    if (existing) {
-      // Mettre à jour la clé existante
-      const { data, error } = await supabase
+    try {
+      // Vérifier si une clé existe déjà pour ce provider
+      const { data: existing } = await supabase
         .from('user_api_keys')
-        .update({
-          api_key: apiKey.api_key,
-          api_secret: apiKey.api_secret,
-          enabled: apiKey.enabled,
-          is_valid: apiKey.is_valid
-        })
-        .eq('id', existing.id)
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', apiKey.user_id)
+        .eq('provider', apiKey.provider)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Erreur lors de la mise à jour de la clé API:', error);
-        return null;
+      if (existing) {
+        // Mettre à jour la clé existante
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .update({
+            api_key: apiKey.api_key,
+            api_secret: apiKey.api_secret,
+            enabled: apiKey.enabled,
+            is_valid: apiKey.is_valid
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Erreur lors de la mise à jour de la clé API:', error);
+          return null;
+        }
+
+        return data;
+      } else {
+        // Créer une nouvelle clé
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .insert(apiKey)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Erreur lors de la création de la clé API:', error);
+          return null;
+        }
+
+        return data;
       }
-
-      return data;
-    } else {
-      // Créer une nouvelle clé
-      const { data, error } = await supabase
-        .from('user_api_keys')
-        .insert(apiKey)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erreur lors de la création de la clé API:', error);
-        return null;
-      }
-
-      return data;
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la clé API:', error);
+      return null;
     }
   }
 
   static async deleteApiKey(keyId: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('user_api_keys')
-      .delete()
-      .eq('id', keyId);
+    try {
+      const { error } = await supabase
+        .from('user_api_keys')
+        .delete()
+        .eq('id', keyId);
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la suppression de la clé API:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
       console.error('Erreur lors de la suppression de la clé API:', error);
       return false;
     }
-
-    return true;
   }
 
   static async updateApiKeyStatus(keyId: string, isValid: boolean, lastTested?: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('user_api_keys')
-      .update({
-        is_valid: isValid,
-        last_tested: lastTested || new Date().toISOString()
-      })
-      .eq('id', keyId);
+    try {
+      const { error } = await supabase
+        .from('user_api_keys')
+        .update({
+          is_valid: isValid,
+          last_tested: lastTested || new Date().toISOString()
+        })
+        .eq('id', keyId);
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la mise à jour du statut de la clé API:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
       console.error('Erreur lors de la mise à jour du statut de la clé API:', error);
       return false;
     }
-
-    return true;
   }
 
   static async toggleApiKey(keyId: string, enabled: boolean): Promise<boolean> {
-    const { error } = await supabase
-      .from('user_api_keys')
-      .update({ enabled })
-      .eq('id', keyId);
+    try {
+      const { error } = await supabase
+        .from('user_api_keys')
+        .update({ enabled })
+        .eq('id', keyId);
 
-    if (error) {
+      if (error) {
+        console.error('Erreur lors de la modification de l\'état de la clé API:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
       console.error('Erreur lors de la modification de l\'état de la clé API:', error);
       return false;
     }
-
-    return true;
   }
 }
 
@@ -200,8 +240,10 @@ export class AuthService {
       password,
       options: {
         data: {
-          name: name
-        }
+          name: name,
+          full_name: name
+        },
+        emailRedirectTo: undefined // Désactiver la confirmation par email pour le développement
       }
     });
 
