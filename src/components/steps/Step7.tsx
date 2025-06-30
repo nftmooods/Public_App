@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, ArrowRight, Edit3, RefreshCw, Search, ExternalLink, Plus, Sparkles } from 'lucide-react';
+import { Loader2, ArrowRight, Edit3, RefreshCw, Search, ExternalLink, Plus, Sparkles, X, Maximize, Minimize } from 'lucide-react';
 import { ContentSettings, KeyPoint, TranscriptionData } from '../../types';
 
 interface Step7Props {
@@ -26,19 +26,28 @@ const Step7: React.FC<Step7Props> = ({
   onNext
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [editContent, setEditContent] = useState(generatedContent);
   const [customPrompt, setCustomPrompt] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<string[]>([]);
 
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setIsMaximized(true);
+    setEditContent(generatedContent);
+  };
+
   const handleSaveEdit = () => {
     onContentChange(editContent);
     setIsEditing(false);
+    setIsMaximized(false);
   };
 
   const handleCancelEdit = () => {
     setEditContent(generatedContent);
     setIsEditing(false);
+    setIsMaximized(false);
   };
 
   const handleCustomRegenerate = async () => {
@@ -111,6 +120,97 @@ const Step7: React.FC<Step7Props> = ({
     );
   }
 
+  // Maximized edit mode
+  if (isMaximized && isEditing) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        {/* Maximized header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+          <div className="flex items-center space-x-4">
+            <h2 className="text-2xl font-bold text-gray-900">Edit Content</h2>
+            <div className="flex items-center space-x-2">
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                {contentSettings.format}
+              </span>
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                {contentSettings.tone}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            {/* Word count in header */}
+            <div className="text-sm text-gray-500">
+              <span className="font-medium">{editContent.split(' ').length}</span> words
+            </div>
+            
+            <button
+              onClick={() => setIsMaximized(false)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Minimize"
+            >
+              <Minimize className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={handleCancelEdit}
+              className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg font-medium hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            
+            <button
+              onClick={handleSaveEdit}
+              className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        {/* Maximized content area */}
+        <div className="flex-1 p-6 overflow-hidden">
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="w-full h-full p-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-base leading-relaxed"
+            placeholder="Edit your content here..."
+          />
+        </div>
+
+        {/* Maximized footer with stats */}
+        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600">
+                  <span className="font-medium text-blue-900">{editContent.split(' ').length}</span> words
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600">
+                  <span className="font-medium text-green-900">{editContent.length}</span> characters
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-gray-600">
+                  <span className="font-medium text-purple-900">{Math.ceil(editContent.split(' ').length / 200)}</span> min read
+                </span>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-500">
+              Press Ctrl+S to save • Esc to cancel
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="text-center mb-8">
@@ -149,60 +249,30 @@ const Step7: React.FC<Step7Props> = ({
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-gray-900">Final Content</h3>
           <div className="flex space-x-3">
-            {isEditing ? (
-              <>
-                <button
-                  onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700 transition-colors"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg font-medium hover:bg-gray-600 transition-colors"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={onRegenerate}
-                  className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Complete with AI
-                </button>
-                <button
-                  onClick={() => {
-                    setIsEditing(true);
-                    setEditContent(generatedContent);
-                  }}
-                  className="flex items-center px-4 py-2 text-blue-600 border border-blue-600 text-sm rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                >
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  Edit
-                </button>
-              </>
-            )}
+            <button
+              onClick={onRegenerate}
+              className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all text-sm"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Complete with AI
+            </button>
+            <button
+              onClick={handleStartEdit}
+              className="flex items-center px-4 py-2 text-blue-600 border border-blue-600 text-sm rounded-lg font-medium hover:bg-blue-50 transition-colors"
+            >
+              <Edit3 className="w-4 h-4 mr-2" />
+              Edit
+            </button>
           </div>
         </div>
 
-        {isEditing ? (
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="w-full h-[600px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
-          />
-        ) : (
-          <div className="prose prose-sm max-w-none">
-            <div className="bg-gray-50 rounded-lg p-6 min-h-[600px] max-h-[600px] overflow-y-auto">
-              <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
-                {generatedContent}
-              </pre>
-            </div>
+        <div className="prose prose-sm max-w-none">
+          <div className="bg-gray-50 rounded-lg p-6 min-h-[600px] max-h-[600px] overflow-y-auto">
+            <pre className="whitespace-pre-wrap font-sans text-gray-800 leading-relaxed">
+              {generatedContent}
+            </pre>
           </div>
-        )}
+        </div>
 
         {/* Compact content metrics */}
         <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
