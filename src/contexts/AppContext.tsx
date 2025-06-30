@@ -392,30 +392,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     console.log('🚀 Step1 Next called - Session ID:', analysisSessionId);
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
-    // More realistic analysis duration based on content type
-    const getAnalysisDuration = () => {
-      if (appState.textContent.trim()) {
-        const textLength = appState.textContent.length;
-        if (textLength < 1000) return 3000; // 3 seconds for short text
-        if (textLength < 5000) return 6000; // 6 seconds for medium text
-        return 10000; // 10 seconds for long text
-      } else if (appState.audioFile) {
-        const fileSizeMB = appState.audioFile.size / (1024 * 1024);
-        if (fileSizeMB < 5) return 8000; // 8 seconds for small file
-        if (fileSizeMB < 20) return 15000; // 15 seconds for medium file
-        return 25000; // 25 seconds for large file
-      }
-      return 5000; // Default
-    };
-
-    const analysisDuration = getAnalysisDuration();
-    console.log(`⏱️ Estimated analysis duration: ${analysisDuration}ms`);
-    
     try {
       let transcriptionResult;
-      
-      // Wait for realistic analysis duration
-      await simulateDelay(analysisDuration);
       
       // If text is provided, use it directly
       if (appState.textContent.trim()) {
@@ -605,10 +583,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
-      // Realistic regeneration duration
-      const regenerationDuration = 8000; // 8 seconds
-      await simulateDelay(regenerationDuration);
-      
       // Use Gemini API if configured and in production mode
       if (!demoMode && geminiConfigured && apiKey && appState.transcription) {
         console.log('🚀 Content generation with Gemini 2.5 Flash...');
@@ -632,6 +606,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       } else {
         // Demo mode
         console.log('🎭 Content generation in demo mode');
+        await simulateDelay(2000);
         
         const content = generateMockContent(
           appState.contentSettings.format, 

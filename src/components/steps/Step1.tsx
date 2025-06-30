@@ -231,7 +231,7 @@ const Step1: React.FC<Step1Props> = ({
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Local algorithm',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
           duration: useGemini ? 3000 : 2000
         },
         { 
@@ -289,14 +289,14 @@ const Step1: React.FC<Step1Props> = ({
           id: 'transcription', 
           label: `Audio transcription ${fileInfo.method === 'files-api' ? '(Files API)' : '(Inline)'}`, 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash (Multimodal)' : 'Simulated data',
+          api: useGemini ? 'Gemini 2.5 Flash (Multimodal)' : 'Demo mode',
           duration: baseTranscriptionTime
         },
         { 
           id: 'speaker-analysis', 
           label: 'Speaker analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Local processing',
+          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
           duration: 2500
         },
         { 
@@ -458,7 +458,7 @@ const Step1: React.FC<Step1Props> = ({
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
-                        step.api.includes('Demo') || step.api.includes('Simulated') ? 'bg-yellow-100 text-yellow-700' :
+                        step.api.includes('Demo') || step.api.includes('demo') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {step.api}
@@ -647,7 +647,7 @@ const Step1: React.FC<Step1Props> = ({
                     </p>
                     <div className="text-xs text-gray-400 space-y-1">
                       <p>• Files ≤20MB: Fast inline processing</p>
-                      <p>• Files &gt;20MB: Files API processing</p>
+                      <p>• Files >20MB: Files API processing</p>
                       <p>• Maximum size: 2GB</p>
                     </div>
                   </div>
@@ -693,12 +693,12 @@ const Step1: React.FC<Step1Props> = ({
                     textFile ? 'text-purple-600' : 'text-gray-400'
                   }`} />
                   {textFile ? (
-                    <p className="text-sm font-medium text-purple-700">
+                    <p className="text-xs font-medium text-purple-700">
                       {textFile.name}
                     </p>
                   ) : (
                     <div>
-                      <p className="text-sm text-gray-700">Upload text file</p>
+                      <p className="text-xs text-gray-700">Upload text file</p>
                       <p className="text-xs text-gray-500">TXT, MD files supported</p>
                     </div>
                   )}
