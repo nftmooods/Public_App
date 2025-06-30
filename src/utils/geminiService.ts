@@ -47,24 +47,55 @@ export class GeminiService {
     try {
       console.log('🎵 Starting Gemini 2.0 Flash transcription for:', audioFile.name);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('📊 File type:', audioFile.type);
       
+      // Validate file size (max 20MB for audio files)
+      const maxSizeBytes = 20 * 1024 * 1024; // 20MB
+      if (audioFile.size > maxSizeBytes) {
+        throw new Error(`File too large. Maximum size is 20MB, got ${(audioFile.size / 1024 / 1024).toFixed(2)}MB`);
+      }
+
+      // Validate file type
+      const supportedTypes = [
+        'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/m4a', 'audio/aac',
+        'audio/ogg', 'audio/flac', 'audio/webm', 'video/mp4', 'video/mpeg',
+        'video/mov', 'video/avi', 'video/x-flv', 'video/mpg', 'video/webm'
+      ];
+      
+      if (!supportedTypes.includes(audioFile.type)) {
+        console.warn('⚠️ File type not in supported list, but attempting transcription:', audioFile.type);
+      }
+
       // Convert audio file to base64
       const audioBase64 = await this.fileToBase64(audioFile);
       console.log('🔄 File converted to base64');
       
-      // Use Gemini 2.0 Flash for transcription
-      const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+      // Use Gemini 2.0 Flash for transcription with proper model configuration
+      const model = this.genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash-exp",
+        generationConfig: {
+          temperature: 0.1, // Low temperature for more consistent transcription
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 8192,
+        },
+      });
 
-      // Build transcription prompt
-      const transcriptionPrompt = this.buildTranscriptionPrompt(options);
-      console.log('📝 Transcription prompt built');
+      // Build optimized transcription prompt based on Google's recommendations
+      const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
+      console.log('📝 Optimized transcription prompt built');
 
       console.log('🚀 Sending request to Gemini 2.0 Flash...');
+      
+      // Create the request with proper MIME type detection
+      const mimeType = this.detectMimeType(audioFile);
+      console.log('🔍 Detected MIME type:', mimeType);
+
       const result = await model.generateContent([
         {
           inlineData: {
             data: audioBase64,
-            mimeType: audioFile.type
+            mimeType: mimeType
           }
         },
         transcriptionPrompt
@@ -82,7 +113,7 @@ export class GeminiService {
       return {
         text: parsedResult.text,
         language: parsedResult.language || this.detectLanguage(parsedResult.text),
-        confidence: parsedResult.confidence || 0.95,
+        confidence: parsedResult.confidence || 0.96,
         segments: parsedResult.segments,
         keyPoints: parsedResult.keyPoints
       };
@@ -90,18 +121,24 @@ export class GeminiService {
     } catch (error) {
       console.error('❌ Error during Gemini 2.0 Flash transcription:', error);
       
-      // Analyze error type
+      // Analyze error type with more specific error handling
       if (error instanceof Error) {
         if (error.message.includes('quota') || error.message.includes('429')) {
           throw new Error('API quota exceeded. Check your API key or increase your quota.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
           throw new Error('Invalid API key or insufficient permissions.');
         } else if (error.message.includes('400')) {
-          throw new Error('Unsupported file format or corrupted file.');
+          throw new Error('Invalid request. Please check file format and size.');
+        } else if (error.message.includes('413')) {
+          throw new Error('File too large. Maximum size is 20MB.');
+        } else if (error.message.includes('415')) {
+          throw new Error('Unsupported media type. Please use supported audio/video formats.');
+        } else if (error.message.includes('500')) {
+          throw new Error('Gemini service temporarily unavailable. Please try again later.');
         }
       }
       
-      throw new Error(`Gemini error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Gemini transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -121,16 +158,26 @@ export class GeminiService {
     try {
       console.log('🌐 Downloading audio from:', audioUrl);
       
-      // Download audio file from URL
-      const response = await fetch(audioUrl);
+      // Download audio file from URL with proper headers
+      const response = await fetch(audioUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; GeminiTranscriber/1.0)'
+        }
+      });
+      
       if (!response.ok) {
-        throw new Error(`Unable to download audio: ${response.statusText}`);
+        throw new Error(`Unable to download audio: ${response.status} ${response.statusText}`);
       }
 
+      const contentType = response.headers.get('content-type') || 'audio/mpeg';
       const audioBlob = await response.blob();
-      const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mpeg' });
+      
+      // Create file with proper type
+      const fileName = audioUrl.split('/').pop()?.split('?')[0] || 'audio';
+      const audioFile = new File([audioBlob], fileName, { type: contentType });
       
       console.log('📥 Audio downloaded, size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
+      console.log('📥 Content type:', contentType);
 
       // Use file transcription method
       return await this.transcribeFile(audioFile, options);
@@ -141,47 +188,105 @@ export class GeminiService {
     }
   }
 
-  private buildTranscriptionPrompt(options: {
+  private buildOptimizedTranscriptionPrompt(options: {
     language?: string;
     extractKeyPoints?: boolean;
     detectSpeakers?: boolean;
     prompt?: string;
   }): string {
-    let prompt = `Transcribe this audio file accurately. `;
+    // Build prompt following Google's best practices for audio transcription
+    let prompt = `You are an expert audio transcription AI. Please transcribe this audio file with high accuracy.
 
-    if (options.language && options.language !== 'en') {
-      prompt += `If the audio is not in English, transcribe it in its original language then translate to English. `;
-    }
+INSTRUCTIONS:
+- Provide a complete, word-for-word transcription
+- Maintain natural punctuation and capitalization
+- Preserve the original language of the audio`;
 
     if (options.detectSpeakers) {
-      prompt += `Identify different speakers and indicate who is speaking at each moment. Format: [Speaker X]: text. `;
+      prompt += `
+- Identify different speakers and label them as [Speaker 1], [Speaker 2], etc.
+- Use consistent speaker labels throughout the transcription
+- Format: [Speaker X]: [their words]`;
+    }
+
+    if (options.language) {
+      prompt += `
+- The audio is expected to be in ${options.language}`;
     }
 
     if (options.extractKeyPoints) {
-      prompt += `After transcription, list key points and important moments from the discussion. `;
+      prompt += `
+- After the transcription, extract key points and important topics discussed`;
     }
 
     prompt += `
-Structure your response as follows:
+
+OUTPUT FORMAT:
 TRANSCRIPTION:
-[complete transcription here]
+[Provide the complete transcription here]
 
-DETECTED_LANGUAGE:
-[detected language]
+LANGUAGE:
+[Detected language]`;
 
-${options.detectSpeakers ? `SPEAKERS:
-[list of detected speakers]
+    if (options.detectSpeakers) {
+      prompt += `
 
-` : ''}${options.extractKeyPoints ? `KEY_POINTS:
-[key points from the discussion]
-
-` : ''}Be precise and faithful to the audio content.`;
-
-    if (options.prompt) {
-      prompt += `\n\nAdditional instructions: ${options.prompt}`;
+SPEAKERS:
+[List of identified speakers with brief descriptions if possible]`;
     }
 
+    if (options.extractKeyPoints) {
+      prompt += `
+
+KEY_POINTS:
+[List the main points discussed, one per line with - prefix]`;
+    }
+
+    if (options.prompt) {
+      prompt += `
+
+ADDITIONAL_INSTRUCTIONS:
+${options.prompt}`;
+    }
+
+    prompt += `
+
+Please ensure accuracy and completeness in your transcription.`;
+
     return prompt;
+  }
+
+  private detectMimeType(file: File): string {
+    // Map file extensions to proper MIME types for Gemini
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const mimeTypeMap: Record<string, string> = {
+      'mp3': 'audio/mpeg',
+      'wav': 'audio/wav',
+      'm4a': 'audio/mp4',
+      'aac': 'audio/aac',
+      'ogg': 'audio/ogg',
+      'flac': 'audio/flac',
+      'webm': 'audio/webm',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'flv': 'video/x-flv',
+      'mpg': 'video/mpeg',
+      'mpeg': 'video/mpeg'
+    };
+
+    // Use file's MIME type if available and valid, otherwise use extension mapping
+    if (file.type && file.type !== 'application/octet-stream') {
+      return file.type;
+    }
+
+    if (extension && mimeTypeMap[extension]) {
+      return mimeTypeMap[extension];
+    }
+
+    // Default fallback
+    return 'audio/mpeg';
   }
 
   private parseGeminiResponse(response: string, options: any): {
@@ -200,26 +305,32 @@ ${options.detectSpeakers ? `SPEAKERS:
       keyPoints: ''
     };
 
-    // Parse different sections of the response
-    const transcriptionMatch = response.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\n(?:DETECTED_LANGUAGE|SPEAKERS|KEY_POINTS|$))/);
+    // Parse different sections of the response with improved regex
+    const transcriptionMatch = response.match(/TRANSCRIPTION:\s*([\s\S]*?)(?=\n(?:LANGUAGE|SPEAKERS|KEY_POINTS|$))/i);
     if (transcriptionMatch) {
       sections.transcription = transcriptionMatch[1].trim();
       console.log('📝 Transcription section found:', sections.transcription.length, 'characters');
     }
 
-    const languageMatch = response.match(/DETECTED_LANGUAGE:\s*(.*?)(?=\n|$)/);
+    const languageMatch = response.match(/LANGUAGE:\s*(.*?)(?=\n|$)/i);
     if (languageMatch) {
       sections.language = languageMatch[1].trim();
       console.log('🌍 Language detected:', sections.language);
     }
 
-    const keyPointsMatch = response.match(/KEY_POINTS:\s*([\s\S]*?)$/);
+    const speakersMatch = response.match(/SPEAKERS:\s*([\s\S]*?)(?=\n(?:KEY_POINTS|$))/i);
+    if (speakersMatch) {
+      sections.speakers = speakersMatch[1].trim();
+      console.log('👥 Speakers section found');
+    }
+
+    const keyPointsMatch = response.match(/KEY_POINTS:\s*([\s\S]*?)$/i);
     if (keyPointsMatch) {
       sections.keyPoints = keyPointsMatch[1].trim();
       console.log('🎯 Key points found');
     }
 
-    // If no structure, use entire response as transcription
+    // If no structured response, use entire response as transcription
     if (!sections.transcription) {
       sections.transcription = response;
       console.log('⚠️ No structure detected, using entire response');
@@ -232,21 +343,21 @@ ${options.detectSpeakers ? `SPEAKERS:
       console.log('👥 Segments with speakers parsed:', segments.length);
     }
 
-    // Parse key points
+    // Parse key points with improved extraction
     let keyPoints: string[] = [];
     if (sections.keyPoints) {
       keyPoints = sections.keyPoints
         .split('\n')
         .filter(line => line.trim())
         .map(line => line.replace(/^[-•*]\s*/, '').trim())
-        .filter(point => point.length > 0);
+        .filter(point => point.length > 10); // Filter out very short points
       console.log('🎯 Key points extracted:', keyPoints.length);
     }
 
     return {
       text: sections.transcription,
       language: sections.language,
-      confidence: 0.96, // Gemini 2.0 Flash has even higher confidence
+      confidence: 0.96, // Gemini 2.0 Flash has high confidence
       segments: segments.length > 0 ? segments : undefined,
       keyPoints: keyPoints.length > 0 ? keyPoints : undefined
     };
@@ -261,30 +372,48 @@ ${options.detectSpeakers ? `SPEAKERS:
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
 
-      // Look for pattern [Speaker X]: text
-      const speakerMatch = trimmedLine.match(/^\[([^\]]+)\]:\s*(.+)$/);
-      if (speakerMatch) {
-        const speaker = speakerMatch[1];
-        const text = speakerMatch[2];
-        
+      // Look for various speaker patterns: [Speaker X], [Name], Speaker X:, Name:
+      const speakerPatterns = [
+        /^\[([^\]]+)\]:\s*(.+)$/,           // [Speaker 1]: text
+        /^\[([^\]]+)\]\s*(.+)$/,            // [Speaker 1] text
+        /^([^:]+):\s*(.+)$/,                // Speaker 1: text
+        /^(Speaker\s+\d+):\s*(.+)$/i        // Speaker 1: text (case insensitive)
+      ];
+
+      let matched = false;
+      for (const pattern of speakerPatterns) {
+        const match = trimmedLine.match(pattern);
+        if (match) {
+          const speaker = match[1].trim();
+          const text = match[2].trim();
+          
+          if (text.length > 0) {
+            const duration = Math.max(30, text.length * 0.08); // More realistic timing
+            segments.push({
+              start: currentTime,
+              end: currentTime + duration,
+              text: text,
+              speaker: speaker
+            });
+            
+            currentTime += duration;
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      // If no speaker pattern matched, treat as continuation or unknown speaker
+      if (!matched && trimmedLine.length > 0) {
+        const duration = Math.max(20, trimmedLine.length * 0.08);
         segments.push({
           start: currentTime,
-          end: currentTime + Math.max(30, text.length * 0.1), // Estimation based on length
-          text: text,
-          speaker: speaker
-        });
-        
-        currentTime += Math.max(30, text.length * 0.1);
-      } else {
-        // Line without identified speaker
-        segments.push({
-          start: currentTime,
-          end: currentTime + Math.max(30, trimmedLine.length * 0.1),
+          end: currentTime + duration,
           text: trimmedLine,
-          speaker: 'Speaker'
+          speaker: 'Unknown Speaker'
         });
         
-        currentTime += Math.max(30, trimmedLine.length * 0.1);
+        currentTime += duration;
       }
     }
 
@@ -300,17 +429,19 @@ ${options.detectSpeakers ? `SPEAKERS:
         const base64 = result.split(',')[1];
         resolve(base64);
       };
-      reader.onerror = reject;
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        reject(new Error('Failed to read file'));
+      };
       reader.readAsDataURL(file);
     });
   }
 
   private detectLanguage(text: string): string {
+    // Simplified language detection for French and English only
     const languagePatterns = {
-      'French': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être)\b/gi,
-      'English': /\b(the|and|to|of|a|in|that|is|it|you|for|with|on|as|be|at|by|this|have|from|or|one|had|but|words|not|what|all|were|they|we|when|your|can|said)\b/gi,
-      'Spanish': /\b(el|la|de|que|y|a|en|un|es|se|no|te|lo|le|da|su|por|son|con|para|una|del|al|como|las|los|pero|sus|fue|ser|ha|todo|era|muy|hasta|desde)\b/gi,
-      'German': /\b(der|die|und|in|den|von|zu|das|mit|sich|des|auf|für|ist|im|dem|nicht|ein|eine|als|auch|es|an|werden|aus|er|hat|dass|sie|nach|wird|bei)\b/gi
+      'French': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être|mais|tout|vous|ils|nous|comme|peut|plus|temps|très|bien|encore|aussi|autre|après|deux|même|faire|dire|ici|où|comment|pourquoi|quand|alors|depuis|pendant|avant|maintenant|toujours|jamais|souvent|parfois|quelque|chose|personne|rien|tout|tous|toute|toutes|chaque|plusieurs|beaucoup|peu|assez|trop|moins|plus|autant|tant|si|oui|non|peut-être|sûrement|certainement|probablement|évidemment|naturellement|heureusement|malheureusement|finalement|enfin|d'abord|ensuite|puis|après|avant|pendant|depuis|jusqu'à|vers|chez|contre|sans|avec|pour|par|selon|malgré|grâce|à|cause|de|afin|de|dans|le|but|de)\b/gi,
+      'English': /\b(the|and|to|of|a|in|that|is|it|you|for|with|on|as|be|at|by|this|have|from|or|one|had|but|words|not|what|all|were|they|we|when|your|can|said|each|which|she|do|how|their|if|will|up|other|about|out|many|then|them|these|so|some|her|would|make|like|into|him|has|two|more|very|what|know|just|first|get|over|think|also|back|after|use|work|life|only|new|way|could|good|water|been|need|should|home|around|right|high|every|another|small|found|still|between|through|where|much|before|move|too|any|same|tell|does|set|three|want|air|well|play|end|put|why|again|turn|here|off|went|old|number|great|men|say|little|came|show|large|often|together|asked|house|don't|world|going|school|important|until|form|food|keep|children|feet|land|side|without|boy|once|animal|enough|took|sometimes|four|head|above|kind|began|almost|live|page|got|earth|far|hand|year|mother|light|country|father|let|night|picture|being|study|second|book|carry|science|eat|room|friend|idea|fish|mountain|stop|base|hear|horse|cut|sure|watch|color|wood|main|plain|girl|usual|young|ready|red|list|though|feel|talk|bird|soon|body|dog|family|direct|leave|song|measure|door|product|black|short|numeral|class|wind|question|happen|complete|ship|area|half|rock|order|fire|south|problem|piece|told|knew|pass|since|top|whole|king|space|heard|best|hour|better|during|hundred|five|remember|step|early|hold|west|ground|interest|reach|fast|verb|sing|listen|six|table|travel|less|morning|ten|simple|several|vowel|toward|war|lay|against|pattern|slow|center|love|person|money|serve|appear|road|map|rain|rule|govern|pull|cold|notice|voice|unit|power|town|fine|certain|fly|fall|lead|cry|dark|machine|note|wait|plan|figure|star|box|noun|field|rest|correct|able|pound|done|beauty|drive|stood|contain|front|teach|week|final|gave|green|quick|develop|ocean|warm|free|minute|strong|special|mind|behind|clear|tail|produce|fact|street|inch|multiply|nothing|course|stay|wheel|full|force|blue|object|decide|surface|deep|moon|island|foot|system|busy|test|record|boat|common|gold|possible|plane|stead|dry|wonder|laugh|thousands|ago|ran|check|game|shape|equate|hot|miss|brought|heat|snow|tire|bring|yes|distant|fill|east|paint|language|among|grand|ball|yet|wave|drop|heart|present|heavy|dance|engine|position|arm|wide|sail|material|size|vary|settle|speak|weight|general|ice|matter|circle|pair|include|divide|syllable|felt|perhaps|pick|sudden|count|square|reason|length|represent|art|subject|region|energy|hunt|probable|bed|brother|egg|ride|cell|believe|fraction|forest|sit|race|window|store|summer|train|sleep|prove|lone|leg|exercise|wall|catch|mount|wish|sky|board|joy|winter|sat|written|wild|instrument|kept|glass|grass|cow|job|edge|sign|visit|past|soft|fun|bright|gas|weather|month|million|bear|finish|happy|hope|flower|clothe|strange|gone|jump|baby|eight|village|meet|root|buy|raise|solve|metal|whether|push|seven|paragraph|third|shall|held|hair|describe|cook|floor|either|result|burn|hill|safe|cat|century|consider|type|law|bit|coast|copy|phrase|silent|tall|sand|soil|roll|temperature|finger|industry|value|fight|lie|beat|excite|natural|view|sense|ear|else|quite|broke|case|middle|kill|son|lake|moment|scale|loud|spring|observe|child|straight|consonant|nation|dictionary|milk|speed|method|organ|pay|age|section|dress|cloud|surprise|quiet|stone|tiny|climb|bad|oil|blood|touch|grew|cent|mix|team|wire|cost|lost|brown|wear|garden|equal|sent|choose|fell|fit|flow|fair|bank|collect|save|control|decimal|gentle|woman|captain|practice|separate|difficult|doctor|please|protect|noon|whose|locate|ring|character|insect|caught|period|indicate|radio|spoke|atom|human|history|effect|electric|expect|crop|modern|element|hit|student|corner|party|supply|bone|rail|imagine|provide|agree|thus|capital|chair|danger|fruit|rich|thick|soldier|process|operate|guess|necessary|sharp|wing|create|neighbor|wash|bat|rather|crowd|corn|compare|poem|string|bell|depend|meat|rub|tube|famous|dollar|stream|fear|sight|thin|triangle|planet|hurry|chief|colony|clock|mine|tie|enter|major|fresh|search|send|yellow|gun|allow|print|dead|spot|desert|suit|current|lift|rose|continue|block|chart|hat|sell|success|company|subtract|event|particular|deal|swim|term|opposite|wife|shoe|shoulder|spread|arrange|camp|invent|cotton|born|determine|quart|nine|truck|noise|level|chance|gather|shop|stretch|throw|shine|property|column|molecule|select|wrong|gray|repeat|require|broad|prepare|salt|nose|plural|anger|claim|continent|oxygen|sugar|death|pretty|skill|women|season|solution|magnet|silver|thank|branch|match|suffix|especially|afraid|huge|sister|steel|discuss|forward|similar|guide|experience|score|apple|bought|led|pitch|coat|mass|card|band|rope|slip|win|dream|evening|condition|feed|tool|total|basic|smell|valley|double|seat|arrive|master|track|parent|shore|division|sheet|substance|favor|connect|post|spend|chord|fat|glad|original|share|station|dad|bread|charge|proper|bar|offer|segment|slave|duck|instant|market|degree|populate|chick|dear|enemy|reply|drink|occur|support|speech|nature|range|steam|motion|path|liquid|log|meant|quotient|teeth|shell|neck)\b/gi
     };
 
     let maxMatches = 0;
