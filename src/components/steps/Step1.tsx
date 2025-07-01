@@ -334,7 +334,7 @@ const Step1: React.FC<Step1Props> = ({
           duration: 1500,
           details: 'Verifying transcription quality'
         }
-      );
+      ];
 
       if (fileInfo.method === 'files-api') {
         steps.push({
@@ -752,8 +752,8 @@ const Step1: React.FC<Step1Props> = ({
                       or click to browse
                     </p>
                     <div className="text-xs text-gray-400 space-y-1">
-                      <p>• Files ≤20MB: Fast inline processing</p>
-                      <p>• Files >20MB: Files API processing</p>
+                      <p>{'• Files ≤20MB: Fast inline processing'}</p>
+                      <p>{'• Files >20MB: Files API processing'}</p>
                       <p>• Maximum size: 2GB</p>
                     </div>
                   </div>
@@ -842,7 +842,7 @@ const Step1: React.FC<Step1Props> = ({
             <h4 className="font-medium text-blue-800 mb-1 text-sm">API-Managed Processing</h4>
             <div className="text-xs text-blue-700 space-y-1">
               <p>• Complete processing managed by assigned APIs</p>
-              <p>• Large files (>20MB) automatically use Files API</p>
+              <p>{'• Large files (>20MB) automatically use Files API'}</p>
               <p>• Automatic speaker detection and key points extraction</p>
               <p>• Direct transition to Key Points & Speakers editing</p>
               {!demoMode && (
