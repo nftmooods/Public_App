@@ -97,19 +97,27 @@ export class GeminiService {
 
       console.log('🚀 Sending request to Gemini 2.5 Flash...');
       
-      // Create the request with proper MIME type using the new API format
+      // Create the request with proper MIME type using the correct API format
       const mimeType = this.detectMimeType(audioFile);
       console.log('🔍 Detected MIME type:', mimeType);
 
-      // Use the new API format for inline data
+      // Use the correct API format with parts array
       const contents = [
-        { text: transcriptionPrompt },
         {
-          inlineData: {
-            mimeType: mimeType,
-            data: audioBase64,
-          },
+          parts: [
+            { text: transcriptionPrompt }
+          ]
         },
+        {
+          parts: [
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: audioBase64,
+              }
+            }
+          ]
+        }
       ];
 
       const result = await model.generateContent({ contents });
@@ -240,17 +248,26 @@ export class GeminiService {
       // Build transcription prompt
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       
-      // Create content request with file reference using the new API format
-      const result = await model.generateContent([
+      // Create content request with file reference using the correct API format
+      const contents = [
         {
-          fileData: {
-            mimeType: fileInfo.mimeType,
-            fileUri: fileInfo.uri
-          }
+          parts: [
+            {
+              fileData: {
+                mimeType: fileInfo.mimeType,
+                fileUri: fileInfo.uri
+              }
+            }
+          ]
         },
-        { text: transcriptionPrompt }
-      ]);
-      
+        {
+          parts: [
+            { text: transcriptionPrompt }
+          ]
+        }
+      ];
+
+      const result = await model.generateContent({ contents });
       const response = await result.response;
       const transcriptionText = response.text();
       
@@ -663,7 +680,15 @@ Focus on:
 Respond only with a list of key points, one per line, preceded by a dash (-).
 Each point should be concise but comprehensive (1-2 sentences max).`;
 
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent({
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ]
+      });
       const response = await result.response;
       const keyPointsText = response.text();
 
@@ -734,7 +759,15 @@ Generate well-structured ${settings.format} content with a ${settings.tone} tone
 
 Please create comprehensive, professional content that would be suitable for publication.`;
 
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent({
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ]
+      });
       const response = await result.response;
       const generatedContent = response.text();
       
