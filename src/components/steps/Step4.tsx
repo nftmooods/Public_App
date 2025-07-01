@@ -3,6 +3,7 @@ import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Che
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
 import { generateMockKeyPoints } from '../../utils/mockData';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface Step4Props {
   transcription: TranscriptionData | null;
@@ -32,6 +33,7 @@ const Step4: React.FC<Step4Props> = ({
   geminiConfigured,
   apiKey
 }) => {
+  const { setApiKeyError, setDemoMode } = useAppContext();
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
   const [editingKeyPoint, setEditingKeyPoint] = useState<string | null>(null);
   const [newKeyPoint, setNewKeyPoint] = useState({ title: '', description: '', speaker: '' });
@@ -121,14 +123,45 @@ const Step4: React.FC<Step4Props> = ({
             }
           } catch (error) {
             console.error('❌ Error during Gemini extraction:', error);
-            setExtractionProgress({
-              status: 'error',
-              currentStep: `Gemini error: ${(error as Error).message}`,
-              progress: 0,
-              api: 'Gemini 1.5 Pro'
-            });
             
-            // Fallback to demo data
+            const errorMessage = (error as Error).message;
+            
+            // Check for quota-related errors
+            if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
+              console.log('🚫 API quota exceeded - switching to demo mode');
+              setApiKeyError('API quota exceeded. Switching to demo mode.');
+              setDemoMode(true);
+              
+              setExtractionProgress({
+                status: 'error',
+                currentStep: 'API quota exceeded - switching to demo mode',
+                progress: 0,
+                api: 'Gemini 1.5 Pro (Quota Exceeded)'
+              });
+            } else if (errorMessage.includes('Failed to fetch')) {
+              console.log('🌐 Network error - switching to demo mode');
+              setApiKeyError('Network error connecting to Gemini API. Switching to demo mode.');
+              setDemoMode(true);
+              
+              setExtractionProgress({
+                status: 'error',
+                currentStep: 'Network error - switching to demo mode',
+                progress: 0,
+                api: 'Gemini 1.5 Pro (Network Error)'
+              });
+            } else {
+              console.log('⚠️ General API error');
+              setApiKeyError(`Gemini API error: ${errorMessage}`);
+              
+              setExtractionProgress({
+                status: 'error',
+                currentStep: `Gemini error: ${errorMessage}`,
+                progress: 0,
+                api: 'Gemini 1.5 Pro'
+              });
+            }
+            
+            // Fallback to demo data after a short delay
             console.log('🔄 Fallback to demo data');
             setTimeout(() => {
               const mockKeyPoints = generateMockKeyPoints();
@@ -139,7 +172,7 @@ const Step4: React.FC<Step4Props> = ({
                 progress: 100,
                 api: 'Demo mode (fallback)'
               });
-            }, 1000);
+            }, 2000);
           }
         } else {
           // Demo mode
@@ -175,7 +208,7 @@ const Step4: React.FC<Step4Props> = ({
     };
 
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey, setApiKeyError, setDemoMode]);
 
   if (!transcription) return null;
 
@@ -362,6 +395,19 @@ const Step4: React.FC<Step4Props> = ({
       }
     } catch (error) {
       console.error('❌ Error during AI completion:', error);
+      
+      const errorMessage = (error as Error).message;
+      
+      // Handle errors during manual completion
+      if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
+        setApiKeyError('API quota exceeded during completion. Please try again later.');
+        setDemoMode(true);
+      } else if (errorMessage.includes('Failed to fetch')) {
+        setApiKeyError('Network error during completion. Please check your connection.');
+        setDemoMode(true);
+      } else {
+        setApiKeyError(`Error during AI completion: ${errorMessage}`);
+      }
     } finally {
       setIsCompleting(false);
     }
