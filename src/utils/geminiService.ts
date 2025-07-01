@@ -166,7 +166,8 @@ export class GeminiService {
       extractKeyPoints?: boolean;
       detectSpeakers?: boolean;
       prompt?: string;
-    } = {}
+    } = {},
+    onProgressUpdate?: (step: string, progress: number) => void
   ): Promise<GeminiTranscriptionResult> {
     if (!this.genAI) {
       throw new Error('Gemini service not configured.');
@@ -177,12 +178,15 @@ export class GeminiService {
       throw new Error('Files API is not available in this version of @google/generative-ai. Please update to version 0.12.0 or newer, or use smaller files (under 20MB).');
     }
 
+    let uploadedFileName: string | null = null;
+
     try {
       console.log('📁 Using Files API for large file transcription...');
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       
       // Step 1: Upload file using Files API
       console.log('⬆️ Uploading file to Gemini Files API...');
+      onProgressUpdate?.('Uploading to Gemini Files API...', 20);
       
       // Detect proper MIME type
       const mimeType = this.detectMimeType(audioFile);
@@ -197,12 +201,15 @@ export class GeminiService {
         }
       });
       
+      uploadedFileName = uploadResult.name;
       console.log('✅ File uploaded successfully');
       console.log('📄 File URI:', uploadResult.uri);
       console.log('📄 File name:', uploadResult.name);
       
       // Step 2: Wait for file processing (if needed)
       console.log('⏳ Waiting for file processing...');
+      onProgressUpdate?.('Server-side file processing...', 40);
+      
       let fileInfo = uploadResult;
       let attempts = 0;
       const maxAttempts = 30; // 30 attempts = 5 minutes max
@@ -213,6 +220,7 @@ export class GeminiService {
         try {
           fileInfo = await this.genAI.files.get(uploadResult.name);
           console.log(`📊 File processing status: ${fileInfo.state} (attempt ${attempts + 1}/${maxAttempts})`);
+          onProgressUpdate?.(`Processing file on server... (${attempts + 1}/${maxAttempts})`, 40 + (attempts / maxAttempts) * 30);
         } catch (error) {
           console.warn('⚠️ Error checking file status, continuing...', error);
           break;
@@ -231,6 +239,7 @@ export class GeminiService {
       
       // Step 3: Generate content using the uploaded file
       console.log('🚀 Generating transcription with uploaded file...');
+      onProgressUpdate?.('Audio transcription (Files API)...', 70);
       
       const model = this.genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
@@ -268,16 +277,25 @@ export class GeminiService {
       console.log('✅ Gemini 2.5 Flash transcription completed via Files API');
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
       
-      // Step 4: Clean up - delete the uploaded file
-      try {
-        await this.genAI.files.delete(uploadResult.name);
-        console.log('🗑️ Uploaded file cleaned up');
-      } catch (error) {
-        console.warn('⚠️ Could not delete uploaded file:', error);
-      }
-      
       // Parse response
       const parsedResult = this.parseGeminiResponse(transcriptionText, options);
+      
+      // Step 4: Keep cleanup step in progress until the very end
+      console.log('🗑️ Starting cleanup process...');
+      onProgressUpdate?.('Cleaning up uploaded file...', 90);
+      
+      // Simulate extended cleanup time to show the progress bar
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Step 5: Clean up - delete the uploaded file
+      try {
+        await this.genAI.files.delete(uploadResult.name);
+        console.log('🗑️ Uploaded file cleaned up successfully');
+        onProgressUpdate?.('Cleanup completed', 100);
+      } catch (error) {
+        console.warn('⚠️ Could not delete uploaded file:', error);
+        onProgressUpdate?.('Cleanup completed (with warnings)', 100);
+      }
       
       return {
         text: parsedResult.text,
@@ -289,6 +307,16 @@ export class GeminiService {
       
     } catch (error) {
       console.error('❌ Error with Files API transcription:', error);
+      
+      // Clean up uploaded file in case of error
+      if (uploadedFileName && this.genAI?.files) {
+        try {
+          await this.genAI.files.delete(uploadedFileName);
+          console.log('🗑️ Uploaded file cleaned up after error');
+        } catch (cleanupError) {
+          console.warn('⚠️ Could not clean up uploaded file after error:', cleanupError);
+        }
+      }
       
       // Enhanced error handling for Files API
       if (error instanceof Error) {

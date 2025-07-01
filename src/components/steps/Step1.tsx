@@ -54,6 +54,7 @@ const Step1: React.FC<Step1Props> = ({
   const [activeTab, setActiveTab] = useState<'audio' | 'text'>('audio');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [cleanupInProgress, setCleanupInProgress] = useState(false);
 
   // Reset state when sessionId changes (new content)
   useEffect(() => {
@@ -63,6 +64,7 @@ const Step1: React.FC<Step1Props> = ({
       setCurrentStepIndex(0);
       setAnalysisProgress(0);
       setError('');
+      setCleanupInProgress(false);
       console.log('🔄 Step1 reset for session:', sessionId);
     }
   }, [sessionId]);
@@ -342,7 +344,7 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Cleaning up uploaded file', 
           status: 'pending' as const, 
           api: 'Gemini Files API',
-          duration: 1000,
+          duration: -1, // Durée illimitée
           details: 'Removing temporary files from server'
         });
       }
@@ -357,6 +359,7 @@ const Step1: React.FC<Step1Props> = ({
 
     setIsProcessing(true);
     setAnalysisProgress(0);
+    setCleanupInProgress(false);
     
     const steps = getProcessingSteps();
     setProcessingSteps(steps);
@@ -377,7 +380,7 @@ const Step1: React.FC<Step1Props> = ({
         
         setCurrentStepIndex(i);
         
-        console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms) - ${step.api}`);
+        console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration === -1 ? 'unlimited' : step.duration + 'ms'}) - ${step.api}`);
         
         // Handle specific step logic
         if (step.id === 'file-upload' && audioFile) {
@@ -397,31 +400,58 @@ const Step1: React.FC<Step1Props> = ({
           } else {
             console.log('🎭 Using demo mode for key extraction');
           }
+        } else if (step.id === 'cleanup') {
+          // Marquer le début du nettoyage
+          setCleanupInProgress(true);
+          console.log('🗑️ Starting cleanup process - will continue until analysis is complete...');
         }
         
         // Simulate step progress with micro-updates
-        const stepDuration = step.duration || 2000;
-        const updateInterval = 100; // Update every 100ms
-        const updates = stepDuration / updateInterval;
-        
-        for (let j = 0; j <= updates; j++) {
-          const stepProgress = j / updates;
-          const globalProgress = ((i + stepProgress) / steps.length) * 100;
-          setAnalysisProgress(globalProgress);
+        if (step.duration === -1) {
+          // Pour l'étape de nettoyage, on reste en cours indéfiniment
+          console.log('🔄 Cleanup step will remain in progress until analysis completion');
+          // On ne fait pas de progression automatique pour cette étape
+          continue;
+        } else {
+          const stepDuration = step.duration || 2000;
+          const updateInterval = 100; // Update every 100ms
+          const updates = stepDuration / updateInterval;
           
-          if (j < updates) {
-            await new Promise(resolve => setTimeout(resolve, updateInterval));
+          for (let j = 0; j <= updates; j++) {
+            const stepProgress = j / updates;
+            // Calculer le progrès global en excluant l'étape de nettoyage
+            const totalStepsForProgress = steps.filter(s => s.duration !== -1).length;
+            const completedStepsForProgress = steps.slice(0, i).filter(s => s.duration !== -1).length;
+            const globalProgress = ((completedStepsForProgress + stepProgress) / totalStepsForProgress) * 90; // 90% max pour laisser place au nettoyage
+            setAnalysisProgress(globalProgress);
+            
+            if (j < updates) {
+              await new Promise(resolve => setTimeout(resolve, updateInterval));
+            }
           }
         }
         
-        // Mark step as completed
-        setProcessingSteps(prev => prev.map((s, index) => ({
-          ...s,
-          status: index <= i ? 'completed' : 'pending'
-        })));
+        // Mark step as completed (sauf pour cleanup)
+        if (step.id !== 'cleanup') {
+          setProcessingSteps(prev => prev.map((s, index) => ({
+            ...s,
+            status: index <= i ? 'completed' : 'pending'
+          })));
+        }
       }
 
-      console.log('✅ API-managed processing completed, calling onNext()');
+      console.log('✅ Main processing completed, finalizing cleanup...');
+      
+      // Maintenant on peut finaliser le nettoyage
+      if (cleanupInProgress) {
+        console.log('🗑️ Finalizing cleanup process...');
+        setProcessingSteps(prev => prev.map(s => 
+          s.id === 'cleanup' ? { ...s, status: 'completed' } : s
+        ));
+        
+        // Attendre un peu pour montrer la finalisation
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
       
       // Complete the progress
       setAnalysisProgress(100);
@@ -429,6 +459,7 @@ const Step1: React.FC<Step1Props> = ({
       // Wait a bit then move to next step
       setTimeout(() => {
         setIsProcessing(false);
+        setCleanupInProgress(false);
         onNext(); // This should trigger the move to step 2 (Key Points & Speakers)
       }, 1000);
       
@@ -449,6 +480,7 @@ const Step1: React.FC<Step1Props> = ({
       
       setError('Processing failed. Please try again or switch to demo mode.');
       setIsProcessing(false);
+      setCleanupInProgress(false);
     }
   };
 
@@ -483,6 +515,11 @@ const Step1: React.FC<Step1Props> = ({
             
             <div className="text-sm text-gray-600 text-center">
               Step {currentStepIndex + 1} of {processingSteps.length}
+              {cleanupInProgress && (
+                <span className="ml-2 text-orange-600 font-medium">
+                  • Cleanup in progress until completion
+                </span>
+              )}
             </div>
           </div>
 
@@ -519,6 +556,11 @@ const Step1: React.FC<Step1Props> = ({
                       'text-gray-700'
                     }`}>
                       {step.label}
+                      {step.id === 'cleanup' && step.status === 'processing' && (
+                        <span className="ml-2 text-orange-600 text-xs font-normal">
+                          (En cours jusqu'à la fin de l'analyse)
+                        </span>
+                      )}
                     </h4>
                     
                     {step.api && (
@@ -542,7 +584,9 @@ const Step1: React.FC<Step1Props> = ({
                   {step.status === 'processing' && (
                     <div className="mt-1">
                       <div className="w-full bg-blue-200 rounded-full h-1">
-                        <div className="bg-blue-600 h-1 rounded-full animate-pulse w-3/4"></div>
+                        <div className={`bg-blue-600 h-1 rounded-full ${
+                          step.id === 'cleanup' ? 'animate-pulse w-full' : 'animate-pulse w-3/4'
+                        }`}></div>
                       </div>
                     </div>
                   )}
@@ -590,6 +634,9 @@ const Step1: React.FC<Step1Props> = ({
                     <p>• Size: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
                     <p>• {getFileSizeInfo(audioFile).description}</p>
                     <p>• Multimodal AI transcription with speaker detection</p>
+                    {getFileSizeInfo(audioFile).method === 'files-api' && (
+                      <p>• Cleanup will continue until analysis is complete</p>
+                    )}
                   </div>
                 </>
               ) : null}
@@ -845,6 +892,7 @@ const Step1: React.FC<Step1Props> = ({
               <p>{'• Large files (>20MB) automatically use Files API'}</p>
               <p>• Automatic speaker detection and key points extraction</p>
               <p>• Direct transition to Key Points & Speakers editing</p>
+              <p>• Cleanup process continues until analysis completion</p>
               {!demoMode && (
                 <p>• Using your configured API keys for processing</p>
               )}
