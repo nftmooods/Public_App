@@ -32,6 +32,7 @@ export const MainApp: React.FC = () => {
     isAuthenticated,
     authLoading,
     apiKeys,
+    apiUsageAssignment,
     
     // Actions
     setApiKeyError,
@@ -83,6 +84,42 @@ export const MainApp: React.FC = () => {
 
   const handleLogin = (userData: any) => {
     // Authentication management is now in useAuth
+  };
+
+  const getApiUsageSummary = () => {
+    const usageTypes = [
+      { key: 'audio', name: 'Audio', icon: '🎵' },
+      { key: 'analysis', name: 'Analysis', icon: '🔍' },
+      { key: 'writing', name: 'Writing', icon: '✍️' },
+      { key: 'export', name: 'Export', icon: '📤' }
+    ];
+
+    const assignedApis = usageTypes.filter(type => 
+      apiUsageAssignment[type.key as keyof typeof apiUsageAssignment]
+    );
+
+    if (assignedApis.length === 0) {
+      return 'Demo Mode';
+    }
+
+    const uniqueApis = [...new Set(assignedApis.map(type => 
+      apiUsageAssignment[type.key as keyof typeof apiUsageAssignment]
+    ))];
+
+    if (uniqueApis.length === 1) {
+      const apiName = uniqueApis[0];
+      const apiDisplayNames: Record<string, string> = {
+        'googleAI': 'Gemini',
+        'openAI': 'OpenAI',
+        'anthropic': 'Claude',
+        'mistral': 'Mistral',
+        'elevenLabs': 'ElevenLabs',
+        'twitterAPI': 'Twitter'
+      };
+      return apiDisplayNames[apiName] || apiName;
+    }
+
+    return `${uniqueApis.length} APIs`;
   };
 
   const renderCurrentStep = () => {
@@ -194,7 +231,7 @@ export const MainApp: React.FC = () => {
   const getGeminiStatusText = () => {
     if (demoMode) return 'Demo Mode';
     if (apiKeyError) return 'API Error';
-    if (geminiConfigured) return 'Gemini 2.5 Flash';
+    if (geminiConfigured) return getApiUsageSummary();
     return 'Demo Mode';
   };
 
@@ -290,7 +327,7 @@ export const MainApp: React.FC = () => {
                     <button
                       onClick={() => setShowApiKeyModal(true)}
                       className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Configure Gemini 2.5 Flash"
+                      title="Configure API Keys"
                     >
                       <Settings className="w-4 h-4" />
                     </button>
@@ -320,6 +357,26 @@ export const MainApp: React.FC = () => {
               </span>
             </div>
           </div>
+          
+          {/* API Usage Assignment Info */}
+          {isAuthenticated && !demoMode && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Settings className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-blue-700">
+                    <strong>API Usage:</strong> {getApiUsageSummary()}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowApiKeysModal(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Configure APIs
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* API Key Error Banner */}
           {apiKeyError && !demoMode && (
@@ -402,6 +459,7 @@ export const MainApp: React.FC = () => {
             apiKeys={apiKeys}
             onSave={handleApiKeysSave}
             userId={user.id}
+            currentUsageAssignment={apiUsageAssignment}
           />
           
           <ProfileModal

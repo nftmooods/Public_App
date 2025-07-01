@@ -72,19 +72,31 @@ export interface ApiKeyConfig {
   isValid?: boolean;
 }
 
+export interface TwitterApiConfig {
+  apiKey: string;
+  apiSecret: string;
+  enabled: boolean;
+  lastTested?: string;
+  isValid?: boolean;
+}
+
 export interface UserApiKeys {
   googleAI?: ApiKeyConfig;
   openAI?: ApiKeyConfig;
   anthropic?: ApiKeyConfig;
   mistral?: ApiKeyConfig;
   elevenLabs?: ApiKeyConfig;
-  twitterAPI?: {
-    apiKey: string;
-    apiSecret: string;
-    enabled: boolean;
-    lastTested?: string;
-    isValid?: boolean;
-  };
+  twitterAPI?: TwitterApiConfig;
+}
+
+// New types for API usage assignment
+export type ApiUsageType = 'audio' | 'analysis' | 'writing' | 'export';
+
+export interface ApiUsageAssignment {
+  audio: string | null;      // Which API to use for audio transcription
+  analysis: string | null;   // Which API to use for data analysis/key points
+  writing: string | null;    // Which API to use for content writing
+  export: string | null;     // Which API to use for export formatting
 }
 
 export interface UserSubscription {
@@ -109,6 +121,7 @@ export interface AppState {
   isProcessing: boolean;
   user: User | null;
   isAuthenticated: boolean;
+  apiUsageAssignment: ApiUsageAssignment;
 }
 
 // Déclarations TypeScript pour l'API Web Speech Recognition
