@@ -35,26 +35,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
   
   const { saveApiKeys, testApiKey, isLoading } = useApiKeys(userId);
 
-  useEffect(() => {
-    setLocalApiKeys(apiKeys);
-  }, [apiKeys]);
-
-  useEffect(() => {
-    // Auto-assign APIs if only one is available and enabled
-    const enabledApis = getEnabledApiProviders();
-    if (enabledApis.length === 1) {
-      const singleApi = enabledApis[0];
-      setUsageAssignment({
-        audio: singleApi,
-        analysis: singleApi,
-        writing: singleApi,
-        export: singleApi
-      });
-    }
-  }, [localApiKeys]);
-
-  if (!isOpen) return null;
-
   const apiProviders = [
     {
       id: 'googleAI',
@@ -179,6 +159,26 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
       getEnabledApiProviders().includes(provider.id)
     );
   };
+
+  useEffect(() => {
+    setLocalApiKeys(apiKeys);
+  }, [apiKeys]);
+
+  useEffect(() => {
+    // Auto-assign APIs if only one is available and enabled
+    const enabledApis = getEnabledApiProviders();
+    if (enabledApis.length === 1) {
+      const singleApi = enabledApis[0];
+      setUsageAssignment({
+        audio: singleApi,
+        analysis: singleApi,
+        writing: singleApi,
+        export: singleApi
+      });
+    }
+  }, [localApiKeys]);
+
+  if (!isOpen) return null;
 
   const handleKeyChange = (provider: string, value: string, field?: string) => {
     setLocalApiKeys(prev => {
