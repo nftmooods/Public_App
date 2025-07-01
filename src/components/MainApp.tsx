@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Stepper from './Stepper';
 import Step1 from './steps/Step1';
-import Step2 from './steps/Step2';
 import Step4 from './steps/Step4';
 import Step5 from './steps/Step5';
 import Step6 from './steps/Step6';
@@ -112,9 +111,7 @@ export const MainApp: React.FC = () => {
         'googleAI': 'Gemini',
         'openAI': 'OpenAI',
         'anthropic': 'Claude',
-        'mistral': 'Mistral',
-        'elevenLabs': 'ElevenLabs',
-        'twitterAPI': 'Twitter'
+        'mistral': 'Mistral'
       };
       return apiDisplayNames[apiName] || apiName;
     }
@@ -144,44 +141,36 @@ export const MainApp: React.FC = () => {
         );
       case 2:
         return (
-          <Step2
-            transcription={appState.transcription}
-            isProcessing={appState.isProcessing}
-            onNext={handleStep2Next}
-          />
-        );
-      case 3:
-        return (
           <Step4
             transcription={appState.transcription}
             keyPoints={appState.keyPoints}
             onUpdateTranscription={handleUpdateTranscription}
             onUpdateKeyPoints={handleUpdateKeyPoints}
-            onNext={handleStep3Next}
+            onNext={handleStep2Next}
             demoMode={demoMode}
             geminiConfigured={geminiConfigured}
             apiKey={apiKey}
           />
         );
-      case 4:
+      case 3:
         return (
           <Step5
             keyPoints={appState.keyPoints}
             contentSettings={appState.contentSettings}
             onUpdateSettings={handleUpdateContentSettings}
-            onNext={handleStep4Next}
+            onNext={handleStep3Next}
           />
         );
-      case 5:
+      case 4:
         return (
           <Step6
             contentSettings={appState.contentSettings}
             keyPoints={appState.keyPoints}
             onUpdateSettings={handleUpdateContentSettings}
-            onNext={handleStep5Next}
+            onNext={handleStep4Next}
           />
         );
-      case 6:
+      case 5:
         return (
           <Step7
             transcription={appState.transcription}
@@ -192,18 +181,18 @@ export const MainApp: React.FC = () => {
             onContentChange={handleContentChange}
             onSettingsChange={handleUpdateContentSettings}
             onRegenerate={handleRegenerate}
-            onNext={handleStep6Next}
+            onNext={handleStep5Next}
           />
         );
-      case 7:
+      case 6:
         return (
           <Step8
             generatedContent={appState.generatedContent}
             contentSettings={appState.contentSettings}
-            onNext={handleStep7Next}
+            onNext={handleStep6Next}
           />
         );
-      case 8:
+      case 7:
         return (
           <DonationStep
             onNewAnalysis={resetAppState}
@@ -343,7 +332,7 @@ export const MainApp: React.FC = () => {
               )}
               
               <div className="text-sm text-gray-500">
-                Step {appState.currentStep} of 8
+                Step {appState.currentStep} of 7
               </div>
             </div>
           </div>

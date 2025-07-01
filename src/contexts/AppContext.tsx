@@ -17,13 +17,12 @@ import { GeminiServiceFactory } from '../utils/geminiService';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/Text content', completed: false, active: true },
-  { id: 2, title: 'Analysis', description: 'Key points & insights', completed: false, active: false },
-  { id: 3, title: 'Transcription', description: 'Complete editing', completed: false, active: false },
-  { id: 4, title: 'Structure', description: 'Title & overview', completed: false, active: false },
-  { id: 5, title: 'Format', description: 'Type & tone', completed: false, active: false },
-  { id: 6, title: 'Generation', description: 'Enriched content', completed: false, active: false },
-  { id: 7, title: 'Export', description: 'Download & share', completed: false, active: false },
-  { id: 8, title: 'Support', description: 'Help us improve', completed: false, active: false }
+  { id: 2, title: 'Transcription', description: 'Complete editing', completed: false, active: false },
+  { id: 3, title: 'Structure', description: 'Title & overview', completed: false, active: false },
+  { id: 4, title: 'Format', description: 'Type & tone', completed: false, active: false },
+  { id: 5, title: 'Generation', description: 'Enriched content', completed: false, active: false },
+  { id: 6, title: 'Export', description: 'Download & share', completed: false, active: false },
+  { id: 7, title: 'Support', description: 'Help us improve', completed: false, active: false }
 ];
 
 const initialAppState: AppState = {
@@ -265,9 +264,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           ...prev,
           currentStep: stepId,
           transcription: mockTranscription,
-          keyPoints: stepId >= 3 ? mockKeyPoints : prev.keyPoints,
-          generatedContent: stepId >= 6 ? mockContent : prev.generatedContent,
-          contentSettings: stepId >= 4 ? {
+          keyPoints: stepId >= 2 ? mockKeyPoints : prev.keyPoints,
+          generatedContent: stepId >= 5 ? mockContent : prev.generatedContent,
+          contentSettings: stepId >= 3 ? {
             ...prev.contentSettings,
             title: 'Demo Analysis',
             subtitle: 'Automatically generated content for demonstration'
@@ -292,7 +291,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const nextStep = appState.currentStep + 1;
     console.log(`➡️ Moving to next step: ${nextStep}`);
     
-    if (nextStep <= 8) {
+    if (nextStep <= 7) {
       updateStepStatus(appState.currentStep, true, false);
       setAppState(prev => ({ ...prev, currentStep: nextStep }));
       updateStepStatus(nextStep, false, true);
@@ -440,6 +439,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     
     try {
       let transcriptionResult;
+      let keyPointsResult: any[] = [];
       
       // If text is provided, use it directly
       if (appState.textContent.trim()) {
@@ -464,6 +464,32 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           tokenCount: estimatedTokens,
           estimatedCost: estimatedCost
         };
+        
+        // Extract key points from text using analysis API
+        const analysisApiKey = getApiKeyForUsage('analysis');
+        if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+          try {
+            console.log('🎯 Extracting key points from text with assigned API...');
+            const geminiService = GeminiServiceFactory.create(analysisApiKey);
+            const extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
+            
+            if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+              keyPointsResult = extractedKeyPoints.map((point, index) => ({
+                id: `text_${Date.now()}_${index}`,
+                text: point,
+                timestamp: 0,
+                speaker: transcriptionResult.speakers[0]?.name || 'Speaker',
+                category: 'insight' as const,
+                editable: true,
+                webLinks: []
+              }));
+              console.log('✅ Key points extracted from text:', keyPointsResult.length);
+            }
+          } catch (error) {
+            console.error('❌ Error extracting key points from text:', error);
+            // Continue without key points
+          }
+        }
         
         console.log('✅ Text content processed');
       } else {
@@ -507,6 +533,32 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 estimatedCost: estimatedCost
               };
               
+              // Extract key points from transcription using analysis API
+              const analysisApiKey = getApiKeyForUsage('analysis');
+              if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+                try {
+                  console.log('🎯 Extracting key points from transcription with assigned API...');
+                  const geminiService = GeminiServiceFactory.create(analysisApiKey);
+                  const extractedKeyPoints = await geminiService.extractKeyPoints(transcriptionText);
+                  
+                  if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+                    keyPointsResult = extractedKeyPoints.map((point, index) => ({
+                      id: `audio_${Date.now()}_${index}`,
+                      text: point,
+                      timestamp: 0,
+                      speaker: transcriptionResult.speakers[0]?.name || 'Speaker',
+                      category: 'insight' as const,
+                      editable: true,
+                      webLinks: []
+                    }));
+                    console.log('✅ Key points extracted from transcription:', keyPointsResult.length);
+                  }
+                } catch (error) {
+                  console.error('❌ Error extracting key points from transcription:', error);
+                  // Continue without key points
+                }
+              }
+              
               console.log('✅ Audio transcription successful');
             } else {
               throw new Error('Empty transcription received');
@@ -527,30 +579,39 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             // Fallback to demo data
             console.log('🔄 Fallback to demo data');
             transcriptionResult = generateMockTranscription();
+            keyPointsResult = generateMockKeyPoints();
           }
         } else {
           // Demo mode
           console.log('🎭 Demo mode - using simulated data');
           transcriptionResult = generateMockTranscription();
+          keyPointsResult = generateMockKeyPoints();
         }
       }
       
-      console.log('💾 Setting transcription result and moving to next step');
+      // If no key points were extracted, use demo key points
+      if (keyPointsResult.length === 0) {
+        console.log('🎭 No key points extracted, using demo data');
+        keyPointsResult = generateMockKeyPoints();
+      }
+      
+      console.log('💾 Setting transcription and key points, moving to next step');
       setAppState(prev => ({ 
         ...prev, 
         transcription: transcriptionResult,
+        keyPoints: keyPointsResult,
         isProcessing: false 
       }));
       
-      // Automatically move to next step after analysis
+      // Automatically move to next step after processing
       console.log('➡️ Calling goToNextStep()');
       setTimeout(() => {
         goToNextStep();
       }, 500);
       
     } catch (error) {
-      console.error('Analysis error:', error);
-      setApiKeyError(`Analysis error: ${(error as Error).message}`);
+      console.error('Processing error:', error);
+      setApiKeyError(`Processing error: ${(error as Error).message}`);
       setAppState(prev => ({ ...prev, isProcessing: false }));
     }
   };
@@ -568,38 +629,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleStep3Next = async () => {
-    // If we don't have key points yet, extract them automatically
-    if (appState.keyPoints.length === 0 && appState.transcription) {
-      try {
-        const analysisApiKey = getApiKeyForUsage('analysis');
-        
-        if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-          console.log('🎯 Automatic key points extraction with assigned API...');
-          
-          const geminiService = GeminiServiceFactory.create(analysisApiKey);
-          const extractedKeyPoints = await geminiService.extractKeyPoints(appState.transcription.text);
-          
-          if (extractedKeyPoints.length > 0) {
-            const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
-              id: `auto_${Date.now()}_${index}`,
-              text: point,
-              timestamp: 0,
-              speaker: appState.transcription?.speakers[0]?.name || 'Speaker',
-              category: 'insight' as const,
-              editable: true,
-              webLinks: []
-            }));
-            
-            setAppState(prev => ({ ...prev, keyPoints: formattedKeyPoints }));
-            console.log('✅ Key points automatically extracted:', extractedKeyPoints.length);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error during automatic key points extraction:', error);
-        // Continue without automatic key points
-      }
-    }
-    
     goToNextStep();
   };
 
