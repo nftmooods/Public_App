@@ -334,7 +334,7 @@ const Step1: React.FC<Step1Props> = ({
           duration: 1500,
           details: 'Verifying transcription quality'
         }
-      ];
+      );
 
       if (fileInfo.method === 'files-api') {
         steps.push({
