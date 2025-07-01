@@ -64,9 +64,9 @@ const Step4: React.FC<Step4Props> = ({
             
             setExtractionProgress({
               status: 'extracting',
-              currentStep: 'Connecting to Gemini 1.5 Pro...',
+              currentStep: 'Connecting to Gemini 2.5 Flash...',
               progress: 10,
-              api: 'Gemini 1.5 Pro'
+              api: 'Gemini 2.5 Flash'
             });
             
             const geminiService = GeminiServiceFactory.create(apiKey);
@@ -93,7 +93,7 @@ const Step4: React.FC<Step4Props> = ({
               progress: 85
             }));
             
-            if (extractedKeyPoints.length > 0) {
+            if (extractedKeyPoints && extractedKeyPoints.length > 0) {
               const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
                 id: `gemini_${Date.now()}_${index}`,
                 text: point,
@@ -119,7 +119,29 @@ const Step4: React.FC<Step4Props> = ({
                 console.log('✅ Key points extracted with Gemini:', extractedKeyPoints.length);
               }, 500);
             } else {
-              throw new Error('No key points found by Gemini');
+              console.log('⚠️ No key points returned from Gemini - falling back to demo mode');
+              
+              setExtractionProgress({
+                status: 'error',
+                currentStep: 'No key points found - switching to demo mode',
+                progress: 0,
+                api: 'Gemini 2.5 Flash (No Results)'
+              });
+              
+              setApiKeyError('Gemini API returned no key points. Switching to demo mode.');
+              setDemoMode(true);
+              
+              // Fallback to demo data
+              setTimeout(() => {
+                const mockKeyPoints = generateMockKeyPoints();
+                onUpdateKeyPoints(mockKeyPoints);
+                setExtractionProgress({
+                  status: 'completed',
+                  currentStep: 'Demo data loaded (fallback)',
+                  progress: 100,
+                  api: 'Demo mode (fallback)'
+                });
+              }, 2000);
             }
           } catch (error) {
             console.error('❌ Error during Gemini extraction:', error);
@@ -136,7 +158,7 @@ const Step4: React.FC<Step4Props> = ({
                 status: 'error',
                 currentStep: 'API quota exceeded - switching to demo mode',
                 progress: 0,
-                api: 'Gemini 1.5 Pro (Quota Exceeded)'
+                api: 'Gemini 2.5 Flash (Quota Exceeded)'
               });
             } else if (errorMessage.includes('Failed to fetch')) {
               console.log('🌐 Network error - switching to demo mode');
@@ -147,7 +169,7 @@ const Step4: React.FC<Step4Props> = ({
                 status: 'error',
                 currentStep: 'Network error - switching to demo mode',
                 progress: 0,
-                api: 'Gemini 1.5 Pro (Network Error)'
+                api: 'Gemini 2.5 Flash (Network Error)'
               });
             } else {
               console.log('⚠️ General API error');
@@ -157,7 +179,7 @@ const Step4: React.FC<Step4Props> = ({
                 status: 'error',
                 currentStep: `Gemini error: ${errorMessage}`,
                 progress: 0,
-                api: 'Gemini 1.5 Pro'
+                api: 'Gemini 2.5 Flash'
               });
             }
             
@@ -334,27 +356,31 @@ const Step4: React.FC<Step4Props> = ({
         const geminiService = GeminiServiceFactory.create(apiKey);
         const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
         
-        // Filter key points that don't already exist
-        const existingTexts = keyPoints.map(kp => kp.text.toLowerCase());
-        const newKeyPoints = extractedKeyPoints
-          .filter(point => !existingTexts.some(existing => 
-            existing.includes(point.toLowerCase().substring(0, 50))
-          ))
-          .map((point, index) => ({
-            id: `ai_${Date.now()}_${index}`,
-            text: point,
-            timestamp: 0,
-            speaker: 'AI Analysis',
-            category: 'insight' as const,
-            editable: true,
-            webLinks: []
-          }));
-        
-        if (newKeyPoints.length > 0) {
-          onUpdateKeyPoints([...keyPoints, ...newKeyPoints]);
-          console.log('✅ New key points added:', newKeyPoints.length);
+        if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+          // Filter key points that don't already exist
+          const existingTexts = keyPoints.map(kp => kp.text.toLowerCase());
+          const newKeyPoints = extractedKeyPoints
+            .filter(point => !existingTexts.some(existing => 
+              existing.includes(point.toLowerCase().substring(0, 50))
+            ))
+            .map((point, index) => ({
+              id: `ai_${Date.now()}_${index}`,
+              text: point,
+              timestamp: 0,
+              speaker: 'AI Analysis',
+              category: 'insight' as const,
+              editable: true,
+              webLinks: []
+            }));
+          
+          if (newKeyPoints.length > 0) {
+            onUpdateKeyPoints([...keyPoints, ...newKeyPoints]);
+            console.log('✅ New key points added:', newKeyPoints.length);
+          } else {
+            console.log('ℹ️ No new key points found');
+          }
         } else {
-          console.log('ℹ️ No new key points found');
+          console.log('⚠️ No key points returned from Gemini during completion');
         }
       } else {
         // Demo mode
