@@ -101,15 +101,12 @@ export class GeminiService {
       const mimeType = this.detectMimeType(audioFile);
       console.log('🔍 Detected MIME type:', mimeType);
 
-      // Use the correct API format with parts array
+      // Use the correct API format with single user role containing all parts
       const contents = [
         {
+          role: 'user',
           parts: [
-            { text: transcriptionPrompt }
-          ]
-        },
-        {
-          parts: [
+            { text: transcriptionPrompt },
             {
               inlineData: {
                 mimeType: mimeType,
@@ -248,21 +245,18 @@ export class GeminiService {
       // Build transcription prompt
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       
-      // Create content request with file reference using the correct API format
+      // Create content request with file reference using the correct API format with single user role
       const contents = [
         {
+          role: 'user',
           parts: [
+            { text: transcriptionPrompt },
             {
               fileData: {
                 mimeType: fileInfo.mimeType,
                 fileUri: fileInfo.uri
               }
             }
-          ]
-        },
-        {
-          parts: [
-            { text: transcriptionPrompt }
           ]
         }
       ];
@@ -683,6 +677,7 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
       const result = await model.generateContent({
         contents: [
           {
+            role: 'user',
             parts: [
               { text: prompt }
             ]
@@ -762,6 +757,7 @@ Please create comprehensive, professional content that would be suitable for pub
       const result = await model.generateContent({
         contents: [
           {
+            role: 'user',
             parts: [
               { text: prompt }
             ]
