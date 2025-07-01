@@ -72,21 +72,11 @@ export interface ApiKeyConfig {
   isValid?: boolean;
 }
 
-export interface TwitterApiConfig {
-  apiKey: string;
-  apiSecret: string;
-  enabled: boolean;
-  lastTested?: string;
-  isValid?: boolean;
-}
-
 export interface UserApiKeys {
   googleAI?: ApiKeyConfig;
   openAI?: ApiKeyConfig;
   anthropic?: ApiKeyConfig;
   mistral?: ApiKeyConfig;
-  elevenLabs?: ApiKeyConfig;
-  twitterAPI?: TwitterApiConfig;
 }
 
 // New types for API usage assignment
@@ -124,7 +114,7 @@ export interface AppState {
   apiUsageAssignment: ApiUsageAssignment;
 }
 
-// Déclarations TypeScript pour l'API Web Speech Recognition
+// TypeScript declarations for Web Speech Recognition API
 declare global {
   interface Window {
     SpeechRecognition: typeof SpeechRecognition;

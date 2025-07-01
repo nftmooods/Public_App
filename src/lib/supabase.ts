@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Types pour la base de données
+// Types for the database
 export interface Profile {
   id: string;
   email: string;
@@ -24,7 +24,7 @@ export interface Profile {
 export interface UserApiKey {
   id: string;
   user_id: string;
-  provider: 'google_ai' | 'openai' | 'anthropic' | 'mistral' | 'eleven_labs' | 'twitter_api';
+  provider: 'google_ai' | 'openai' | 'anthropic' | 'mistral';
   api_key: string;
   api_secret?: string;
   enabled: boolean;
@@ -43,7 +43,7 @@ export interface Feedback {
   created_at: string;
 }
 
-// Service pour gérer les profils utilisateurs
+// Service to manage user profiles
 export class ProfileService {
   static async getProfile(userId: string): Promise<Profile | null> {
     try {
@@ -54,13 +54,13 @@ export class ProfileService {
         .maybeSingle();
 
       if (error) {
-        console.error('Erreur lors de la récupération du profil:', error);
+        console.error('Error retrieving profile:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil:', error);
+      console.error('Error retrieving profile:', error);
       return null;
     }
   }
@@ -75,13 +75,13 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la mise à jour du profil:', error);
+        console.error('Error updating profile:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil:', error);
+      console.error('Error updating profile:', error);
       return null;
     }
   }
@@ -95,19 +95,19 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la création du profil:', error);
+        console.error('Error creating profile:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Erreur lors de la création du profil:', error);
+      console.error('Error creating profile:', error);
       return null;
     }
   }
 }
 
-// Service pour gérer les clés API
+// Service to manage API keys
 export class ApiKeyService {
   static async getUserApiKeys(userId: string): Promise<UserApiKey[]> {
     try {
@@ -118,20 +118,20 @@ export class ApiKeyService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erreur lors de la récupération des clés API:', error);
+        console.error('Error retrieving API keys:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Erreur lors de la récupération des clés API:', error);
+      console.error('Error retrieving API keys:', error);
       return [];
     }
   }
 
   static async saveApiKey(apiKey: Omit<UserApiKey, 'id' | 'created_at' | 'updated_at'>): Promise<UserApiKey | null> {
     try {
-      // Vérifier si une clé existe déjà pour ce provider
+      // Check if a key already exists for this provider
       const { data: existing } = await supabase
         .from('user_api_keys')
         .select('id')
@@ -140,7 +140,7 @@ export class ApiKeyService {
         .maybeSingle();
 
       if (existing) {
-        // Mettre à jour la clé existante
+        // Update existing key
         const { data, error } = await supabase
           .from('user_api_keys')
           .update({
@@ -154,13 +154,13 @@ export class ApiKeyService {
           .single();
 
         if (error) {
-          console.error('Erreur lors de la mise à jour de la clé API:', error);
+          console.error('Error updating API key:', error);
           return null;
         }
 
         return data;
       } else {
-        // Créer une nouvelle clé
+        // Create new key
         const { data, error } = await supabase
           .from('user_api_keys')
           .insert(apiKey)
@@ -168,14 +168,14 @@ export class ApiKeyService {
           .single();
 
         if (error) {
-          console.error('Erreur lors de la création de la clé API:', error);
+          console.error('Error creating API key:', error);
           return null;
         }
 
         return data;
       }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la clé API:', error);
+      console.error('Error saving API key:', error);
       return null;
     }
   }
@@ -188,13 +188,13 @@ export class ApiKeyService {
         .eq('id', keyId);
 
       if (error) {
-        console.error('Erreur lors de la suppression de la clé API:', error);
+        console.error('Error deleting API key:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de la suppression de la clé API:', error);
+      console.error('Error deleting API key:', error);
       return false;
     }
   }
@@ -210,13 +210,13 @@ export class ApiKeyService {
         .eq('id', keyId);
 
       if (error) {
-        console.error('Erreur lors de la mise à jour du statut de la clé API:', error);
+        console.error('Error updating API key status:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du statut de la clé API:', error);
+      console.error('Error updating API key status:', error);
       return false;
     }
   }
@@ -229,19 +229,19 @@ export class ApiKeyService {
         .eq('id', keyId);
 
       if (error) {
-        console.error('Erreur lors de la modification de l\'état de la clé API:', error);
+        console.error('Error toggling API key state:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de la modification de l\'état de la clé API:', error);
+      console.error('Error toggling API key state:', error);
       return false;
     }
   }
 }
 
-// Service pour gérer les feedbacks
+// Service to manage feedback
 export class FeedbackService {
   static async submitFeedback(feedback: {
     rating: number;
@@ -262,13 +262,13 @@ export class FeedbackService {
         .single();
 
       if (error) {
-        console.error('Erreur lors de la soumission du feedback:', error);
+        console.error('Error submitting feedback:', error);
         return null;
       }
 
       return data;
     } catch (error) {
-      console.error('Erreur lors de la soumission du feedback:', error);
+      console.error('Error submitting feedback:', error);
       return null;
     }
   }
@@ -282,19 +282,19 @@ export class FeedbackService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Erreur lors de la récupération des feedbacks:', error);
+        console.error('Error retrieving feedback:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Erreur lors de la récupération des feedbacks:', error);
+      console.error('Error retrieving feedback:', error);
       return [];
     }
   }
 }
 
-// Service d'authentification
+// Authentication service
 export class AuthService {
   static async signUp(email: string, password: string, name: string) {
     const { data, error } = await supabase.auth.signUp({
@@ -305,12 +305,12 @@ export class AuthService {
           name: name,
           full_name: name
         },
-        emailRedirectTo: undefined // Désactiver la confirmation par email pour le développement
+        emailRedirectTo: undefined // Disable email confirmation for development
       }
     });
 
     if (error) {
-      console.error('Erreur lors de l\'inscription:', error);
+      console.error('Error during sign up:', error);
       throw error;
     }
 
@@ -324,7 +324,7 @@ export class AuthService {
     });
 
     if (error) {
-      console.error('Erreur lors de la connexion:', error);
+      console.error('Error during sign in:', error);
       throw error;
     }
 
@@ -335,7 +335,7 @@ export class AuthService {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error('Error during sign out:', error);
       throw error;
     }
   }
@@ -344,7 +344,7 @@ export class AuthService {
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error) {
-      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      console.error('Error retrieving user:', error);
       return null;
     }
 

@@ -13,38 +13,29 @@ export const useApiKeys = (userId: string | null) => {
     try {
       const keys = await ApiKeyService.getUserApiKeys(userId);
       
-      // Convertir le format de la base de données vers le format de l'application
+      // Convert database format to application format
       const formattedKeys: UserApiKeys = {};
       
       keys.forEach((key) => {
-        if (key.provider === 'twitter_api') {
-          formattedKeys.twitterAPI = {
-            apiKey: key.api_key,
-            apiSecret: key.api_secret || '',
+        const providerMap: Record<string, keyof UserApiKeys> = {
+          'google_ai': 'googleAI',
+          'openai': 'openAI',
+          'anthropic': 'anthropic',
+          'mistral': 'mistral'
+        };
+
+        const providerKey = providerMap[key.provider];
+        if (providerKey) {
+          formattedKeys[providerKey] = {
+            key: key.api_key,
             enabled: key.enabled
           };
-        } else {
-          const providerMap: Record<string, keyof UserApiKeys> = {
-            'google_ai': 'googleAI',
-            'openai': 'openAI',
-            'anthropic': 'anthropic',
-            'mistral': 'mistral',
-            'eleven_labs': 'elevenLabs'
-          };
-
-          const providerKey = providerMap[key.provider];
-          if (providerKey) {
-            formattedKeys[providerKey] = {
-              key: key.api_key,
-              enabled: key.enabled
-            };
-          }
         }
       });
 
       setApiKeys(formattedKeys);
     } catch (error) {
-      console.error('Erreur lors du chargement des clés API:', error);
+      console.error('Error loading API keys:', error);
     } finally {
       setIsLoading(false);
     }
@@ -59,42 +50,30 @@ export const useApiKeys = (userId: string | null) => {
 
     setIsLoading(true);
     try {
-      // Convertir le format de l'application vers le format de la base de données
+      // Convert application format to database format
       const promises: Promise<any>[] = [];
 
-      // Traiter chaque type de clé API
+      // Process each type of API key
       Object.entries(newApiKeys).forEach(([provider, config]) => {
         if (!config) return;
 
-        let dbProvider: string;
-        let apiKey: string;
-        let apiSecret: string | undefined;
+        const providerMap: Record<string, string> = {
+          'googleAI': 'google_ai',
+          'openAI': 'openai',
+          'anthropic': 'anthropic',
+          'mistral': 'mistral'
+        };
+        
+        const dbProvider = providerMap[provider];
+        if (!dbProvider || !('key' in config)) return;
 
-        if (provider === 'twitterAPI' && 'apiKey' in config) {
-          dbProvider = 'twitter_api';
-          apiKey = config.apiKey;
-          apiSecret = config.apiSecret;
-        } else if ('key' in config) {
-          const providerMap: Record<string, string> = {
-            'googleAI': 'google_ai',
-            'openAI': 'openai',
-            'anthropic': 'anthropic',
-            'mistral': 'mistral',
-            'elevenLabs': 'eleven_labs'
-          };
-          dbProvider = providerMap[provider];
-          apiKey = config.key;
-        } else {
-          return;
-        }
-
-        if (apiKey.trim()) {
+        if (config.key.trim()) {
           promises.push(
             ApiKeyService.saveApiKey({
               user_id: userId,
               provider: dbProvider as any,
-              api_key: apiKey,
-              api_secret: apiSecret,
+              api_key: config.key,
+              api_secret: undefined,
               enabled: config.enabled,
               is_valid: true
             })
@@ -105,7 +84,7 @@ export const useApiKeys = (userId: string | null) => {
       await Promise.all(promises);
       setApiKeys(newApiKeys);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des clés API:', error);
+      console.error('Error saving API keys:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -122,19 +101,17 @@ export const useApiKeys = (userId: string | null) => {
           'googleAI': 'google_ai',
           'openAI': 'openai',
           'anthropic': 'anthropic',
-          'mistral': 'mistral',
-          'elevenLabs': 'eleven_labs',
-          'twitterAPI': 'twitter_api'
+          'mistral': 'mistral'
         };
         return k.provider === providerMap[provider];
       });
 
       if (keyToDelete) {
         await ApiKeyService.deleteApiKey(keyToDelete.id);
-        await loadApiKeys(); // Recharger les clés
+        await loadApiKeys(); // Reload keys
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression de la clé API:', error);
+      console.error('Error deleting API key:', error);
       throw error;
     }
   };
@@ -149,16 +126,14 @@ export const useApiKeys = (userId: string | null) => {
           'googleAI': 'google_ai',
           'openAI': 'openai',
           'anthropic': 'anthropic',
-          'mistral': 'mistral',
-          'elevenLabs': 'eleven_labs',
-          'twitterAPI': 'twitter_api'
+          'mistral': 'mistral'
         };
         return k.provider === providerMap[provider];
       });
 
       if (keyToTest) {
-        // Ici vous pouvez ajouter la logique de test spécifique à chaque API
-        // Pour l'instant, on simule un test réussi
+        // Here you can add specific testing logic for each API
+        // For now, we simulate a successful test
         const isValid = true;
         await ApiKeyService.updateApiKeyStatus(keyToTest.id, isValid);
         return isValid;
@@ -166,7 +141,7 @@ export const useApiKeys = (userId: string | null) => {
 
       return false;
     } catch (error) {
-      console.error('Erreur lors du test de la clé API:', error);
+      console.error('Error testing API key:', error);
       return false;
     }
   };

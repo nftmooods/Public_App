@@ -79,28 +79,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
       icon: '🇫🇷',
       type: 'single' as const,
       capabilities: ['analysis', 'writing', 'export']
-    },
-    {
-      id: 'elevenLabs',
-      name: 'ElevenLabs',
-      description: 'For voice synthesis (optional)',
-      placeholder: 'el_...',
-      helpUrl: 'https://elevenlabs.io/app/speech-synthesis',
-      validation: (key: string) => key.length > 10,
-      icon: '🎵',
-      type: 'single' as const,
-      capabilities: ['export']
-    },
-    {
-      id: 'twitterAPI',
-      name: 'Twitter API',
-      description: 'To access Twitter Spaces and publish',
-      placeholder: 'API Key / API Secret',
-      helpUrl: 'https://developer.twitter.com/en/portal/dashboard',
-      validation: (key: string) => key.length > 10,
-      icon: '🐦',
-      type: 'dual' as const,
-      capabilities: ['export']
     }
   ];
 
@@ -139,12 +117,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     const enabled = [];
     
     Object.entries(localApiKeys).forEach(([provider, config]) => {
-      if (config && config.enabled) {
-        if (provider === 'twitterAPI' && 'apiKey' in config) {
-          if (config.apiKey && config.apiSecret) {
-            enabled.push(provider);
-          }
-        } else if ('key' in config && config.key) {
+      if (config && config.enabled && apiProviders.find(p => p.id === provider)) {
+        if ('key' in config && config.key) {
           enabled.push(provider);
         }
       }
@@ -180,61 +154,36 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleKeyChange = (provider: string, value: string, field?: string) => {
+  const handleKeyChange = (provider: string, value: string) => {
     setLocalApiKeys(prev => {
-      const providerConfig = apiProviders.find(p => p.id === provider);
-      
-      if (providerConfig?.type === 'dual' && provider === 'twitterAPI') {
-        const currentTwitter = prev.twitterAPI || { apiKey: '', apiSecret: '', enabled: false };
-        return {
-          ...prev,
-          twitterAPI: {
-            ...currentTwitter,
-            [field || 'apiKey']: value
-          }
-        };
-      } else {
-        const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
-        return {
-          ...prev,
-          [provider]: {
-            ...currentConfig,
-            key: value
-          }
-        };
-      }
+      const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
+      return {
+        ...prev,
+        [provider]: {
+          ...currentConfig,
+          key: value
+        }
+      };
     });
   };
 
   const toggleEnabled = (provider: string) => {
     setLocalApiKeys(prev => {
-      if (provider === 'twitterAPI') {
-        const currentTwitter = prev.twitterAPI || { apiKey: '', apiSecret: '', enabled: false };
-        return {
-          ...prev,
-          twitterAPI: {
-            ...currentTwitter,
-            enabled: !currentTwitter.enabled
-          }
-        };
-      } else {
-        const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
-        return {
-          ...prev,
-          [provider]: {
-            ...currentConfig,
-            enabled: !currentConfig.enabled
-          }
-        };
-      }
+      const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
+      return {
+        ...prev,
+        [provider]: {
+          ...currentConfig,
+          enabled: !currentConfig.enabled
+        }
+      };
     });
   };
 
-  const toggleShowKey = (provider: string, field?: string) => {
-    const key = field ? `${provider}_${field}` : provider;
+  const toggleShowKey = (provider: string) => {
     setShowKeys(prev => ({
       ...prev,
-      [key]: !prev[key]
+      [provider]: !prev[provider]
     }));
   };
 
@@ -282,13 +231,11 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     });
   };
 
-  const getKeyValue = (provider: string, field?: string) => {
+  const getKeyValue = (provider: string) => {
     const config = localApiKeys[provider as keyof UserApiKeys];
     if (!config) return '';
     
-    if (provider === 'twitterAPI' && 'apiKey' in config) {
-      return field === 'apiSecret' ? config.apiSecret : config.apiKey;
-    } else if ('key' in config) {
+    if ('key' in config) {
       return config.key;
     }
     return '';
@@ -303,13 +250,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     const providerConfig = apiProviders.find(p => p.id === provider);
     if (!providerConfig) return false;
 
-    if (provider === 'twitterAPI') {
-      const config = localApiKeys.twitterAPI;
-      return config ? config.apiKey.length > 10 && config.apiSecret.length > 10 : false;
-    } else {
-      const config = localApiKeys[provider as keyof UserApiKeys] as ApiKeyConfig;
-      return config ? providerConfig.validation(config.key) : false;
-    }
+    const config = localApiKeys[provider as keyof UserApiKeys] as ApiKeyConfig;
+    return config ? providerConfig.validation(config.key) : false;
   };
 
   return (
@@ -427,129 +369,69 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        {provider.type === 'dual' ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="relative">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Key
-                              </label>
-                              <input
-                                type={showKeys[`${provider.id}_apiKey`] ? 'text' : 'password'}
-                                value={getKeyValue(provider.id, 'apiKey')}
-                                onChange={(e) => handleKeyChange(provider.id, e.target.value, 'apiKey')}
-                                placeholder="API Key"
-                                disabled={!enabled}
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
-                                  !enabled ? 'bg-gray-100 text-gray-400' :
-                                  getKeyValue(provider.id, 'apiKey') && !valid 
-                                    ? 'border-red-300 bg-red-50' 
-                                    : getKeyValue(provider.id, 'apiKey') && valid
-                                      ? 'border-green-300 bg-green-50'
-                                      : 'border-gray-300'
-                                }`}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => toggleShowKey(provider.id, 'apiKey')}
-                                className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 transition-colors"
-                              >
-                                {showKeys[`${provider.id}_apiKey`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                            
-                            <div className="relative">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                API Secret
-                              </label>
-                              <input
-                                type={showKeys[`${provider.id}_apiSecret`] ? 'text' : 'password'}
-                                value={getKeyValue(provider.id, 'apiSecret')}
-                                onChange={(e) => handleKeyChange(provider.id, e.target.value, 'apiSecret')}
-                                placeholder="API Secret"
-                                disabled={!enabled}
-                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 ${
-                                  !enabled ? 'bg-gray-100 text-gray-400' :
-                                  getKeyValue(provider.id, 'apiSecret') && !valid 
-                                    ? 'border-red-300 bg-red-50' 
-                                    : getKeyValue(provider.id, 'apiSecret') && valid
-                                      ? 'border-green-300 bg-green-50'
-                                      : 'border-gray-300'
-                                }`}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => toggleShowKey(provider.id, 'apiSecret')}
-                                className="absolute right-3 top-8 text-gray-400 hover:text-gray-600 transition-colors"
-                              >
-                                {showKeys[`${provider.id}_apiSecret`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
+                        <div className="relative">
+                          <input
+                            type={showKeys[provider.id] ? 'text' : 'password'}
+                            value={getKeyValue(provider.id)}
+                            onChange={(e) => handleKeyChange(provider.id, e.target.value)}
+                            placeholder={provider.placeholder}
+                            disabled={!enabled}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24 ${
+                              !enabled ? 'bg-gray-100 text-gray-400' :
+                              getKeyValue(provider.id) && !valid 
+                                ? 'border-red-300 bg-red-50' 
+                                : getKeyValue(provider.id) && valid
+                                  ? 'border-green-300 bg-green-50'
+                                  : 'border-gray-300'
+                            }`}
+                          />
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
+                            {getKeyValue(provider.id) && enabled && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => testApiKeyHandler(provider.id)}
+                                  disabled={!valid || testResult === 'testing'}
+                                  className={`p-1 rounded transition-colors ${
+                                    testResult === 'testing' 
+                                      ? 'text-yellow-500' 
+                                      : testResult === 'success'
+                                        ? 'text-green-500'
+                                        : testResult === 'error'
+                                          ? 'text-red-500'
+                                          : 'text-gray-400 hover:text-gray-600'
+                                  }`}
+                                  title="Test key"
+                                >
+                                  {testResult === 'testing' ? (
+                                    <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+                                  ) : testResult === 'success' ? (
+                                    <CheckCircle className="w-4 h-4" />
+                                  ) : testResult === 'error' ? (
+                                    <AlertTriangle className="w-4 h-4" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeKey(provider.id)}
+                                  className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                                  title="Remove key"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => toggleShowKey(provider.id)}
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                              {showKeys[provider.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                           </div>
-                        ) : (
-                          <div className="relative">
-                            <input
-                              type={showKeys[provider.id] ? 'text' : 'password'}
-                              value={getKeyValue(provider.id)}
-                              onChange={(e) => handleKeyChange(provider.id, e.target.value)}
-                              placeholder={provider.placeholder}
-                              disabled={!enabled}
-                              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24 ${
-                                !enabled ? 'bg-gray-100 text-gray-400' :
-                                getKeyValue(provider.id) && !valid 
-                                  ? 'border-red-300 bg-red-50' 
-                                  : getKeyValue(provider.id) && valid
-                                    ? 'border-green-300 bg-green-50'
-                                    : 'border-gray-300'
-                              }`}
-                            />
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                              {getKeyValue(provider.id) && enabled && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => testApiKeyHandler(provider.id)}
-                                    disabled={!valid || testResult === 'testing'}
-                                    className={`p-1 rounded transition-colors ${
-                                      testResult === 'testing' 
-                                        ? 'text-yellow-500' 
-                                        : testResult === 'success'
-                                          ? 'text-green-500'
-                                          : testResult === 'error'
-                                            ? 'text-red-500'
-                                            : 'text-gray-400 hover:text-gray-600'
-                                    }`}
-                                    title="Test key"
-                                  >
-                                    {testResult === 'testing' ? (
-                                      <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
-                                    ) : testResult === 'success' ? (
-                                      <CheckCircle className="w-4 h-4" />
-                                    ) : testResult === 'error' ? (
-                                      <AlertTriangle className="w-4 h-4" />
-                                    ) : (
-                                      <CheckCircle className="w-4 h-4" />
-                                    )}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeKey(provider.id)}
-                                    className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                                    title="Remove key"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => toggleShowKey(provider.id)}
-                                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                              >
-                                {showKeys[provider.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                        </div>
 
                         {getKeyValue(provider.id) && !valid && enabled && (
                           <p className="text-sm text-red-600">
