@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic, HardDrive } from 'lucide-react';
+import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic, HardDrive, Settings } from 'lucide-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface Step1Props {
   audioUrl: string;
@@ -20,9 +21,10 @@ interface Step1Props {
 interface ProcessingStep {
   id: string;
   label: string;
-  status: 'pending' | 'processing' | 'completed';
+  status: 'pending' | 'processing' | 'completed' | 'error';
   api?: string;
   duration?: number;
+  details?: string;
 }
 
 const Step1: React.FC<Step1Props> = ({ 
@@ -36,6 +38,14 @@ const Step1: React.FC<Step1Props> = ({
   geminiConfigured = false,
   sessionId = ''
 }) => {
+  const { 
+    apiUsageAssignment, 
+    apiKeys, 
+    demoMode, 
+    setApiKeyError,
+    setDemoMode 
+  } = useAppContext();
+  
   const [dragActive, setDragActive] = useState(false);
   const [textDragActive, setTextDragActive] = useState(false);
   const [error, setError] = useState<string>('');
@@ -56,6 +66,34 @@ const Step1: React.FC<Step1Props> = ({
       console.log('🔄 Step1 reset for session:', sessionId);
     }
   }, [sessionId]);
+
+  const getAssignedApiKey = (usageType: 'audio' | 'analysis') => {
+    const assignedProvider = apiUsageAssignment[usageType];
+    if (!assignedProvider) return null;
+
+    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
+    if (!providerConfig || !providerConfig.enabled) return null;
+
+    if ('key' in providerConfig) {
+      return providerConfig.key;
+    }
+
+    return null;
+  };
+
+  const getApiDisplayName = (usageType: 'audio' | 'analysis') => {
+    const assignedProvider = apiUsageAssignment[usageType];
+    if (!assignedProvider) return 'Demo Mode';
+
+    const apiDisplayNames: Record<string, string> = {
+      'googleAI': 'Gemini 2.5 Flash',
+      'openAI': 'OpenAI GPT',
+      'anthropic': 'Claude',
+      'mistral': 'Mistral AI'
+    };
+
+    return apiDisplayNames[assignedProvider] || assignedProvider;
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -169,40 +207,19 @@ const Step1: React.FC<Step1Props> = ({
     }
   };
 
-  const getAnalysisSteps = () => {
-    const demoMode = localStorage.getItem('demoMode') === 'true';
-    console.log('🔍 Demo mode status:', demoMode);
-    console.log('🔍 Gemini configured:', geminiConfigured);
+  const getProcessingSteps = () => {
+    const audioApiKey = getAssignedApiKey('audio');
+    const analysisApiKey = getAssignedApiKey('analysis');
+    const audioApiName = getApiDisplayName('audio');
+    const analysisApiName = getApiDisplayName('analysis');
     
-    // Check for API key more thoroughly
-    let hasValidApiKey = false;
-    
-    // Check if user is authenticated and has API keys
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    if (isAuthenticated) {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          if (user.apiKeys?.googleAI && user.apiKeys.googleAI.enabled && user.apiKeys.googleAI.key) {
-            hasValidApiKey = user.apiKeys.googleAI.key.startsWith('AIza');
-            console.log('🔍 User has valid Google AI key:', hasValidApiKey);
-          }
-        } catch (e) {
-          console.error('Error parsing user data:', e);
-        }
-      }
-    }
-    
-    // Fallback to localStorage API key
-    if (!hasValidApiKey) {
-      const storedApiKey = localStorage.getItem('google_ai_api_key');
-      hasValidApiKey = !!(storedApiKey && storedApiKey.startsWith('AIza'));
-      console.log('🔍 Stored API key valid:', hasValidApiKey);
-    }
-    
-    const useGemini = !demoMode && geminiConfigured && hasValidApiKey;
-    console.log('🔍 Will use Gemini 2.5 Flash:', useGemini);
+    console.log('🔍 Processing setup:', {
+      demoMode,
+      audioApiKey: !!audioApiKey,
+      analysisApiKey: !!analysisApiKey,
+      audioApiName,
+      analysisApiName
+    });
     
     if (textContent.trim() || textFile) {
       return [
@@ -211,41 +228,46 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Text content validation', 
           status: 'pending' as const, 
           api: 'Local processing',
-          duration: 1500
+          duration: 1000,
+          details: 'Validating text format and structure'
         },
         { 
           id: 'speaker-detection', 
-          label: 'Speaker detection', 
+          label: 'Speaker pattern detection', 
           status: 'pending' as const, 
           api: 'Local algorithm',
-          duration: 2000
+          duration: 1500,
+          details: 'Identifying speaker patterns in text'
         },
         { 
           id: 'text-analysis', 
-          label: 'Advanced semantic analysis', 
+          label: 'Semantic content analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
-          duration: useGemini ? 4000 : 2500
+          api: analysisApiName,
+          duration: analysisApiKey ? 3000 : 2000,
+          details: 'Advanced semantic analysis and understanding'
         },
         { 
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
-          duration: useGemini ? 3000 : 2000
+          api: analysisApiName,
+          duration: analysisApiKey ? 4000 : 2500,
+          details: 'Extracting main themes and insights'
         },
         { 
-          id: 'cost-calculation', 
-          label: 'Cost and token calculation', 
+          id: 'finalization', 
+          label: 'Data structuring and finalization', 
           status: 'pending' as const, 
           api: 'Local processing',
-          duration: 1000
+          duration: 1000,
+          details: 'Organizing extracted data'
         }
       ];
     } else if (audioFile) {
       const fileSizeMB = audioFile.size / (1024 * 1024);
       const fileInfo = getFileSizeInfo(audioFile);
-      const baseTranscriptionTime = Math.max(5000, fileSizeMB * 800); // More realistic timing
+      const baseTranscriptionTime = Math.max(8000, fileSizeMB * 1000); // More realistic timing
       
       const steps = [
         { 
@@ -253,7 +275,8 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Audio file validation', 
           status: 'pending' as const, 
           api: 'Local processing',
-          duration: 1000
+          duration: 1000,
+          details: 'Validating audio format and size'
         }
       ];
 
@@ -263,25 +286,19 @@ const Step1: React.FC<Step1Props> = ({
             id: 'file-upload', 
             label: 'Uploading to Gemini Files API', 
             status: 'pending' as const, 
-            api: useGemini ? 'Gemini Files API' : 'Demo mode',
-            duration: Math.max(3000, fileSizeMB * 200) // Upload time based on file size
+            api: audioApiName,
+            duration: Math.max(5000, fileSizeMB * 300),
+            details: 'Secure upload for large file processing'
           },
           { 
             id: 'file-processing', 
             label: 'Server-side file processing', 
             status: 'pending' as const, 
-            api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
-            duration: Math.max(5000, fileSizeMB * 300) // Processing time
+            api: audioApiName,
+            duration: Math.max(10000, fileSizeMB * 400),
+            details: 'Processing large file on Gemini servers'
           }
         );
-      } else {
-        steps.push({
-          id: 'audio-preprocessing', 
-          label: 'Transcription preparation', 
-          status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
-          duration: 2000
-        });
       }
 
       steps.push(
@@ -289,22 +306,33 @@ const Step1: React.FC<Step1Props> = ({
           id: 'transcription', 
           label: `Audio transcription ${fileInfo.method === 'files-api' ? '(Files API)' : '(Inline)'}`, 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash (Multimodal)' : 'Demo mode',
-          duration: baseTranscriptionTime
+          api: `${audioApiName} (Multimodal)`,
+          duration: baseTranscriptionTime,
+          details: 'Converting audio to text with speaker detection'
         },
         { 
           id: 'speaker-analysis', 
-          label: 'Speaker analysis', 
+          label: 'Advanced speaker analysis', 
           status: 'pending' as const, 
-          api: useGemini ? 'Gemini 2.5 Flash' : 'Demo mode',
-          duration: 2500
+          api: audioApiName,
+          duration: 3000,
+          details: 'Identifying and separating speakers'
+        },
+        { 
+          id: 'key-extraction', 
+          label: 'Key points extraction', 
+          status: 'pending' as const, 
+          api: analysisApiName,
+          duration: analysisApiKey ? 4000 : 2500,
+          details: 'Extracting main themes and insights'
         },
         { 
           id: 'quality-check', 
           label: 'Quality verification', 
           status: 'pending' as const, 
           api: 'Local algorithm',
-          duration: 1500
+          duration: 1500,
+          details: 'Verifying transcription quality'
         }
       );
 
@@ -314,7 +342,8 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Cleaning up uploaded file', 
           status: 'pending' as const, 
           api: 'Gemini Files API',
-          duration: 1000
+          duration: 1000,
+          details: 'Removing temporary files from server'
         });
       }
 
@@ -329,11 +358,11 @@ const Step1: React.FC<Step1Props> = ({
     setIsProcessing(true);
     setAnalysisProgress(0);
     
-    const steps = getAnalysisSteps();
+    const steps = getProcessingSteps();
     setProcessingSteps(steps);
     setCurrentStepIndex(0);
 
-    console.log('🚀 Starting detailed analysis with', steps.length, 'steps');
+    console.log('🚀 Starting API-managed processing with', steps.length, 'steps');
 
     try {
       // Execute each step with its specific duration
@@ -348,7 +377,27 @@ const Step1: React.FC<Step1Props> = ({
         
         setCurrentStepIndex(i);
         
-        console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms)`);
+        console.log(`⏳ Step ${i + 1}/${steps.length}: ${step.label} (${step.duration}ms) - ${step.api}`);
+        
+        // Handle specific step logic
+        if (step.id === 'file-upload' && audioFile) {
+          const fileSizeMB = audioFile.size / (1024 * 1024);
+          console.log(`📁 Uploading large file (${fileSizeMB.toFixed(2)}MB) to Files API...`);
+        } else if (step.id === 'transcription') {
+          const audioApiKey = getAssignedApiKey('audio');
+          if (!demoMode && audioApiKey) {
+            console.log('🎵 Using assigned API for transcription:', getApiDisplayName('audio'));
+          } else {
+            console.log('🎭 Using demo mode for transcription');
+          }
+        } else if (step.id === 'key-extraction') {
+          const analysisApiKey = getAssignedApiKey('analysis');
+          if (!demoMode && analysisApiKey) {
+            console.log('🎯 Using assigned API for key extraction:', getApiDisplayName('analysis'));
+          } else {
+            console.log('🎭 Using demo mode for key extraction');
+          }
+        }
         
         // Simulate step progress with micro-updates
         const stepDuration = step.duration || 2000;
@@ -372,7 +421,7 @@ const Step1: React.FC<Step1Props> = ({
         })));
       }
 
-      console.log('✅ Analysis completed, calling onNext()');
+      console.log('✅ API-managed processing completed, calling onNext()');
       
       // Complete the progress
       setAnalysisProgress(100);
@@ -380,12 +429,25 @@ const Step1: React.FC<Step1Props> = ({
       // Wait a bit then move to next step
       setTimeout(() => {
         setIsProcessing(false);
-        onNext(); // This should trigger the move to step 2
+        onNext(); // This should trigger the move to step 2 (Key Points & Speakers)
       }, 1000);
       
     } catch (error) {
-      console.error('❌ Error during analysis:', error);
-      setError('Analysis failed. Please try again.');
+      console.error('❌ Error during API-managed processing:', error);
+      
+      // Handle specific API errors
+      const errorMessage = (error as Error).message;
+      
+      if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+        setApiKeyError('API quota exceeded. Switching to demo mode.');
+        setDemoMode(true);
+      } else if (errorMessage.includes('Failed to fetch')) {
+        setApiKeyError('Network error. Please check your connection.');
+      } else {
+        setApiKeyError(`Processing error: ${errorMessage}`);
+      }
+      
+      setError('Processing failed. Please try again or switch to demo mode.');
       setIsProcessing(false);
     }
   };
@@ -395,10 +457,10 @@ const Step1: React.FC<Step1Props> = ({
       <div className="max-w-5xl mx-auto p-4 h-screen flex flex-col">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Analysis in Progress
+            API-Managed Processing
           </h2>
           <p className="text-gray-600">
-            Intelligent processing of your content with Gemini 2.5 Flash
+            Your content is being processed by the assigned APIs with advanced AI capabilities
           </p>
         </div>
 
@@ -406,7 +468,7 @@ const Step1: React.FC<Step1Props> = ({
           {/* Global progress */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Global Progress</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Processing Progress</h3>
               <span className="text-sm text-gray-500">
                 {Math.round(analysisProgress)}%
               </span>
@@ -429,9 +491,10 @@ const Step1: React.FC<Step1Props> = ({
             {processingSteps.map((step, index) => (
               <div 
                 key={step.id}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-300 ${
+                className={`flex items-start space-x-3 p-4 rounded-lg transition-all duration-300 ${
                   step.status === 'processing' ? 'bg-blue-50 border border-blue-200 scale-105' :
                   step.status === 'completed' ? 'bg-green-50 border border-green-200' :
+                  step.status === 'error' ? 'bg-red-50 border border-red-200' :
                   'bg-gray-50 border border-gray-200'
                 }`}
               >
@@ -440,6 +503,8 @@ const Step1: React.FC<Step1Props> = ({
                     <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
                   ) : step.status === 'completed' ? (
                     <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : step.status === 'error' ? (
+                    <AlertCircle className="w-5 h-5 text-red-600" />
                   ) : (
                     <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>
                   )}
@@ -450,6 +515,7 @@ const Step1: React.FC<Step1Props> = ({
                     <h4 className={`font-medium text-sm ${
                       step.status === 'processing' ? 'text-blue-900' :
                       step.status === 'completed' ? 'text-green-900' :
+                      step.status === 'error' ? 'text-red-900' :
                       'text-gray-700'
                     }`}>
                       {step.label}
@@ -458,6 +524,9 @@ const Step1: React.FC<Step1Props> = ({
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                         step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
+                        step.api.includes('OpenAI') ? 'bg-green-100 text-green-700' :
+                        step.api.includes('Claude') ? 'bg-orange-100 text-orange-700' :
+                        step.api.includes('Mistral') ? 'bg-red-100 text-red-700' :
                         step.api.includes('Demo') || step.api.includes('demo') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
@@ -465,6 +534,10 @@ const Step1: React.FC<Step1Props> = ({
                       </span>
                     )}
                   </div>
+                  
+                  {step.details && (
+                    <p className="text-xs text-gray-600 mb-2">{step.details}</p>
+                  )}
                   
                   {step.status === 'processing' && (
                     <div className="mt-1">
@@ -476,7 +549,13 @@ const Step1: React.FC<Step1Props> = ({
                   
                   {step.status === 'completed' && (
                     <div className="text-xs text-green-600 mt-1">
-                      ✓ Completed
+                      ✓ Completed successfully
+                    </div>
+                  )}
+
+                  {step.status === 'error' && (
+                    <div className="text-xs text-red-600 mt-1">
+                      ✗ Error occurred
                     </div>
                   )}
                 </div>
@@ -486,20 +565,32 @@ const Step1: React.FC<Step1Props> = ({
 
           {/* Processing information */}
           <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2 text-sm">Processing Details</h4>
+            <h4 className="font-medium text-blue-900 mb-2 text-sm">API Assignment Details</h4>
             <div className="text-xs text-blue-700 space-y-1">
+              <div className="flex items-center justify-between">
+                <span>Audio Processing:</span>
+                <span className="font-medium">{getApiDisplayName('audio')}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Content Analysis:</span>
+                <span className="font-medium">{getApiDisplayName('analysis')}</span>
+              </div>
               {textContent.trim() ? (
                 <>
-                  <p>• Analyzing {textContent.length} characters of text</p>
-                  <p>• Automatic speaker detection</p>
-                  <p>• Intelligent key points extraction with Gemini 2.5 Flash</p>
+                  <div className="mt-2 pt-2 border-t border-blue-200">
+                    <p>• Analyzing {textContent.length} characters of text</p>
+                    <p>• Automatic speaker pattern detection</p>
+                    <p>• Intelligent key points extraction</p>
+                  </div>
                 </>
               ) : audioFile ? (
                 <>
-                  <p>• Processing audio file: {audioFile.name}</p>
-                  <p>• Size: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                  <p>• {getFileSizeInfo(audioFile).description}</p>
-                  <p>• Multimodal AI transcription with Gemini 2.5 Flash</p>
+                  <div className="mt-2 pt-2 border-t border-blue-200">
+                    <p>• Processing audio file: {audioFile.name}</p>
+                    <p>• Size: {(audioFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p>• {getFileSizeInfo(audioFile).description}</p>
+                    <p>• Multimodal AI transcription with speaker detection</p>
+                  </div>
                 </>
               ) : null}
             </div>
@@ -516,17 +607,32 @@ const Step1: React.FC<Step1Props> = ({
           Import Your Content
         </h2>
         <p className="text-gray-600">
-          Choose your content source to get started with transforming it into structured summaries
+          Choose your content source to get started with AI-powered analysis and transformation
         </p>
       </div>
 
-      {/* Gemini Status */}
-      {geminiConfigured && (
+      {/* API Assignment Status */}
+      {!demoMode && (
         <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center">
-            <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-blue-800 font-medium text-sm">
-              Gemini 2.5 Flash configured - Advanced multimodal transcription enabled
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4 text-blue-600" />
+              <span className="text-blue-800 font-medium text-sm">
+                API Assignment: Audio → {getApiDisplayName('audio')} | Analysis → {getApiDisplayName('analysis')}
+              </span>
+            </div>
+            <span className="text-xs text-blue-600">Configured</span>
+          </div>
+        </div>
+      )}
+
+      {/* Demo Mode Notice */}
+      {demoMode && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-yellow-600" />
+            <span className="text-yellow-800 font-medium text-sm">
+              Demo Mode - All processing will be simulated with sample data
             </span>
           </div>
         </div>
@@ -647,7 +753,7 @@ const Step1: React.FC<Step1Props> = ({
                     </p>
                     <div className="text-xs text-gray-400 space-y-1">
                       <p>• Files ≤20MB: Fast inline processing</p>
-                      <p>• Files &gt;20MB: Files API processing</p>
+                      <p>• Files >20MB: Files API processing</p>
                       <p>• Maximum size: 2GB</p>
                     </div>
                   </div>
@@ -733,14 +839,14 @@ const Step1: React.FC<Step1Props> = ({
         <div className="flex items-start space-x-2">
           <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-800 mb-1 text-sm">Next Steps</h4>
+            <h4 className="font-medium text-blue-800 mb-1 text-sm">API-Managed Processing</h4>
             <div className="text-xs text-blue-700 space-y-1">
-              <p>• Preliminary analysis and cost estimation</p>
-              <p>• Automatic speaker detection (for audio/video)</p>
-              <p>• Key insights extraction with Gemini 2.5 Flash</p>
-              <p>• Token count and pricing calculation</p>
-              {audioFile && getFileSizeInfo(audioFile).method === 'files-api' && (
-                <p>• Large file processing via Gemini Files API</p>
+              <p>• Complete processing managed by assigned APIs</p>
+              <p>• Large files (>20MB) automatically use Files API</p>
+              <p>• Automatic speaker detection and key points extraction</p>
+              <p>• Direct transition to Key Points & Speakers editing</p>
+              {!demoMode && (
+                <p>• Using your configured API keys for processing</p>
               )}
             </div>
           </div>
@@ -757,7 +863,7 @@ const Step1: React.FC<Step1Props> = ({
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }`}
         >
-          Analyze Content
+          Start API Processing
           <ArrowRight className="w-5 h-5 ml-2" />
         </button>
       </div>
