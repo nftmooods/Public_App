@@ -12,12 +12,12 @@ export interface AudioTranscriptionService {
   isSupported(): boolean;
 }
 
-// Service de transcription utilisant Gemini 1.5 Pro
+// Service de transcription utilisant Gemini avec modèle spécifique
 class GeminiTranscriptionService implements AudioTranscriptionService {
   private geminiService: GeminiService;
 
-  constructor(apiKey?: string) {
-    this.geminiService = GeminiServiceFactory.create(apiKey);
+  constructor(apiKey?: string, modelName?: string) {
+    this.geminiService = GeminiServiceFactory.create(apiKey, modelName);
   }
 
   isSupported(): boolean {
@@ -191,11 +191,11 @@ class MockTranscriptionService implements AudioTranscriptionService {
 
 // Factory pour créer le service de transcription approprié
 export class TranscriptionServiceFactory {
-  static create(apiKey?: string): AudioTranscriptionService {
-    // Si une clé API Google AI est fournie et valide, utiliser Gemini
+  static create(apiKey?: string, modelName?: string): AudioTranscriptionService {
+    // Si une clé API Google AI est fournie et valide, utiliser Gemini avec le modèle spécifié
     if (apiKey && apiKey.startsWith('AIza') && apiKey.length > 20) {
-      console.log('Utilisation du service Gemini 1.5 Pro avec clé API');
-      return new GeminiTranscriptionService(apiKey);
+      console.log(`Utilisation du service Gemini avec clé API et modèle: ${modelName || 'gemini-2.5-flash'}`);
+      return new GeminiTranscriptionService(apiKey, modelName);
     }
     
     // Sinon, essayer Web Speech API si supporté

@@ -18,12 +18,16 @@ export interface GeminiSegment {
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
   private apiKey: string | null = null;
+  private modelName: string;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, modelName?: string) {
     if (apiKey) {
       this.apiKey = apiKey;
       this.genAI = new GoogleGenerativeAI(apiKey);
-      console.log('🔧 Gemini 2.5 Flash service initialized with API key');
+      this.modelName = modelName || 'gemini-2.5-flash'; // Default to 2.5 Flash
+      console.log(`🔧 Gemini service initialized with API key and model: ${this.modelName}`);
+    } else {
+      this.modelName = 'gemini-2.5-flash';
     }
   }
 
@@ -45,7 +49,7 @@ export class GeminiService {
     }
 
     try {
-      console.log('🎵 Starting Gemini 2.5 Flash transcription for:', audioFile.name);
+      console.log(`🎵 Starting ${this.modelName} transcription for:`, audioFile.name);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
       
@@ -80,9 +84,9 @@ export class GeminiService {
       const audioBase64 = await this.fileToBase64(audioFile);
       console.log('🔄 File converted to base64');
       
-      // Use Gemini 2.5 Flash for transcription
+      // Use the specified model for transcription
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: this.modelName,
         generationConfig: {
           temperature: 0.1, // Low temperature for consistent transcription
           topP: 0.8,
@@ -95,7 +99,7 @@ export class GeminiService {
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       console.log('📝 Optimized transcription prompt built');
 
-      console.log('🚀 Sending request to Gemini 2.5 Flash...');
+      console.log(`🚀 Sending request to ${this.modelName}...`);
       
       // Create the request with proper MIME type using the correct API format
       const mimeType = this.detectMimeType(audioFile);
@@ -121,7 +125,7 @@ export class GeminiService {
       const response = await result.response;
       const transcriptionText = response.text();
 
-      console.log('✅ Gemini 2.5 Flash transcription completed');
+      console.log(`✅ ${this.modelName} transcription completed`);
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
 
       // Parse response to extract different information
@@ -136,7 +140,7 @@ export class GeminiService {
       };
 
     } catch (error) {
-      console.error('❌ Error during Gemini 2.5 Flash transcription:', error);
+      console.error(`❌ Error during ${this.modelName} transcription:`, error);
       
       // Analyze error type with more specific error handling
       if (error instanceof Error) {
@@ -155,7 +159,7 @@ export class GeminiService {
         }
       }
       
-      throw new Error(`Gemini transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`${this.modelName} transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -181,7 +185,7 @@ export class GeminiService {
     let uploadedFileName: string | null = null;
 
     try {
-      console.log('📁 Using Files API for large file transcription...');
+      console.log(`📁 Using Files API for large file transcription with ${this.modelName}...`);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       
       // Step 1: Upload file using Files API
@@ -238,11 +242,11 @@ export class GeminiService {
       }
       
       // Step 3: Generate content using the uploaded file
-      console.log('🚀 Generating transcription with uploaded file...');
+      console.log(`🚀 Generating transcription with uploaded file using ${this.modelName}...`);
       onProgressUpdate?.('Audio transcription (Files API)...', 70);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: this.modelName,
         generationConfig: {
           temperature: 0.1,
           topP: 0.8,
@@ -274,7 +278,7 @@ export class GeminiService {
       const response = await result.response;
       const transcriptionText = response.text();
       
-      console.log('✅ Gemini 2.5 Flash transcription completed via Files API');
+      console.log(`✅ ${this.modelName} transcription completed via Files API`);
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
       
       // Parse response
@@ -306,7 +310,7 @@ export class GeminiService {
       };
       
     } catch (error) {
-      console.error('❌ Error with Files API transcription:', error);
+      console.error(`❌ Error with Files API transcription using ${this.modelName}:`, error);
       
       // Clean up uploaded file in case of error
       if (uploadedFileName && this.genAI?.files) {
@@ -506,7 +510,7 @@ Please ensure accuracy and completeness in your transcription. Focus on clarity 
     segments?: GeminiSegment[];
     keyPoints?: string[];
   } {
-    console.log('🔍 Parsing Gemini 2.5 Flash response...');
+    console.log(`🔍 Parsing ${this.modelName} response...`);
     
     const sections = {
       transcription: '',
@@ -567,7 +571,7 @@ Please ensure accuracy and completeness in your transcription. Focus on clarity 
     return {
       text: sections.transcription,
       language: sections.language,
-      confidence: 0.96, // Gemini 2.5 Flash has high confidence
+      confidence: 0.96, // Gemini models have high confidence
       segments: segments.length > 0 ? segments : undefined,
       keyPoints: keyPoints.length > 0 ? keyPoints : undefined
     };
@@ -677,10 +681,10 @@ Please ensure accuracy and completeness in your transcription. Focus on clarity 
     }
 
     try {
-      console.log('🎯 Extracting key points with Gemini 2.5 Flash...');
+      console.log(`🎯 Extracting key points with ${this.modelName}...`);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: this.modelName,
         generationConfig: {
           temperature: 0.2,
           topP: 0.8,
@@ -747,11 +751,11 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
     }
 
     try {
-      console.log('📝 Generating content with Gemini 2.5 Flash...');
+      console.log(`📝 Generating content with ${this.modelName}...`);
       console.log('🎯 Format:', settings.format, '| Tone:', settings.tone);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: this.modelName,
         generationConfig: {
           temperature: 0.7, // Higher temperature for creative content generation
           topP: 0.9,
@@ -811,7 +815,7 @@ Please create comprehensive, professional content that would be suitable for pub
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = this.genAI.getGenerativeModel({ model: this.modelName });
       
       const countTokensResponse = await model.countTokens({
         contents: [{ role: 'user', parts: [{ text: content }] }]
@@ -830,9 +834,9 @@ Please create comprehensive, professional content that would be suitable for pub
 export class GeminiServiceFactory {
   private static instance: GeminiService | null = null;
 
-  static create(apiKey?: string): GeminiService {
-    if (!GeminiServiceFactory.instance || apiKey) {
-      GeminiServiceFactory.instance = new GeminiService(apiKey);
+  static create(apiKey?: string, modelName?: string): GeminiService {
+    if (!GeminiServiceFactory.instance || apiKey || modelName) {
+      GeminiServiceFactory.instance = new GeminiService(apiKey, modelName);
     }
     return GeminiServiceFactory.instance;
   }
