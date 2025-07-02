@@ -1,6 +1,7 @@
 import React from 'react';
-import { Check, Circle, Lock } from 'lucide-react';
+import { Check, Circle, Lock, RotateCcw, Home } from 'lucide-react';
 import { Step } from '../types';
+import { useAppContext } from '../contexts/AppContext';
 
 interface StepperProps {
   steps: Step[];
@@ -10,6 +11,8 @@ interface StepperProps {
 }
 
 const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demoMode = false }) => {
+  const { resetAppState } = useAppContext();
+
   const canNavigateToStep = (stepId: number) => {
     if (demoMode) {
       // In demo mode, you can navigate to all steps
@@ -24,8 +27,8 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
   return (
     <div className="w-full bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="max-w-6xl mx-auto">
-        {/* Mode indicator at the top */}
-        <div className="flex justify-center mb-4">
+        {/* Mode indicator and controls at the top */}
+        <div className="flex justify-between items-center mb-4">
           <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
             demoMode 
               ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' 
@@ -37,6 +40,27 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
             <span>
               {demoMode ? '🎭 DEMO MODE - Free navigation' : '🚀 PRODUCTION MODE - Sequential navigation'}
             </span>
+          </div>
+
+          {/* Step Control Buttons */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all text-sm"
+              title="Restart current step"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Restart Step
+            </button>
+            
+            <button
+              onClick={resetAppState}
+              className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm"
+              title="Start over from the beginning"
+            >
+              <Home className="w-4 h-4 mr-1" />
+              Start Over
+            </button>
           </div>
         </div>
 
@@ -138,6 +162,14 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
                 <span>Locked</span>
               </div>
             )}
+            <div className="flex items-center space-x-1">
+              <RotateCcw className="w-2 h-2" />
+              <span>Restart Step</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Home className="w-2 h-2" />
+              <span>Start Over</span>
+            </div>
           </div>
         </div>
       </div>

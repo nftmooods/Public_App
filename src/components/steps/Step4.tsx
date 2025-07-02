@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus, X, Save, Wand2 } from 'lucide-react';
+import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus, RotateCcw, Home } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
 import { generateMockKeyPoints } from '../../utils/mockData';
@@ -23,15 +23,6 @@ interface ExtractionProgress {
   api: string;
 }
 
-interface EditingKeyPoint {
-  id: string;
-  title: string;
-  description: string;
-  speaker: string;
-  category: string;
-  webLinks: string[];
-}
-
 const Step4: React.FC<Step4Props> = ({ 
   transcription, 
   keyPoints, 
@@ -42,9 +33,16 @@ const Step4: React.FC<Step4Props> = ({
   geminiConfigured,
   apiKey
 }) => {
-  const { setApiKeyError, setDemoMode, apiUsageAssignment, apiKeys } = useAppContext();
+  const { 
+    setApiKeyError, 
+    setDemoMode, 
+    resetAppState,
+    apiUsageAssignment,
+    apiKeys
+  } = useAppContext();
+  
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
-  const [editingKeyPoint, setEditingKeyPoint] = useState<EditingKeyPoint | null>(null);
+  const [editingKeyPoint, setEditingKeyPoint] = useState<string | null>(null);
   const [newKeyPoint, setNewKeyPoint] = useState({ title: '', description: '', speaker: '' });
   const [isCompleting, setIsCompleting] = useState(false);
   const [addingLinkTo, setAddingLinkTo] = useState<string | null>(null);
@@ -59,21 +57,147 @@ const Step4: React.FC<Step4Props> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [newSpeaker, setNewSpeaker] = useState({ name: '', color: '#3B82F6' });
   const [showAddSpeaker, setShowAddSpeaker] = useState(false);
-  const [isAssigningSpeakers, setIsAssigningSpeakers] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
-  // Get API key for analysis
-  const getAnalysisApiKey = (): string | null => {
-    const assignedProvider = apiUsageAssignment.analysis;
-    if (!assignedProvider) return null;
-
-    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
-    if (!providerConfig || !providerConfig.enabled) return null;
-
-    if ('key' in providerConfig) {
-      return providerConfig.key;
+  // Function to get API key and model for usage
+  const getApiKeyAndModelForUsage = (usageType: 'analysis'): { apiKey: string | null; model: string | null } => {
+    const assignment = apiUsageAssignment[usageType];
+    if (!assignment || !assignment.provider) {
+      return { apiKey: null, model: null };
     }
 
-    return null;
+    const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
+    if (!providerConfig || !providerConfig.enabled) {
+      return { apiKey: null, model: null };
+    }
+
+    if ('key' in providerConfig) {
+      return { 
+        apiKey: providerConfig.key,
+        model: assignment.model
+      };
+    }
+
+    return { apiKey: null, model: null };
+  };
+
+  // Function to regenerate key points
+  const handleRegenerateKeyPoints = async () => {
+    if (!transcription) return;
+
+    setIsRegenerating(true);
+    setExtractionProgress({
+      status: 'extracting',
+      currentStep: 'Regenerating key points...',
+      progress: 10,
+      api: 'Processing'
+    });
+
+    try {
+      const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+      
+      if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+        console.log('🔄 Regenerating key points with assigned analysis API and model:', analysisModel);
+        
+        setExtractionProgress(prev => ({
+          ...prev,
+          currentStep: 'Connecting to analysis API...',
+          progress: 30,
+          api: analysisModel ? `Analysis API (${analysisModel})` : 'Analysis API'
+        }));
+        
+        const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+        
+        setExtractionProgress(prev => ({
+          ...prev,
+          currentStep: 'Extracting new key points...',
+          progress: 60
+        }));
+        
+        const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+        
+        if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+          const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
+            id: `regenerated_${Date.now()}_${index}`,
+            text: point,
+            timestamp: 0,
+            speaker: transcription.speakers[0]?.name || 'Speaker',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: []
+          }));
+          
+          setExtractionProgress(prev => ({
+            ...prev,
+            currentStep: `${extractedKeyPoints.length} new key points generated`,
+            progress: 100,
+            api: 'Completed'
+          }));
+          
+          setTimeout(() => {
+            onUpdateKeyPoints(formattedKeyPoints);
+            setExtractionProgress(prev => ({
+              ...prev,
+              status: 'completed'
+            }));
+            console.log('✅ Key points regenerated successfully:', extractedKeyPoints.length);
+          }, 500);
+        } else {
+          throw new Error('No key points returned from API');
+        }
+      } else {
+        // Demo mode regeneration
+        console.log('🎭 Regenerating key points in demo mode');
+        setExtractionProgress(prev => ({
+          ...prev,
+          currentStep: 'Generating demo key points...',
+          progress: 70,
+          api: 'Demo Mode'
+        }));
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const mockKeyPoints = generateMockKeyPoints();
+        onUpdateKeyPoints(mockKeyPoints);
+        
+        setExtractionProgress({
+          status: 'completed',
+          currentStep: `${mockKeyPoints.length} demo key points generated`,
+          progress: 100,
+          api: 'Demo Mode'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error during key points regeneration:', error);
+      
+      const errorMessage = (error as Error).message;
+      
+      if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+        setApiKeyError('API quota exceeded. Switching to demo mode.');
+        setDemoMode(true);
+      }
+      
+      setExtractionProgress({
+        status: 'error',
+        currentStep: 'Error during regeneration - using demo data',
+        progress: 0,
+        api: 'Error'
+      });
+      
+      // Fallback to demo data
+      setTimeout(() => {
+        const mockKeyPoints = generateMockKeyPoints();
+        onUpdateKeyPoints(mockKeyPoints);
+        setExtractionProgress({
+          status: 'completed',
+          currentStep: 'Demo data loaded (fallback)',
+          progress: 100,
+          api: 'Demo mode (fallback)'
+        });
+      }, 1000);
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   // Auto-extraction of key points if none exist
@@ -83,20 +207,20 @@ const Step4: React.FC<Step4Props> = ({
         console.log('🎯 Starting auto-extraction of key points...');
         console.log('📊 Demo mode:', demoMode, '| Gemini configured:', geminiConfigured, '| API Key present:', !!apiKey);
         
-        const analysisApiKey = getAnalysisApiKey();
+        const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
         
         if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
           try {
-            console.log('🚀 Using assigned API for extraction...');
+            console.log('🚀 Using assigned analysis API for extraction...');
             
             setExtractionProgress({
               status: 'extracting',
-              currentStep: 'Connecting to assigned analysis API...',
+              currentStep: 'Connecting to analysis API...',
               progress: 10,
-              api: 'Assigned Analysis API'
+              api: analysisModel ? `Analysis API (${analysisModel})` : 'Analysis API'
             });
             
-            const geminiService = GeminiServiceFactory.create(analysisApiKey);
+            const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
             
             setExtractionProgress(prev => ({
               ...prev,
@@ -143,7 +267,7 @@ const Step4: React.FC<Step4Props> = ({
                   ...prev,
                   status: 'completed'
                 }));
-                console.log('✅ Key points extracted with assigned API:', extractedKeyPoints.length);
+                console.log('✅ Key points extracted with API:', extractedKeyPoints.length);
               }, 500);
             } else {
               console.log('⚠️ No key points returned from API - falling back to demo mode');
@@ -152,10 +276,10 @@ const Step4: React.FC<Step4Props> = ({
                 status: 'error',
                 currentStep: 'No key points found - switching to demo mode',
                 progress: 0,
-                api: 'Analysis API (No Results)'
+                api: 'API (No Results)'
               });
               
-              setApiKeyError('Analysis API returned no key points. Switching to demo mode.');
+              setApiKeyError('API returned no key points. Switching to demo mode.');
               setDemoMode(true);
               
               // Fallback to demo data
@@ -185,28 +309,28 @@ const Step4: React.FC<Step4Props> = ({
                 status: 'error',
                 currentStep: 'API quota exceeded - switching to demo mode',
                 progress: 0,
-                api: 'Analysis API (Quota Exceeded)'
+                api: 'API (Quota Exceeded)'
               });
             } else if (errorMessage.includes('Failed to fetch')) {
               console.log('🌐 Network error - switching to demo mode');
-              setApiKeyError('Network error connecting to analysis API. Switching to demo mode.');
+              setApiKeyError('Network error connecting to API. Switching to demo mode.');
               setDemoMode(true);
               
               setExtractionProgress({
                 status: 'error',
                 currentStep: 'Network error - switching to demo mode',
                 progress: 0,
-                api: 'Analysis API (Network Error)'
+                api: 'API (Network Error)'
               });
             } else {
               console.log('⚠️ General API error');
-              setApiKeyError(`Analysis API error: ${errorMessage}`);
+              setApiKeyError(`API error: ${errorMessage}`);
               
               setExtractionProgress({
                 status: 'error',
                 currentStep: `API error: ${errorMessage}`,
                 progress: 0,
-                api: 'Analysis API'
+                api: 'API Error'
               });
             }
             
@@ -257,7 +381,7 @@ const Step4: React.FC<Step4Props> = ({
     };
 
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey, setApiKeyError, setDemoMode, getAnalysisApiKey]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey, setApiKeyError, setDemoMode]);
 
   if (!transcription) return null;
 
@@ -315,44 +439,11 @@ const Step4: React.FC<Step4Props> = ({
     }
   };
 
-  // Enhanced key point editing with title/description separation
-  const startEditingKeyPoint = (keyPoint: KeyPoint) => {
-    const colonIndex = keyPoint.text.indexOf(':');
-    const title = colonIndex > 0 ? keyPoint.text.substring(0, colonIndex) : keyPoint.text.substring(0, 80);
-    const description = colonIndex > 0 ? keyPoint.text.substring(colonIndex + 1).trim() : '';
-    
-    setEditingKeyPoint({
-      id: keyPoint.id,
-      title: title,
-      description: description,
-      speaker: keyPoint.speaker,
-      category: keyPoint.category,
-      webLinks: keyPoint.webLinks || []
-    });
-  };
-
-  const saveEditingKeyPoint = () => {
-    if (!editingKeyPoint) return;
-    
-    const updatedText = editingKeyPoint.description 
-      ? `${editingKeyPoint.title}: ${editingKeyPoint.description}`
-      : editingKeyPoint.title;
-    
+  const handleKeyPointEdit = (id: string, field: 'text' | 'speaker', newValue: string) => {
     const updatedKeyPoints = keyPoints.map(kp =>
-      kp.id === editingKeyPoint.id ? {
-        ...kp,
-        text: updatedText,
-        speaker: editingKeyPoint.speaker,
-        category: editingKeyPoint.category as any,
-        webLinks: editingKeyPoint.webLinks
-      } : kp
+      kp.id === id ? { ...kp, [field]: newValue } : kp
     );
-    
     onUpdateKeyPoints(updatedKeyPoints);
-    setEditingKeyPoint(null);
-  };
-
-  const cancelEditingKeyPoint = () => {
     setEditingKeyPoint(null);
   };
 
@@ -406,148 +497,16 @@ const Step4: React.FC<Step4Props> = ({
     onUpdateKeyPoints(updatedKeyPoints);
   };
 
-  // AI-powered speaker assignment based on content
-  const handleIntelligentSpeakerAssignment = async () => {
-    setIsAssigningSpeakers(true);
-    
-    try {
-      const analysisApiKey = getAnalysisApiKey();
-      
-      if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-        console.log('🤖 Using AI for intelligent speaker assignment...');
-        
-        const geminiService = GeminiServiceFactory.create(analysisApiKey);
-        
-        // Create a prompt for speaker assignment
-        const speakerAssignmentPrompt = `Analyze these key points and assign them to the most appropriate speakers based on content, expertise, and context:
-
-AVAILABLE SPEAKERS:
-${transcription.speakers.map(s => `- ${s.name}`).join('\n')}
-
-KEY POINTS TO ASSIGN:
-${keyPoints.map((kp, index) => {
-  const title = kp.text.split(':')[0] || kp.text.substring(0, 80);
-  const description = kp.text.split(':')[1]?.trim() || kp.text.substring(80);
-  return `${index + 1}. ${title}\n   Description: ${description}\n   Current Speaker: ${kp.speaker}`;
-}).join('\n\n')}
-
-ORIGINAL TRANSCRIPTION CONTEXT:
-${transcription.text.substring(0, 2000)}...
-
-Instructions:
-- Assign each key point to the speaker who would most likely have said or be expert in that topic
-- Consider the context from the transcription
-- Look for patterns in speaking style, expertise areas, and content themes
-- If a speaker is clearly associated with technical topics, assign technical key points to them
-- If a speaker discusses business aspects, assign business-related points to them
-
-Respond with only a JSON array in this format:
-[
-  {"keyPointIndex": 0, "assignedSpeaker": "Speaker Name", "reason": "Brief reason"},
-  {"keyPointIndex": 1, "assignedSpeaker": "Speaker Name", "reason": "Brief reason"}
-]`;
-
-        const result = await geminiService.generateContent(
-          transcription.text,
-          [],
-          {
-            title: 'Speaker Assignment',
-            subtitle: '',
-            summary: speakerAssignmentPrompt,
-            format: 'article',
-            tone: 'professional'
-          }
-        );
-
-        // Parse the AI response
-        try {
-          const jsonMatch = result.match(/\[[\s\S]*\]/);
-          if (jsonMatch) {
-            const assignments = JSON.parse(jsonMatch[0]);
-            
-            // Apply the assignments
-            const updatedKeyPoints = keyPoints.map((kp, index) => {
-              const assignment = assignments.find((a: any) => a.keyPointIndex === index);
-              if (assignment && transcription.speakers.some(s => s.name === assignment.assignedSpeaker)) {
-                console.log(`🎯 Assigning "${kp.text.substring(0, 50)}..." to ${assignment.assignedSpeaker}: ${assignment.reason}`);
-                return { ...kp, speaker: assignment.assignedSpeaker };
-              }
-              return kp;
-            });
-            
-            onUpdateKeyPoints(updatedKeyPoints);
-            console.log('✅ Intelligent speaker assignment completed');
-          } else {
-            throw new Error('Invalid AI response format');
-          }
-        } catch (parseError) {
-          console.error('❌ Error parsing AI response:', parseError);
-          throw new Error('Failed to parse AI speaker assignments');
-        }
-        
-      } else {
-        // Demo mode - simulate intelligent assignment
-        console.log('🎭 Demo mode - simulating intelligent speaker assignment...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Simple demo logic: assign based on keywords
-        const updatedKeyPoints = keyPoints.map(kp => {
-          const text = kp.text.toLowerCase();
-          
-          // Technical topics
-          if (text.includes('technical') || text.includes('scalability') || text.includes('zk-rollup') || text.includes('layer 2')) {
-            const techSpeaker = transcription.speakers.find(s => 
-              s.name.toLowerCase().includes('mike') || 
-              s.name.toLowerCase().includes('rodriguez') ||
-              s.name.toLowerCase().includes('tech')
-            );
-            if (techSpeaker) return { ...kp, speaker: techSpeaker.name };
-          }
-          
-          // Business/institutional topics
-          if (text.includes('institutional') || text.includes('adoption') || text.includes('business') || text.includes('regulatory')) {
-            const businessSpeaker = transcription.speakers.find(s => 
-              s.name.toLowerCase().includes('alex') || 
-              s.name.toLowerCase().includes('chen') ||
-              s.name.toLowerCase().includes('sarah')
-            );
-            if (businessSpeaker) return { ...kp, speaker: businessSpeaker.name };
-          }
-          
-          // User experience topics
-          if (text.includes('user') || text.includes('experience') || text.includes('interface') || text.includes('ux')) {
-            const uxSpeaker = transcription.speakers.find(s => 
-              s.name.toLowerCase().includes('sarah') || 
-              s.name.toLowerCase().includes('johnson')
-            );
-            if (uxSpeaker) return { ...kp, speaker: uxSpeaker.name };
-          }
-          
-          return kp;
-        });
-        
-        onUpdateKeyPoints(updatedKeyPoints);
-        console.log('✅ Demo speaker assignment completed');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error during intelligent speaker assignment:', error);
-      setApiKeyError(`Speaker assignment error: ${(error as Error).message}`);
-    } finally {
-      setIsAssigningSpeakers(false);
-    }
-  };
-
   const handleCompleteWithAI = async () => {
     setIsCompleting(true);
     
     try {
-      const analysisApiKey = getAnalysisApiKey();
+      const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
       
       if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
         console.log('🚀 Completing with assigned analysis API...');
         
-        const geminiService = GeminiServiceFactory.create(analysisApiKey);
+        const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
         const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
         
         if (extractedKeyPoints && extractedKeyPoints.length > 0) {
@@ -708,15 +667,15 @@ ${keyPoints.map((kp, index) =>
   };
 
   // Display extraction in progress
-  if (extractionProgress.status === 'extracting' && keyPoints.length === 0) {
+  if ((extractionProgress.status === 'extracting' && keyPoints.length === 0) || isRegenerating) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Key Points Extraction
+            {isRegenerating ? 'Regenerating Key Points' : 'Key Points Extraction'}
           </h2>
           <p className="text-lg text-gray-600">
-            Intelligent analysis of your content in progress
+            {isRegenerating ? 'Creating new key points with AI analysis' : 'Intelligent analysis of your content in progress'}
           </p>
         </div>
 
@@ -724,7 +683,7 @@ ${keyPoints.map((kp, index) =>
           <div className="text-center mb-6">
             <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Extraction in Progress
+              {isRegenerating ? 'Regeneration in Progress' : 'Extraction in Progress'}
             </h3>
             <p className="text-gray-600 mb-4">
               {extractionProgress.currentStep}
@@ -734,7 +693,7 @@ ${keyPoints.map((kp, index) =>
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
                 className={`h-3 rounded-full transition-all duration-500 ${
-                  extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+                  extractionProgress.api.includes('API') 
                     ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
                     : 'bg-gradient-to-r from-yellow-500 to-orange-500'
                 }`}
@@ -747,7 +706,7 @@ ${keyPoints.map((kp, index) =>
               <span>•</span>
               <span className="flex items-center space-x-1">
                 <span className={`w-2 h-2 rounded-full ${
-                  extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
+                  extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
                 }`}></span>
                 <span>{extractionProgress.api}</span>
               </span>
@@ -755,22 +714,22 @@ ${keyPoints.map((kp, index) =>
           </div>
 
           <div className={`border rounded-lg p-4 ${
-            extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+            extractionProgress.api.includes('API') 
               ? 'bg-purple-50 border-purple-200' 
               : 'bg-yellow-50 border-yellow-200'
           }`}>
             <h4 className={`font-medium mb-2 ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'text-purple-800' : 'text-yellow-800'
+              extractionProgress.api.includes('API') ? 'text-purple-800' : 'text-yellow-800'
             }`}>
-              Extraction Process
+              {isRegenerating ? 'Regeneration Process' : 'Extraction Process'}
             </h4>
             <div className={`space-y-2 text-sm ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'text-purple-700' : 'text-yellow-700'
+              extractionProgress.api.includes('API') ? 'text-purple-700' : 'text-yellow-700'
             }`}>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 10 
-                    ? (extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>API Connection</span>
@@ -778,7 +737,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 30 
-                    ? (extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Semantic content analysis</span>
@@ -786,7 +745,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 60 
-                    ? (extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Main insights extraction</span>
@@ -794,7 +753,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 85 
-                    ? (extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Key points structuring</span>
@@ -802,7 +761,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 100 
-                    ? (extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Finalization</span>
@@ -821,14 +780,14 @@ ${keyPoints.map((kp, index) =>
           Key Points and Speakers
         </h2>
         <p className="text-lg text-gray-600">
-          Edit key points with titles, manage speakers and enrich with reference links
+          Edit key points, manage speakers and enrich with reference links
         </p>
       </div>
 
       {/* Extraction status */}
       {extractionProgress.status === 'completed' && (
         <div className={`border rounded-xl p-4 mb-6 ${
-          extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+          extractionProgress.api.includes('API') 
             ? 'bg-green-50 border-green-200' 
             : extractionProgress.api.includes('fallback')
               ? 'bg-orange-50 border-orange-200'
@@ -836,14 +795,14 @@ ${keyPoints.map((kp, index) =>
         }`}>
           <div className="flex items-center space-x-2">
             <Check className={`w-5 h-5 ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+              extractionProgress.api.includes('API') 
                 ? 'text-green-600' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
                   : 'text-yellow-600'
             }`} />
             <span className={`font-medium ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+              extractionProgress.api.includes('API') 
                 ? 'text-green-800' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-800'
@@ -852,7 +811,7 @@ ${keyPoints.map((kp, index) =>
               {extractionProgress.currentStep}
             </span>
             <span className={`text-sm ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API')
+              extractionProgress.api.includes('API') 
                 ? 'text-green-600' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
@@ -878,7 +837,7 @@ ${keyPoints.map((kp, index) =>
         </div>
       )}
 
-      {/* Header with main actions */}
+      {/* Header with main actions and step controls */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-3">
           <button
@@ -894,32 +853,45 @@ ${keyPoints.map((kp, index) =>
             {isCompleting ? 'Analysis in progress...' : 'Complete with AI'}
           </button>
 
-          <button
-            onClick={handleIntelligentSpeakerAssignment}
-            disabled={isAssigningSpeakers}
-            className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all text-sm"
-          >
-            {isAssigningSpeakers ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Wand2 className="w-4 h-4 mr-2" />
-            )}
-            {isAssigningSpeakers ? 'Assigning...' : 'Smart Speaker Assignment'}
-          </button>
-
           {/* API indicator */}
           <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
             <div className={`w-2 h-2 rounded-full ${
-              extractionProgress.api.includes('Gemini') || extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
+              extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
             }`}></div>
             <span className="text-sm font-medium text-gray-700">
-              {extractionProgress.api || (demoMode ? 'Demo mode' : 'Analysis API')}
+              {extractionProgress.api || (demoMode ? 'Demo mode' : 'Not defined')}
             </span>
           </div>
         </div>
+
+        {/* Step Control Actions */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleRegenerateKeyPoints}
+            disabled={isRegenerating || !transcription}
+            className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-all text-sm"
+            title="Regenerate key points with AI"
+          >
+            {isRegenerating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <RotateCcw className="w-4 h-4 mr-2" />
+            )}
+            {isRegenerating ? 'Regenerating...' : 'Restart Step'}
+          </button>
+
+          <button
+            onClick={resetAppState}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm"
+            title="Start over from the beginning"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Start Over
+          </button>
+        </div>
       </div>
 
-      {/* Key points with enhanced editing */}
+      {/* Key points with enhanced drop zones */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Key Points ({keyPoints.length})</h3>
@@ -996,7 +968,7 @@ ${keyPoints.map((kp, index) =>
                     </div>
                     <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => startEditingKeyPoint(keyPoint)}
+                        onClick={() => setEditingKeyPoint(keyPoint.id)}
                         className="p-1 text-gray-400 hover:text-blue-600"
                       >
                         <Edit3 className="w-4 h-4" />
@@ -1010,88 +982,24 @@ ${keyPoints.map((kp, index) =>
                     </div>
                   </div>
 
-                  {/* Enhanced editing interface */}
-                  {editingKeyPoint && editingKeyPoint.id === keyPoint.id ? (
-                    <div className="space-y-4 border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                        <input
-                          type="text"
-                          value={editingKeyPoint.title}
-                          onChange={(e) => setEditingKeyPoint(prev => prev ? { ...prev, title: e.target.value } : null)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Key point title..."
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea
-                          value={editingKeyPoint.description}
-                          onChange={(e) => setEditingKeyPoint(prev => prev ? { ...prev, description: e.target.value } : null)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                          rows={3}
-                          placeholder="Detailed description..."
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Speaker</label>
-                          <select
-                            value={editingKeyPoint.speaker}
-                            onChange={(e) => setEditingKeyPoint(prev => prev ? { ...prev, speaker: e.target.value } : null)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          >
-                            {transcription.speakers.map(speaker => (
-                              <option key={speaker.id} value={speaker.name}>{speaker.name}</option>
-                            ))}
-                            <option value="AI Analysis">AI Analysis</option>
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                          <select
-                            value={editingKeyPoint.category}
-                            onChange={(e) => setEditingKeyPoint(prev => prev ? { ...prev, category: e.target.value } : null)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="insight">Insight</option>
-                            <option value="theme">Theme</option>
-                            <option value="quote">Quote</option>
-                            <option value="question">Question</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={saveEditingKeyPoint}
-                          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          Save
-                        </button>
-                        <button
-                          onClick={cancelEditingKeyPoint}
-                          className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mb-4">
-                      <h4 className="font-semibold text-gray-900 mb-2">
-                        {getKeyPointTitle(keyPoint.text)}
-                      </h4>
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      {getKeyPointTitle(keyPoint.text)}
+                    </h4>
+                    {editingKeyPoint === keyPoint.id ? (
+                      <textarea
+                        defaultValue={getKeyPointDescription(keyPoint.text)}
+                        onBlur={(e) => handleKeyPointEdit(keyPoint.id, 'text', `${getKeyPointTitle(keyPoint.text)}: ${e.target.value}`)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                        rows={3}
+                        autoFocus
+                      />
+                    ) : (
                       <p className="text-gray-700 leading-relaxed">
                         {getKeyPointDescription(keyPoint.text)}
                       </p>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Web links */}
                   <div className="space-y-2">
@@ -1140,7 +1048,7 @@ ${keyPoints.map((kp, index) =>
                           value={newLink}
                           onChange={(e) => setNewLink(e.target.value)}
                           placeholder="https://example.com"
-                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               handleAddWebLink(keyPoint.id);
@@ -1253,21 +1161,13 @@ ${keyPoints.map((kp, index) =>
         </div>
       )}
 
-      {/* AI Features Notice */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <div className="flex items-start space-x-3">
-          <Wand2 className="w-6 h-6 text-blue-600 mt-0.5" />
-          <div>
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">AI-Enhanced Key Points Editing</h3>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• <strong>Title & Description Editing:</strong> Separate title and description fields for better organization</li>
-              <li>• <strong>Smart Speaker Assignment:</strong> AI analyzes content to assign speakers based on expertise and context</li>
-              <li>• <strong>Intelligent Categorization:</strong> Automatic categorization of insights, themes, quotes, and questions</li>
-              <li>• <strong>Reference Links:</strong> Add and manage web links for each key point</li>
-              <li>• <strong>Drag & Drop Reordering:</strong> Easily reorganize key points by importance</li>
-              <li>• <strong>Complete with AI:</strong> Let AI find additional key points you might have missed</li>
-            </ul>
-          </div>
+      {/* Step Control Information */}
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h4 className="font-medium text-blue-800 mb-2">Step Control Options</h4>
+        <div className="text-sm text-blue-700 space-y-1">
+          <p><strong>Restart Step:</strong> Regenerate key points with AI using the same transcription</p>
+          <p><strong>Start Over:</strong> Return to Step 1 and begin the entire process again</p>
+          <p><strong>Complete with AI:</strong> Add additional key points to complement existing ones</p>
         </div>
       </div>
 
