@@ -28,7 +28,6 @@ export interface UserApiKey {
   api_key: string;
   api_secret?: string;
   enabled: boolean;
-  model?: string; // Added model field
   last_tested?: string;
   is_valid: boolean;
   created_at: string;
@@ -158,7 +157,6 @@ export class ApiKeyService {
             api_key: apiKey.api_key,
             api_secret: apiKey.api_secret,
             enabled: apiKey.enabled,
-            model: apiKey.model, // Include model in update
             is_valid: apiKey.is_valid
           })
           .eq('id', existing.id)

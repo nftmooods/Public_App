@@ -15,28 +15,108 @@ interface ApiKeysModalProps {
 // Available models for each provider with updated configurations
 const AVAILABLE_MODELS = {
   googleAI: [
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Latest model, fast and efficient for text processing' },
-    { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Flash-Lite Preview', description: 'Optimized for low-latency use cases, most cost-effective' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Advanced model for complex audio and text tasks' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Fast model for quick responses' }
+    { 
+      id: 'gemini-2.5-flash', 
+      name: 'Gemini 2.5 Flash', 
+      description: 'Latest model, fast and efficient for all tasks',
+      usageTypes: ['audio', 'analysis', 'writing', 'export']
+    },
+    { 
+      id: 'gemini-2.5-flash-lite-preview', 
+      name: 'Gemini 2.5 Flash-Lite Preview', 
+      description: 'Optimized for low-latency use cases, most cost-effective',
+      usageTypes: ['audio', 'analysis', 'writing', 'export']
+    },
+    { 
+      id: 'gemini-1.5-pro', 
+      name: 'Gemini 1.5 Pro', 
+      description: 'Advanced model for complex audio and text tasks',
+      usageTypes: ['audio', 'analysis', 'writing', 'export']
+    },
+    { 
+      id: 'gemini-1.5-flash', 
+      name: 'Gemini 1.5 Flash', 
+      description: 'Fast model for quick responses',
+      usageTypes: ['analysis', 'writing', 'export']
+    }
   ],
   openAI: [
-    { id: 'whisper-1', name: 'Whisper', description: 'Audio transcription model' },
-    { id: 'gpt-4o', name: 'GPT-4o', description: 'Latest multimodal model' },
-    { id: 'gpt-4.1', name: 'GPT-4.1', description: 'Enhanced version of GPT-4' },
-    { id: 'o3', name: 'o3', description: 'Latest reasoning model' },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and cost-effective' }
+    { 
+      id: 'whisper-1', 
+      name: 'Whisper', 
+      description: 'Audio transcription model',
+      usageTypes: ['audio']
+    },
+    { 
+      id: 'gpt-4o', 
+      name: 'GPT-4o', 
+      description: 'Latest multimodal model',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'gpt-4-turbo', 
+      name: 'GPT-4 Turbo', 
+      description: 'Enhanced version of GPT-4',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'o1', 
+      name: 'o1', 
+      description: 'Latest reasoning model',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'gpt-3.5-turbo', 
+      name: 'GPT-3.5 Turbo', 
+      description: 'Fast and cost-effective',
+      usageTypes: ['analysis', 'writing', 'export']
+    }
   ],
   anthropic: [
-    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Latest and most capable' },
-    { id: 'claude-3-opus', name: 'Claude 3 Opus', description: 'Most powerful model' },
-    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', description: 'Balanced performance' },
-    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', description: 'Fast and efficient' }
+    { 
+      id: 'claude-3-5-sonnet', 
+      name: 'Claude 3.5 Sonnet', 
+      description: 'Latest and most capable',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'claude-3-opus', 
+      name: 'Claude 3 Opus', 
+      description: 'Most powerful model',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'claude-3-sonnet', 
+      name: 'Claude 3 Sonnet', 
+      description: 'Balanced performance',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'claude-3-haiku', 
+      name: 'Claude 3 Haiku', 
+      description: 'Fast and efficient',
+      usageTypes: ['analysis', 'writing', 'export']
+    }
   ],
   mistral: [
-    { id: 'mistral-large', name: 'Mistral Large', description: 'Most capable model' },
-    { id: 'mistral-medium', name: 'Mistral Medium', description: 'Balanced performance' },
-    { id: 'mistral-small', name: 'Mistral Small', description: 'Fast and efficient' }
+    { 
+      id: 'mistral-large', 
+      name: 'Mistral Large', 
+      description: 'Most capable model',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'mistral-medium', 
+      name: 'Mistral Medium', 
+      description: 'Balanced performance',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
+      id: 'mistral-small', 
+      name: 'Mistral Small', 
+      description: 'Fast and efficient',
+      usageTypes: ['analysis', 'writing', 'export']
+    }
   ]
 };
 
@@ -174,20 +254,29 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     );
   };
 
+  const getModelsForProviderAndUsage = (providerId: string, usageType: ApiUsageType) => {
+    const provider = apiProviders.find(p => p.id === providerId);
+    if (!provider) return [];
+
+    return provider.models.filter(model => 
+      model.usageTypes.includes(usageType)
+    );
+  };
+
   useEffect(() => {
     setLocalApiKeys(apiKeys);
   }, [apiKeys]);
 
   if (!isOpen) return null;
 
-  const handleKeyChange = (provider: string, field: 'key' | 'model', value: string) => {
+  const handleKeyChange = (provider: string, value: string) => {
     setLocalApiKeys(prev => {
       const currentConfig = prev[provider as keyof UserApiKeys] as ApiKeyConfig || { key: '', enabled: false };
       return {
         ...prev,
         [provider]: {
           ...currentConfig,
-          [field]: value
+          key: value
         }
       };
     });
@@ -203,7 +292,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
         setUsageAssignment(prevAssignment => {
           const newAssignment = { ...prevAssignment };
           Object.keys(newAssignment).forEach(usageType => {
-            if (newAssignment[usageType as keyof ApiUsageAssignment] === provider) {
+            const assignment = newAssignment[usageType as keyof ApiUsageAssignment];
+            if (assignment && assignment.provider === provider) {
               newAssignment[usageType as keyof ApiUsageAssignment] = null;
             }
           });
@@ -242,10 +332,10 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     }
   };
 
-  const handleUsageAssignmentChange = (usageType: ApiUsageType, provider: string | null) => {
+  const handleUsageAssignmentChange = (usageType: ApiUsageType, provider: string | null, model: string | null = null) => {
     setUsageAssignment(prev => ({
       ...prev,
-      [usageType]: provider
+      [usageType]: provider ? { provider, model } : null
     }));
   };
 
@@ -275,7 +365,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     setUsageAssignment(prevAssignment => {
       const newAssignment = { ...prevAssignment };
       Object.keys(newAssignment).forEach(usageType => {
-        if (newAssignment[usageType as keyof ApiUsageAssignment] === provider) {
+        const assignment = newAssignment[usageType as keyof ApiUsageAssignment];
+        if (assignment && assignment.provider === provider) {
           newAssignment[usageType as keyof ApiUsageAssignment] = null;
         }
       });
@@ -293,16 +384,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
     return '';
   };
 
-  const getModelValue = (provider: string) => {
-    const config = localApiKeys[provider as keyof UserApiKeys];
-    if (!config) return '';
-    
-    if ('model' in config) {
-      return config.model || '';
-    }
-    return '';
-  };
-
   const isEnabled = (provider: string) => {
     const config = localApiKeys[provider as keyof UserApiKeys];
     return config ? config.enabled : false;
@@ -314,11 +395,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
 
     const config = localApiKeys[provider as keyof UserApiKeys] as ApiKeyConfig;
     return config ? providerConfig.validation(config.key) : false;
-  };
-
-  const getModelsForProvider = (providerId: string) => {
-    const provider = apiProviders.find(p => p.id === providerId);
-    return provider?.models || [];
   };
 
   const tabs = [
@@ -381,7 +457,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                     </h3>
                     <p className="text-sm text-blue-700">
                       Add your personal API keys to use the tool with your own quotas. 
-                      Each provider can be configured with a specific model. You can enable/disable each API individually.
+                      Model selection will be done in the Usage Assignment tab. You can enable/disable each API individually.
                     </p>
                   </div>
                 </div>
@@ -392,7 +468,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                   const testResult = testResults[provider.id];
                   const enabled = isEnabled(provider.id);
                   const valid = isValidKey(provider.id);
-                  const currentModel = getModelValue(provider.id);
 
                   return (
                     <div key={provider.id} className="bg-gray-50 rounded-lg p-6">
@@ -445,7 +520,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                           <input
                             type={showKeys[provider.id] ? 'text' : 'password'}
                             value={getKeyValue(provider.id)}
-                            onChange={(e) => handleKeyChange(provider.id, 'key', e.target.value)}
+                            onChange={(e) => handleKeyChange(provider.id, e.target.value)}
                             placeholder={provider.placeholder}
                             disabled={!enabled}
                             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-24 ${
@@ -505,36 +580,6 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Model Selection */}
-                        {enabled && getKeyValue(provider.id) && provider.models && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Model Selection
-                            </label>
-                            <div className="relative">
-                              <select
-                                value={currentModel}
-                                onChange={(e) => handleKeyChange(provider.id, 'model', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-                              >
-                                <option value="">Select a model...</option>
-                                {provider.models.map((model: any) => (
-                                  <option key={model.id} value={model.id}>
-                                    {model.name} - {model.description}
-                                  </option>
-                                ))}
-                              </select>
-                              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            </div>
-                            {currentModel && (
-                              <p className="text-sm text-green-600 mt-1 flex items-center">
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Model selected: {provider.models.find((m: any) => m.id === currentModel)?.name}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
                         {/* Validation Messages */}
                         {getKeyValue(provider.id) && !valid && enabled && (
                           <p className="text-sm text-red-600">
@@ -571,7 +616,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                       API Usage Assignment
                     </h3>
                     <p className="text-sm text-purple-700">
-                      Choose which API to use for each type of processing. Each usage type can have a different API and model.
+                      Choose which API and model to use for each type of processing. Each usage type can have a different API and model.
                       This allows you to optimize performance and costs for each specific task.
                     </p>
                   </div>
@@ -596,9 +641,9 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                         </div>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <label className="block text-sm font-medium text-gray-700">
-                          Select API for {usage.name}:
+                          Select API and Model for {usage.name}:
                         </label>
                         
                         {availableProviders.length === 0 ? (
@@ -608,7 +653,8 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                             </p>
                           </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-3">
+                            {/* None option */}
                             <div className="flex items-center space-x-2">
                               <input
                                 type="radio"
@@ -624,31 +670,52 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                               </label>
                             </div>
                             
+                            {/* Provider options */}
                             {availableProviders.map((provider) => {
-                              const providerConfig = localApiKeys[provider.id as keyof UserApiKeys];
-                              const modelName = providerConfig?.model;
-                              const modelDisplayName = provider.models?.find(m => m.id === modelName)?.name;
+                              const isSelected = currentAssignment?.provider === provider.id;
+                              const availableModels = getModelsForProviderAndUsage(provider.id, usage.id);
                               
                               return (
-                                <div key={provider.id} className="flex items-center space-x-2">
-                                  <input
-                                    type="radio"
-                                    id={`${usage.id}_${provider.id}`}
-                                    name={usage.id}
-                                    value={provider.id}
-                                    checked={currentAssignment === provider.id}
-                                    onChange={() => handleUsageAssignmentChange(usage.id, provider.id)}
-                                    className="text-blue-600"
-                                  />
-                                  <label htmlFor={`${usage.id}_${provider.id}`} className="flex items-center space-x-2 text-sm text-gray-700">
-                                    <span>{provider.icon}</span>
-                                    <span>{provider.name}</span>
-                                    {modelDisplayName && (
-                                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                        {modelDisplayName}
-                                      </span>
-                                    )}
-                                  </label>
+                                <div key={provider.id} className="border border-gray-200 rounded-lg p-4">
+                                  <div className="flex items-center space-x-2 mb-3">
+                                    <input
+                                      type="radio"
+                                      id={`${usage.id}_${provider.id}`}
+                                      name={usage.id}
+                                      value={provider.id}
+                                      checked={isSelected}
+                                      onChange={() => handleUsageAssignmentChange(usage.id, provider.id, null)}
+                                      className="text-blue-600"
+                                    />
+                                    <label htmlFor={`${usage.id}_${provider.id}`} className="flex items-center space-x-2 text-sm text-gray-700">
+                                      <span>{provider.icon}</span>
+                                      <span className="font-medium">{provider.name}</span>
+                                    </label>
+                                  </div>
+                                  
+                                  {/* Model selection for selected provider */}
+                                  {isSelected && availableModels.length > 0 && (
+                                    <div className="ml-6 mt-3">
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Select Model:
+                                      </label>
+                                      <div className="relative">
+                                        <select
+                                          value={currentAssignment?.model || ''}
+                                          onChange={(e) => handleUsageAssignmentChange(usage.id, provider.id, e.target.value)}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white text-sm"
+                                        >
+                                          <option value="">Select a model...</option>
+                                          {availableModels.map((model: any) => (
+                                            <option key={model.id} value={model.id}>
+                                              {model.name} - {model.description}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -659,12 +726,10 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
                           <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                             <p className="text-sm text-green-800">
                               ✓ {usage.name} will use {(() => {
-                                const provider = apiProviders.find(p => p.id === currentAssignment);
-                                const providerConfig = localApiKeys[currentAssignment as keyof UserApiKeys];
-                                const modelName = providerConfig?.model;
-                                const modelDisplayName = provider?.models?.find(m => m.id === modelName)?.name;
+                                const provider = apiProviders.find(p => p.id === currentAssignment.provider);
+                                const model = provider?.models.find(m => m.id === currentAssignment.model);
                                 
-                                return `${provider?.name}${modelDisplayName ? ` (${modelDisplayName})` : ''}`;
+                                return `${provider?.name}${model ? ` (${model.name})` : ''}`;
                               })()}
                             </p>
                           </div>
@@ -677,25 +742,23 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
 
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-800 mb-2">Current Assignment Summary:</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 gap-3 text-sm">
                   {usageTypes.map((usage) => {
                     const assignment = usageAssignment[usage.id];
-                    const provider = assignment ? apiProviders.find(p => p.id === assignment) : null;
-                    const providerConfig = assignment ? localApiKeys[assignment as keyof UserApiKeys] : null;
-                    const modelName = providerConfig?.model;
-                    const modelDisplayName = provider?.models?.find(m => m.id === modelName)?.name;
+                    const provider = assignment ? apiProviders.find(p => p.id === assignment.provider) : null;
+                    const model = provider && assignment ? provider.models.find(m => m.id === assignment.model) : null;
                     
                     return (
                       <div key={usage.id} className="flex items-center justify-between">
-                        <span className="text-blue-700">{usage.name}:</span>
-                        <span className="font-medium text-blue-900">
+                        <span className="text-blue-700 font-medium">{usage.name}:</span>
+                        <span className="text-blue-900">
                           {provider ? (
                             <span className="flex items-center space-x-1">
                               <span>{provider.icon}</span>
                               <span>{provider.name}</span>
-                              {modelDisplayName && (
-                                <span className="text-xs bg-blue-200 px-1 py-0.5 rounded">
-                                  {modelDisplayName}
+                              {model && (
+                                <span className="text-xs bg-blue-200 px-2 py-1 rounded">
+                                  {model.name}
                                 </span>
                               )}
                             </span>
@@ -717,11 +780,11 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
               <div>
                 <h4 className="font-medium text-yellow-800 mb-1">Security and Privacy</h4>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Your API keys and model selections are stored securely in the database</li>
+                  <li>• Your API keys are stored securely in the database</li>
                   <li>• They are encrypted and never transmitted in plain text</li>
-                  <li>• Each API can be configured with a different model independently</li>
+                  <li>• Model selection is done per usage type for optimal performance</li>
                   <li>• You can enable/disable each API individually</li>
-                  <li>• Model selection allows you to optimize performance and costs</li>
+                  <li>• Each usage type can use a different API and model</li>
                   <li>• You can revoke your keys at any time from the respective platforms</li>
                 </ul>
               </div>

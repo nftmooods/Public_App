@@ -91,10 +91,10 @@ const Step1: React.FC<Step1Props> = ({
 
   // Function to get the actual API name and model for display
   const getApiDisplayInfo = (usageType: 'audio' | 'analysis') => {
-    const assignedProvider = apiUsageAssignment[usageType];
-    if (!assignedProvider) return { name: 'Demo Mode', model: null };
+    const assignment = apiUsageAssignment[usageType];
+    if (!assignment || !assignment.provider) return { name: 'Demo Mode', model: null };
 
-    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
+    const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
     if (!providerConfig || !providerConfig.enabled) return { name: 'Demo Mode', model: null };
 
     // Map provider IDs to display names
@@ -109,14 +109,14 @@ const Step1: React.FC<Step1Props> = ({
     const modelDisplayNames: Record<string, string> = {
       // Google AI models
       'gemini-2.5-flash': 'Gemini 2.5 Flash',
-      'gemini-2.5-flash-lite-preview-06-17': 'Gemini 2.5 Flash-Lite Preview',
+      'gemini-2.5-flash-lite-preview': 'Gemini 2.5 Flash-Lite Preview',
       'gemini-1.5-pro': 'Gemini 1.5 Pro',
       'gemini-1.5-flash': 'Gemini 1.5 Flash',
       // OpenAI models
       'whisper-1': 'Whisper',
       'gpt-4o': 'GPT-4o',
-      'gpt-4.1': 'GPT-4.1',
-      'o3': 'o3',
+      'gpt-4-turbo': 'GPT-4 Turbo',
+      'o1': 'o1',
       'gpt-3.5-turbo': 'GPT-3.5 Turbo',
       // Anthropic models
       'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
@@ -129,8 +129,8 @@ const Step1: React.FC<Step1Props> = ({
       'mistral-small': 'Mistral Small'
     };
 
-    const providerName = providerDisplayNames[assignedProvider] || assignedProvider;
-    const modelName = providerConfig.model ? modelDisplayNames[providerConfig.model] || providerConfig.model : null;
+    const providerName = providerDisplayNames[assignment.provider] || assignment.provider;
+    const modelName = assignment.model ? modelDisplayNames[assignment.model] || assignment.model : null;
 
     return {
       name: providerName,

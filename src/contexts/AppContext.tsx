@@ -144,94 +144,96 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [demoMode, setDemoMode] = useState(true);
   const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
   const [apiUsageAssignment, setApiUsageAssignment] = useState<ApiUsageAssignment>(initialAppState.apiUsageAssignment);
-  const [sessionRestored, setSessionRestored] = useState(false);
 
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
-  const { 
-    loadUserSession, 
-    saveUserSession, 
-    resetUserSession, 
-    autoSaveSession,
-    isLoading: sessionLoading,
-    lastSavedStep 
-  } = useUserSession(user?.id || null);
+  const { loadUserSession, saveUserSession, resetUserSession, autoSaveSession, isLoading: sessionLoading, lastSavedStep } = useUserSession(user?.id || null);
 
   // Function to get the appropriate API key and model for a specific usage
   const getApiKeyAndModelForUsage = (usageType: keyof ApiUsageAssignment): { apiKey: string | null; model: string | null } => {
-    const assignedProvider = apiUsageAssignment[usageType];
-    if (!assignedProvider) return { apiKey: null, model: null };
+    const assignment = apiUsageAssignment[usageType];
+    if (!assignment || !assignment.provider) return { apiKey: null, model: null };
 
-    const providerConfig = apiKeys[assignedProvider as keyof UserApiKeys];
+    const providerConfig = apiKeys[assignment.provider as keyof UserApiKeys];
     if (!providerConfig || !providerConfig.enabled) return { apiKey: null, model: null };
 
     if ('key' in providerConfig) {
       return { 
         apiKey: providerConfig.key,
-        model: providerConfig.model || null
+        model: assignment.model
       };
     }
 
     return { apiKey: null, model: null };
   };
 
+  // Function to completely reset the application
+  const resetAppState = async () => {
+    console.log('🔄 Complete application reset');
+    
+    // Reset user session if authenticated
+    if (user?.id) {
+      await resetUserSession();
+    }
+    
+    // Generate new session ID to force refresh
+    const newSessionId = Date.now().toString();
+    setAnalysisSessionId(newSessionId);
+    
+    // Reset application state
+    setAppState({
+      ...initialAppState,
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated,
+      apiUsageAssignment: apiUsageAssignment
+    });
+    
+    // Reset steps
+    setSteps(initialSteps);
+    
+    // Clear errors
+    setApiKeyError('');
+    
+    console.log('✅ Application reset with session ID:', newSessionId);
+  };
+
   // Load user session on authentication
   useEffect(() => {
-    const restoreUserSession = async () => {
-      if (user && !sessionRestored) {
-        console.log('👤 User authenticated, attempting to restore session...');
+    const loadSession = async () => {
+      if (user?.id && isAuthenticated) {
+        console.log('👤 User authenticated, loading session...');
+        const sessionData = await loadUserSession();
         
-        const savedSession = await loadUserSession();
-        if (savedSession) {
-          console.log('📥 Restoring user session from step:', savedSession.currentStep);
-          
-          // Restore the app state from saved session
+        if (sessionData) {
+          console.log('📥 Restoring session data:', sessionData);
           setAppState(prev => ({
             ...prev,
-            ...savedSession,
+            ...sessionData,
             user,
-            isAuthenticated: true,
-            apiUsageAssignment: apiUsageAssignment,
-            // Don't restore files, they need to be re-uploaded
-            audioFile: null,
-            textFile: null,
-            isProcessing: false
+            isAuthenticated,
+            apiUsageAssignment: sessionData.apiUsageAssignment || apiUsageAssignment
           }));
           
-          // Update steps to reflect restored state
-          if (savedSession.currentStep) {
-            setSteps(prevSteps => 
-              prevSteps.map(step => ({
-                ...step,
-                completed: step.id < savedSession.currentStep!,
-                active: step.id === savedSession.currentStep
-              }))
-            );
+          if (sessionData.apiUsageAssignment) {
+            setApiUsageAssignment(sessionData.apiUsageAssignment);
           }
-          
-          setSessionRestored(true);
-          console.log('✅ Session restored successfully');
-        } else {
-          console.log('📝 No saved session found, starting fresh');
-          setSessionRestored(true);
         }
       }
     };
 
-    restoreUserSession();
-  }, [user, sessionRestored, loadUserSession, apiUsageAssignment]);
+    loadSession();
+  }, [user?.id, isAuthenticated]);
 
-  // Auto-save session when app state changes (for authenticated users)
+  // Auto-save session data when app state changes
   useEffect(() => {
-    if (user && sessionRestored && !sessionLoading) {
-      // Debounce auto-save to avoid too frequent saves
+    if (user?.id && isAuthenticated && appState.currentStep > 1) {
       const timeoutId = setTimeout(() => {
         autoSaveSession(appState);
-      }, 2000); // Save 2 seconds after last change
+      }, 2000); // Debounce auto-save
 
       return () => clearTimeout(timeoutId);
     }
-  }, [user, sessionRestored, sessionLoading, appState, autoSaveSession]);
+  }, [appState, user?.id, isAuthenticated]);
 
   // Update application state with authentication data
   useEffect(() => {
@@ -251,19 +253,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (enabledApis.length === 1) {
         const singleProvider = enabledApis[0][0];
         const newAssignment: ApiUsageAssignment = {
-          audio: singleProvider,
-          analysis: singleProvider,
-          writing: singleProvider,
-          export: singleProvider
+          audio: { provider: singleProvider, model: null },
+          analysis: { provider: singleProvider, model: null },
+          writing: { provider: singleProvider, model: null },
+          export: { provider: singleProvider, model: null }
         };
         setApiUsageAssignment(newAssignment);
       }
     }
 
     // Configure based on usage assignment
-    const hasAnyAssignedApi = Object.values(apiUsageAssignment).some(provider => {
-      if (!provider) return false;
-      const config = apiKeys[provider as keyof UserApiKeys];
+    const hasAnyAssignedApi = Object.values(apiUsageAssignment).some(assignment => {
+      if (!assignment || !assignment.provider) return false;
+      const config = apiKeys[assignment.provider as keyof UserApiKeys];
       return config && config.enabled && ('key' in config ? config.key : false);
     });
 
@@ -361,7 +363,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setApiKeyError('');
       setDemoMode(true);
       setApiUsageAssignment(initialAppState.apiUsageAssignment);
-      setSessionRestored(false);
       // Complete application reset
       resetAppState();
     } catch (error) {
@@ -390,9 +391,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setApiUsageAssignment(usageAssignment);
       
       // Update configuration based on usage assignment
-      const hasAnyAssignedApi = Object.values(usageAssignment).some(provider => {
-        if (!provider) return false;
-        const config = newApiKeys[provider as keyof UserApiKeys];
+      const hasAnyAssignedApi = Object.values(usageAssignment).some(assignment => {
+        if (!assignment || !assignment.provider) return false;
+        const config = newApiKeys[assignment.provider as keyof UserApiKeys];
         return config && config.enabled && ('key' in config ? config.key : false);
       });
       
@@ -410,155 +411,82 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  // Function to completely reset the application
-  const resetAppState = async () => {
-    console.log('🔄 Complete application reset');
-    
-    // Reset user session in database if authenticated
-    if (user) {
-      await resetUserSession();
-    }
-    
-    // Generate new session ID to force refresh
-    const newSessionId = Date.now().toString();
-    setAnalysisSessionId(newSessionId);
-    
-    // Reset application state
-    setAppState({
-      ...initialAppState,
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
-    });
-    
-    // Reset steps
-    setSteps(initialSteps);
-    
-    // Clear errors
-    setApiKeyError('');
-    
-    console.log('✅ Application reset with session ID:', newSessionId);
-  };
-
   const isQuotaError = (error: Error): boolean => {
     return error.message.includes('429') || 
            error.message.includes('quota') || 
            error.message.includes('exceeded your current quota');
   };
 
-  // Content handlers - Fixed to not reset the entire state
+  // Content handlers
   const handleUrlChange = (url: string) => {
-    console.log('🔗 Audio URL changed:', url);
-    setAppState(prev => ({ 
-      ...prev, 
-      audioUrl: url,
-      // Clear other audio sources when URL is set
-      audioFile: url ? null : prev.audioFile,
-      youtubeUrl: url ? '' : prev.youtubeUrl
-    }));
+    setAppState(prev => ({ ...prev, audioUrl: url }));
   };
 
   const handleYoutubeUrlChange = (url: string) => {
-    console.log('📺 YouTube URL changed:', url);
-    setAppState(prev => ({ 
-      ...prev, 
-      youtubeUrl: url,
-      // Clear other audio sources when YouTube URL is set
-      audioFile: url ? null : prev.audioFile,
-      audioUrl: url ? '' : prev.audioUrl
-    }));
+    setAppState(prev => ({ ...prev, youtubeUrl: url }));
   };
 
   const handleFileUpload = (file: File) => {
-    console.log('📁 Audio file uploaded:', file.name, file.size, 'bytes');
-    
-    // Only clear transcription and key points if it's a new file
-    const isNewFile = !appState.audioFile || appState.audioFile.name !== file.name || appState.audioFile.size !== file.size;
-    
+    console.log('📁 New file uploaded:', file.name);
+    // Complete state reset for new file
+    resetAppState();
     setAppState(prev => ({ 
       ...prev, 
       audioFile: file,
-      // Clear other sources when file is uploaded
-      audioUrl: '',
-      youtubeUrl: '',
+      // Clear other sources
       textContent: '',
       textFile: null,
-      // Only clear processed data if it's a new file
-      transcription: isNewFile ? null : prev.transcription,
-      keyPoints: isNewFile ? [] : prev.keyPoints,
-      generatedContent: isNewFile ? '' : prev.generatedContent
+      audioUrl: '',
+      youtubeUrl: '',
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated,
+      apiUsageAssignment: apiUsageAssignment
     }));
-    
-    // Generate new session ID for new content
-    if (isNewFile) {
-      const newSessionId = Date.now().toString();
-      setAnalysisSessionId(newSessionId);
-      console.log('🆔 New session ID generated:', newSessionId);
-    }
   };
 
   const handleTextContentChange = (text: string) => {
-    console.log('📝 Text content changed:', text.length, 'characters');
-    
-    // Only clear processed data if text content significantly changed
-    const isSignificantChange = Math.abs(text.length - appState.textContent.length) > 100;
-    
-    setAppState(prev => ({ 
-      ...prev, 
-      textContent: text,
-      // Clear other sources if entering text
-      audioFile: text.trim() ? null : prev.audioFile,
-      audioUrl: text.trim() ? '' : prev.audioUrl,
-      youtubeUrl: text.trim() ? '' : prev.youtubeUrl,
-      textFile: text.trim() ? null : prev.textFile,
-      // Only clear processed data if significant change
-      transcription: isSignificantChange ? null : prev.transcription,
-      keyPoints: isSignificantChange ? [] : prev.keyPoints,
-      generatedContent: isSignificantChange ? '' : prev.generatedContent
-    }));
-    
-    // Generate new session ID for significant changes
-    if (isSignificantChange && text.trim()) {
-      const newSessionId = Date.now().toString();
-      setAnalysisSessionId(newSessionId);
-      console.log('🆔 New session ID generated for text change:', newSessionId);
+    if (text !== appState.textContent) {
+      console.log('📝 New text content entered');
+      // If it's a significant change, reset
+      if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
+        resetAppState();
+      }
+      setAppState(prev => ({ 
+        ...prev, 
+        textContent: text,
+        // Clear other sources if entering text
+        audioFile: text.trim() ? null : prev.audioFile,
+        textFile: text.trim() ? null : prev.textFile,
+        user: appState.user,
+        isAuthenticated: appState.isAuthenticated,
+        apiUsageAssignment: apiUsageAssignment
+      }));
     }
   };
 
   const handleTextFileUpload = (file: File) => {
-    console.log('📄 Text file uploaded:', file.name, file.size, 'bytes');
-    
-    // Only clear processed data if it's a new file
-    const isNewFile = !appState.textFile || appState.textFile.name !== file.name || appState.textFile.size !== file.size;
-    
+    console.log('📄 New text file uploaded:', file.name);
+    // Complete state reset for new file
+    resetAppState();
     setAppState(prev => ({ 
       ...prev, 
       textFile: file,
-      // Clear other sources when text file is uploaded
+      // Clear other sources
       audioFile: null,
       audioUrl: '',
       youtubeUrl: '',
-      // Only clear processed data if it's a new file
-      transcription: isNewFile ? null : prev.transcription,
-      keyPoints: isNewFile ? [] : prev.keyPoints,
-      generatedContent: isNewFile ? '' : prev.generatedContent
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated,
+      apiUsageAssignment: apiUsageAssignment
     }));
     
     // Read text file content
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      console.log('📄 Text file content loaded:', content.length, 'characters');
       setAppState(prev => ({ ...prev, textContent: content }));
     };
     reader.readAsText(file);
-    
-    // Generate new session ID for new file
-    if (isNewFile) {
-      const newSessionId = Date.now().toString();
-      setAnalysisSessionId(newSessionId);
-      console.log('🆔 New session ID generated for text file:', newSessionId);
-    }
   };
 
   // Step handlers - API-managed processing in Step 1
@@ -655,7 +583,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
-            if (transcriptionText && transcriptionText.trim()) {
+            if (transcriptionText) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
               const estimatedTokens = Math.floor(transcriptionText.length / 4);
               const estimatedCost = 0; // Free in Beta Test
@@ -705,15 +633,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               
               console.log('✅ Audio transcription successful with assigned API');
             } else {
-              // Handle empty transcription gracefully
-              console.log('⚠️ Empty transcription received from API, switching to demo mode');
-              setApiKeyError('The audio file appears to be silent or could not be transcribed. Continuing with demo content.');
-              setDemoMode(true);
-              setGeminiConfigured(false);
-              
-              // Use demo data as fallback
-              transcriptionResult = generateMockTranscription();
-              keyPointsResult = generateMockKeyPoints();
+              throw new Error('Empty transcription received from assigned API');
             }
             
           } catch (error) {
@@ -754,18 +674,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         keyPoints: keyPointsResult,
         isProcessing: false 
       }));
-      
-      // Save to database if user is authenticated
-      if (user) {
-        console.log('💾 Saving transcription and key points to database...');
-        await saveUserSession({
-          ...appState,
-          transcription: transcriptionResult,
-          keyPoints: keyPointsResult,
-          currentStep: 2
-        });
-        console.log('✅ Content saved to database');
-      }
       
       // Automatically move to next step (Key Points & Speakers)
       console.log('➡️ Calling goToNextStep()');

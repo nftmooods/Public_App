@@ -68,7 +68,6 @@ export interface User {
 export interface ApiKeyConfig {
   key: string;
   enabled: boolean;
-  model?: string; // Added model selection
   lastTested?: string;
   isValid?: boolean;
 }
@@ -80,14 +79,26 @@ export interface UserApiKeys {
   mistral?: ApiKeyConfig;
 }
 
-// New types for API usage assignment
+// New types for API usage assignment with provider and model separation
 export type ApiUsageType = 'audio' | 'analysis' | 'writing' | 'export';
 
 export interface ApiUsageAssignment {
-  audio: string | null;      // Which API to use for audio transcription
-  analysis: string | null;   // Which API to use for data analysis/key points
-  writing: string | null;    // Which API to use for content writing
-  export: string | null;     // Which API to use for export formatting
+  audio: {
+    provider: string | null;
+    model: string | null;
+  } | null;
+  analysis: {
+    provider: string | null;
+    model: string | null;
+  } | null;
+  writing: {
+    provider: string | null;
+    model: string | null;
+  } | null;
+  export: {
+    provider: string | null;
+    model: string | null;
+  } | null;
 }
 
 export interface UserSubscription {
