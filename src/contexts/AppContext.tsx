@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Step, AppState, User, UserApiKeys, ApiUsageAssignment } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useApiKeys } from '../hooks/useApiKeys';
+import { useUserSession } from '../hooks/useUserSession';
 import { 
   generateMockTranscription,
   generateMockKeyPoints, 
@@ -79,6 +80,10 @@ interface AppContextType {
   apiKeysLoading: boolean;
   apiUsageAssignment: ApiUsageAssignment;
   
+  // Session management
+  sessionLoading: boolean;
+  lastSavedStep: number | null;
+  
   // Actions
   setSteps: React.Dispatch<React.SetStateAction<Step[]>>;
   setAppState: React.Dispatch<React.SetStateAction<AppState>>;
@@ -139,9 +144,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [demoMode, setDemoMode] = useState(true);
   const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
   const [apiUsageAssignment, setApiUsageAssignment] = useState<ApiUsageAssignment>(initialAppState.apiUsageAssignment);
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
+  const { 
+    loadUserSession, 
+    saveUserSession, 
+    resetUserSession, 
+    autoSaveSession,
+    isLoading: sessionLoading,
+    lastSavedStep 
+  } = useUserSession(user?.id || null);
 
   // Function to get the appropriate API key for a specific usage
   const getApiKeyForUsage = (usageType: keyof ApiUsageAssignment): string | null => {
@@ -158,9 +172,72 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return null;
   };
 
+  // Load user session on authentication
+  useEffect(() => {
+    const restoreUserSession = async () => {
+      if (user && !sessionRestored) {
+        console.log('👤 User authenticated, attempting to restore session...');
+        
+        const savedSession = await loadUserSession();
+        if (savedSession) {
+          console.log('📥 Restoring user session from step:', savedSession.currentStep);
+          
+          // Restore the app state from saved session
+          setAppState(prev => ({
+            ...prev,
+            ...savedSession,
+            user,
+            isAuthenticated: true,
+            apiUsageAssignment: apiUsageAssignment,
+            // Don't restore files, they need to be re-uploaded
+            audioFile: null,
+            textFile: null,
+            isProcessing: false
+          }));
+          
+          // Update steps to reflect restored state
+          if (savedSession.currentStep) {
+            setSteps(prevSteps => 
+              prevSteps.map(step => ({
+                ...step,
+                completed: step.id < savedSession.currentStep!,
+                active: step.id === savedSession.currentStep
+              }))
+            );
+          }
+          
+          setSessionRestored(true);
+          console.log('✅ Session restored successfully');
+        } else {
+          console.log('📝 No saved session found, starting fresh');
+          setSessionRestored(true);
+        }
+      }
+    };
+
+    restoreUserSession();
+  }, [user, sessionRestored, loadUserSession, apiUsageAssignment]);
+
+  // Auto-save session when app state changes (for authenticated users)
+  useEffect(() => {
+    if (user && sessionRestored && !sessionLoading) {
+      // Debounce auto-save to avoid too frequent saves
+      const timeoutId = setTimeout(() => {
+        autoSaveSession(appState);
+      }, 2000); // Save 2 seconds after last change
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, sessionRestored, sessionLoading, appState, autoSaveSession]);
+
   // Function to completely reset the application
-  const resetAppState = () => {
+  const resetAppState = async () => {
     console.log('🔄 Complete application reset');
+    
+    // Reset user session in database if authenticated
+    if (user) {
+      await resetUserSession();
+    }
     
     // Generate new session ID to force refresh
     const newSessionId = Date.now().toString();
@@ -311,6 +388,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setApiKeyError('');
       setDemoMode(true);
       setApiUsageAssignment(initialAppState.apiUsageAssignment);
+      setSessionRestored(false);
       // Complete application reset
       resetAppState();
     } catch (error) {
@@ -761,6 +839,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     apiKeys,
     apiKeysLoading,
     apiUsageAssignment,
+    
+    // Session management
+    sessionLoading,
+    lastSavedStep,
     
     // Actions
     setSteps,

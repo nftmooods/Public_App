@@ -13,7 +13,7 @@ import UserMenu from './UserMenu';
 import ApiKeysModal from './ApiKeysModal';
 import ProfileModal from './ProfileModal';
 import { useAppContext } from '../contexts/AppContext';
-import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap, TestTube } from 'lucide-react';
+import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap, TestTube, Save, Clock } from 'lucide-react';
 
 export const MainApp: React.FC = () => {
   const {
@@ -32,6 +32,10 @@ export const MainApp: React.FC = () => {
     authLoading,
     apiKeys,
     apiUsageAssignment,
+    
+    // Session management
+    sessionLoading,
+    lastSavedStep,
     
     // Actions
     setApiKeyError,
@@ -224,12 +228,14 @@ export const MainApp: React.FC = () => {
     return 'Demo Mode';
   };
 
-  if (authLoading) {
+  if (authLoading || sessionLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {authLoading ? 'Loading...' : 'Restoring session...'}
+          </p>
         </div>
       </div>
     );
@@ -256,6 +262,13 @@ export const MainApp: React.FC = () => {
                     <TestTube className="w-3 h-3" />
                     <span className="text-xs font-bold">BETA TEST</span>
                   </div>
+                  {/* Session status indicator */}
+                  {isAuthenticated && lastSavedStep && (
+                    <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                      <Save className="w-3 h-3" />
+                      <span className="text-xs font-bold">SAVED</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm text-gray-500">Transform audio and text into professional content • Free unlimited usage</p>
               </div>
@@ -346,6 +359,26 @@ export const MainApp: React.FC = () => {
               </span>
             </div>
           </div>
+
+          {/* Session restoration notice */}
+          {isAuthenticated && lastSavedStep && lastSavedStep !== appState.currentStep && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm text-blue-700">
+                    <strong>Session Restored:</strong> Your previous work has been automatically restored from step {lastSavedStep}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleStepClick(lastSavedStep)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Go to step {lastSavedStep}
+                </button>
+              </div>
+            </div>
+          )}
           
           {/* API Usage Assignment Info */}
           {isAuthenticated && !demoMode && (

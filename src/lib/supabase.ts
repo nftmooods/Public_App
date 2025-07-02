@@ -43,6 +43,16 @@ export interface Feedback {
   created_at: string;
 }
 
+export interface UserSession {
+  id: string;
+  user_id: string;
+  session_data: any; // JSON data containing all step content
+  current_step: number;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}
+
 // Service to manage user profiles
 export class ProfileService {
   static async getProfile(userId: string): Promise<Profile | null> {
@@ -290,6 +300,93 @@ export class FeedbackService {
     } catch (error) {
       console.error('Error retrieving feedback:', error);
       return [];
+    }
+  }
+}
+
+// Service to manage user sessions (temporary content storage)
+export class UserSessionService {
+  static async getUserSession(userId: string): Promise<UserSession | null> {
+    try {
+      const { data, error } = await supabase
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error retrieving user session:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error retrieving user session:', error);
+      return null;
+    }
+  }
+
+  static async saveUserSession(userId: string, sessionData: any, currentStep: number): Promise<UserSession | null> {
+    try {
+      // Upsert the session data
+      const { data, error } = await supabase
+        .from('user_sessions')
+        .upsert({
+          user_id: userId,
+          session_data: sessionData,
+          current_step: currentStep,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+        }, {
+          onConflict: 'user_id'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving user session:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error saving user session:', error);
+      return null;
+    }
+  }
+
+  static async resetUserSession(userId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('user_sessions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error resetting user session:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error resetting user session:', error);
+      return false;
+    }
+  }
+
+  static async cleanupExpiredSessions(): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .rpc('cleanup_expired_sessions');
+
+      if (error) {
+        console.error('Error cleaning up expired sessions:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error cleaning up expired sessions:', error);
+      return false;
     }
   }
 }
