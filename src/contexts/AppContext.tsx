@@ -152,18 +152,26 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Function to get the appropriate API key and model for a specific usage
   const getApiKeyAndModelForUsage = (usageType: keyof ApiUsageAssignment): { apiKey: string | null; model: string | null } => {
     const assignment = apiUsageAssignment[usageType];
-    if (!assignment || !assignment.provider) return { apiKey: null, model: null };
+    if (!assignment || !assignment.provider) {
+      console.log(`❌ No assignment for ${usageType}`);
+      return { apiKey: null, model: null };
+    }
 
     const providerConfig = apiKeys[assignment.provider as keyof UserApiKeys];
-    if (!providerConfig || !providerConfig.enabled) return { apiKey: null, model: null };
+    if (!providerConfig || !providerConfig.enabled) {
+      console.log(`❌ Provider ${assignment.provider} not enabled or not found`);
+      return { apiKey: null, model: null };
+    }
 
     if ('key' in providerConfig) {
+      console.log(`✅ Found API key for ${usageType}: ${assignment.provider} with model ${assignment.model}`);
       return { 
         apiKey: providerConfig.key,
         model: assignment.model
       };
     }
 
+    console.log(`❌ No API key found for ${assignment.provider}`);
     return { apiKey: null, model: null };
   };
 
@@ -560,6 +568,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // Get API key and model for audio processing
         const { apiKey: audioApiKey, model: audioModel } = getApiKeyAndModelForUsage('audio');
         
+        console.log('🔍 Audio processing configuration:', {
+          hasApiKey: !!audioApiKey,
+          model: audioModel,
+          demoMode,
+          audioFile: !!appState.audioFile,
+          audioUrl: !!appState.audioUrl,
+          youtubeUrl: !!appState.youtubeUrl
+        });
+        
         // Use assigned API if configured and in production mode
         if (!demoMode && audioApiKey && audioApiKey.startsWith('AIza')) {
           try {
@@ -586,7 +603,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
-            if (transcriptionText) {
+            console.log('📄 Transcription result length:', transcriptionText.length);
+            
+            if (transcriptionText && transcriptionText.length > 0) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
               const estimatedTokens = Math.floor(transcriptionText.length / 4);
               const estimatedCost = 0; // Free in Beta Test
