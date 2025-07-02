@@ -443,76 +443,119 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
            error.message.includes('exceeded your current quota');
   };
 
-  // Content handlers
+  // Content handlers - Fixed to not reset the entire state
   const handleUrlChange = (url: string) => {
-    setAppState(prev => ({ ...prev, audioUrl: url }));
-  };
-
-  const handleYoutubeUrlChange = (url: string) => {
-    setAppState(prev => ({ ...prev, youtubeUrl: url }));
-  };
-
-  const handleFileUpload = (file: File) => {
-    console.log('📁 New file uploaded:', file.name);
-    // Complete state reset for new file
-    resetAppState();
+    console.log('🔗 Audio URL changed:', url);
     setAppState(prev => ({ 
       ...prev, 
-      audioFile: file,
-      // Clear other sources
-      textContent: '',
-      textFile: null,
-      audioUrl: '',
-      youtubeUrl: '',
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
+      audioUrl: url,
+      // Clear other audio sources when URL is set
+      audioFile: url ? null : prev.audioFile,
+      youtubeUrl: url ? '' : prev.youtubeUrl
     }));
   };
 
+  const handleYoutubeUrlChange = (url: string) => {
+    console.log('📺 YouTube URL changed:', url);
+    setAppState(prev => ({ 
+      ...prev, 
+      youtubeUrl: url,
+      // Clear other audio sources when YouTube URL is set
+      audioFile: url ? null : prev.audioFile,
+      audioUrl: url ? '' : prev.audioUrl
+    }));
+  };
+
+  const handleFileUpload = (file: File) => {
+    console.log('📁 Audio file uploaded:', file.name, file.size, 'bytes');
+    
+    // Only clear transcription and key points if it's a new file
+    const isNewFile = !appState.audioFile || appState.audioFile.name !== file.name || appState.audioFile.size !== file.size;
+    
+    setAppState(prev => ({ 
+      ...prev, 
+      audioFile: file,
+      // Clear other sources when file is uploaded
+      audioUrl: '',
+      youtubeUrl: '',
+      textContent: '',
+      textFile: null,
+      // Only clear processed data if it's a new file
+      transcription: isNewFile ? null : prev.transcription,
+      keyPoints: isNewFile ? [] : prev.keyPoints,
+      generatedContent: isNewFile ? '' : prev.generatedContent
+    }));
+    
+    // Generate new session ID for new content
+    if (isNewFile) {
+      const newSessionId = Date.now().toString();
+      setAnalysisSessionId(newSessionId);
+      console.log('🆔 New session ID generated:', newSessionId);
+    }
+  };
+
   const handleTextContentChange = (text: string) => {
-    if (text !== appState.textContent) {
-      console.log('📝 New text content entered');
-      // If it's a significant change, reset
-      if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
-        resetAppState();
-      }
-      setAppState(prev => ({ 
-        ...prev, 
-        textContent: text,
-        // Clear other sources if entering text
-        audioFile: text.trim() ? null : prev.audioFile,
-        textFile: text.trim() ? null : prev.textFile,
-        user: appState.user,
-        isAuthenticated: appState.isAuthenticated,
-        apiUsageAssignment: apiUsageAssignment
-      }));
+    console.log('📝 Text content changed:', text.length, 'characters');
+    
+    // Only clear processed data if text content significantly changed
+    const isSignificantChange = Math.abs(text.length - appState.textContent.length) > 100;
+    
+    setAppState(prev => ({ 
+      ...prev, 
+      textContent: text,
+      // Clear other sources if entering text
+      audioFile: text.trim() ? null : prev.audioFile,
+      audioUrl: text.trim() ? '' : prev.audioUrl,
+      youtubeUrl: text.trim() ? '' : prev.youtubeUrl,
+      textFile: text.trim() ? null : prev.textFile,
+      // Only clear processed data if significant change
+      transcription: isSignificantChange ? null : prev.transcription,
+      keyPoints: isSignificantChange ? [] : prev.keyPoints,
+      generatedContent: isSignificantChange ? '' : prev.generatedContent
+    }));
+    
+    // Generate new session ID for significant changes
+    if (isSignificantChange && text.trim()) {
+      const newSessionId = Date.now().toString();
+      setAnalysisSessionId(newSessionId);
+      console.log('🆔 New session ID generated for text change:', newSessionId);
     }
   };
 
   const handleTextFileUpload = (file: File) => {
-    console.log('📄 New text file uploaded:', file.name);
-    // Complete state reset for new file
-    resetAppState();
+    console.log('📄 Text file uploaded:', file.name, file.size, 'bytes');
+    
+    // Only clear processed data if it's a new file
+    const isNewFile = !appState.textFile || appState.textFile.name !== file.name || appState.textFile.size !== file.size;
+    
     setAppState(prev => ({ 
       ...prev, 
       textFile: file,
-      // Clear other sources
+      // Clear other sources when text file is uploaded
       audioFile: null,
       audioUrl: '',
       youtubeUrl: '',
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
+      // Only clear processed data if it's a new file
+      transcription: isNewFile ? null : prev.transcription,
+      keyPoints: isNewFile ? [] : prev.keyPoints,
+      generatedContent: isNewFile ? '' : prev.generatedContent
     }));
     
     // Read text file content
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
+      console.log('📄 Text file content loaded:', content.length, 'characters');
       setAppState(prev => ({ ...prev, textContent: content }));
     };
     reader.readAsText(file);
+    
+    // Generate new session ID for new file
+    if (isNewFile) {
+      const newSessionId = Date.now().toString();
+      setAnalysisSessionId(newSessionId);
+      console.log('🆔 New session ID generated for text file:', newSessionId);
+    }
   };
 
   // Step handlers - API-managed processing in Step 1
