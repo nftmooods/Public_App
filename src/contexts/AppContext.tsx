@@ -116,9 +116,9 @@ interface AppContextType {
   // Content handlers
   handleUrlChange: (url: string) => void;
   handleYoutubeUrlChange: (url: string) => void;
-  handleFileUpload: (file: File) => void;
+  handleFileUpload: (file: File | null) => void;
   handleTextContentChange: (text: string) => void;
-  handleTextFileUpload: (file: File) => void;
+  handleTextFileUpload: (file: File | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -426,22 +426,30 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAppState(prev => ({ ...prev, youtubeUrl: url }));
   };
 
-  const handleFileUpload = (file: File) => {
-    console.log('📁 New file uploaded:', file.name, file.size, 'bytes');
-    // Complete state reset for new file
-    resetAppState();
-    setAppState(prev => ({ 
-      ...prev, 
-      audioFile: file,
-      // Clear other sources
-      textContent: '',
-      textFile: null,
-      audioUrl: '',
-      youtubeUrl: '',
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
-    }));
+  const handleFileUpload = (file: File | null) => {
+    if (file) {
+      console.log('📁 New file uploaded:', file.name, file.size, 'bytes');
+      // Complete state reset for new file
+      resetAppState();
+      setAppState(prev => ({ 
+        ...prev, 
+        audioFile: file,
+        // Clear other sources
+        textContent: '',
+        textFile: null,
+        audioUrl: '',
+        youtubeUrl: '',
+        user: appState.user,
+        isAuthenticated: appState.isAuthenticated,
+        apiUsageAssignment: apiUsageAssignment
+      }));
+    } else {
+      // Remove file
+      setAppState(prev => ({ 
+        ...prev, 
+        audioFile: null
+      }));
+    }
   };
 
   const handleTextContentChange = (text: string) => {
@@ -464,30 +472,39 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
-  const handleTextFileUpload = (file: File) => {
-    console.log('📄 New text file uploaded:', file.name, file.size, 'bytes');
-    // Complete state reset for new file
-    resetAppState();
-    setAppState(prev => ({ 
-      ...prev, 
-      textFile: file,
-      // Clear other sources
-      audioFile: null,
-      audioUrl: '',
-      youtubeUrl: '',
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
-    }));
-    
-    // Read text file content
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      console.log('📄 Text file content loaded:', content.length, 'characters');
-      setAppState(prev => ({ ...prev, textContent: content }));
-    };
-    reader.readAsText(file);
+  const handleTextFileUpload = (file: File | null) => {
+    if (file) {
+      console.log('📄 New text file uploaded:', file.name, file.size, 'bytes');
+      // Complete state reset for new file
+      resetAppState();
+      setAppState(prev => ({ 
+        ...prev, 
+        textFile: file,
+        // Clear other sources
+        audioFile: null,
+        audioUrl: '',
+        youtubeUrl: '',
+        user: appState.user,
+        isAuthenticated: appState.isAuthenticated,
+        apiUsageAssignment: apiUsageAssignment
+      }));
+      
+      // Read text file content
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        console.log('📄 Text file content loaded:', content.length, 'characters');
+        setAppState(prev => ({ ...prev, textContent: content }));
+      };
+      reader.readAsText(file);
+    } else {
+      // Remove file
+      setAppState(prev => ({ 
+        ...prev, 
+        textFile: null,
+        textContent: ''
+      }));
+    }
   };
 
   // Step handlers - API-managed processing in Step 1

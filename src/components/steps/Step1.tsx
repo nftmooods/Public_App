@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic, HardDrive, Settings } from 'lucide-react';
+import { Upload, ArrowRight, AlertCircle, Sparkles, FileText, Type, Loader2, CheckCircle, Mic, HardDrive, Settings, X } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface Step1Props {
@@ -117,6 +117,7 @@ const Step1: React.FC<Step1Props> = ({
       'gpt-4o': 'GPT-4o',
       'gpt-4-turbo': 'GPT-4 Turbo',
       'o1': 'o1',
+      'o3': 'o3',
       'gpt-3.5-turbo': 'GPT-3.5 Turbo',
       // Anthropic models
       'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
@@ -798,6 +799,30 @@ const Step1: React.FC<Step1Props> = ({
               </div>
             </div>
 
+            {/* Show current file if exists */}
+            {audioFile && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-800">{audioFile.name}</p>
+                      <p className="text-sm text-green-600">
+                        {(audioFile.size / 1024 / 1024).toFixed(2)} MB • {getFileSizeInfo(audioFile).description}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onFileUpload(null as any)}
+                    className="p-1 text-red-500 hover:text-red-700"
+                    title="Remove file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div
               className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer flex-1 flex flex-col justify-center ${
                 dragActive 
@@ -829,46 +854,19 @@ const Step1: React.FC<Step1Props> = ({
                   }`} />
                 </div>
                 
-                {audioFile ? (
-                  <div>
-                    <p className="text-lg font-medium text-green-700 mb-1">
-                      {audioFile.name}
-                    </p>
-                    <p className="text-sm text-green-600 mb-2">
-                      {(audioFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                    
-                    {/* File processing method indicator */}
-                    {(() => {
-                      const fileInfo = getFileSizeInfo(audioFile);
-                      const Icon = fileInfo.icon;
-                      return (
-                        <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                          fileInfo.method === 'inline' ? 'bg-green-100 text-green-700' :
-                          fileInfo.method === 'files-api' ? 'bg-blue-100 text-blue-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          <Icon className="w-3 h-3" />
-                          <span>{fileInfo.description}</span>
-                        </div>
-                      );
-                    })()}
+                <div>
+                  <p className="text-lg text-gray-700 mb-1">
+                    {audioFile ? 'Click to change file' : 'Drop your audio file here'}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    or click to browse
+                  </p>
+                  <div className="text-xs text-gray-400 space-y-1">
+                    <p>{'• Files ≤20MB: Fast inline processing'}</p>
+                    <p>{'• Files >20MB: Files API processing'}</p>
+                    <p>• Maximum size: 2GB</p>
                   </div>
-                ) : (
-                  <div>
-                    <p className="text-lg text-gray-700 mb-1">
-                      Drop your audio file here
-                    </p>
-                    <p className="text-sm text-gray-500 mb-2">
-                      or click to browse
-                    </p>
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <p>{'• Files ≤20MB: Fast inline processing'}</p>
-                      <p>{'• Files >20MB: Files API processing'}</p>
-                      <p>• Maximum size: 2GB</p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -883,6 +881,25 @@ const Step1: React.FC<Step1Props> = ({
             </div>
 
             <div className="space-y-4 flex-1 flex flex-col">
+              {/* Show current text file if exists */}
+              {textFile && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-4 h-4 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-800">{textFile.name}</span>
+                    </div>
+                    <button
+                      onClick={() => onTextFileUpload(null as any)}
+                      className="p-1 text-red-500 hover:text-red-700"
+                      title="Remove file"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* File upload for text */}
               <div
                 className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
@@ -909,16 +926,12 @@ const Step1: React.FC<Step1Props> = ({
                   <FileText className={`w-6 h-6 mx-auto ${
                     textFile ? 'text-purple-600' : 'text-gray-400'
                   }`} />
-                  {textFile ? (
-                    <p className="text-xs font-medium text-purple-700">
-                      {textFile.name}
+                  <div>
+                    <p className="text-xs text-gray-700">
+                      {textFile ? 'Click to change file' : 'Upload text file'}
                     </p>
-                  ) : (
-                    <div>
-                      <p className="text-xs text-gray-700">Upload text file</p>
-                      <p className="text-xs text-gray-500">TXT, MD files supported</p>
-                    </div>
-                  )}
+                    <p className="text-xs text-gray-500">TXT, MD files supported</p>
+                  </div>
                 </div>
               </div>
               
