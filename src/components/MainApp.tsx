@@ -13,7 +13,7 @@ import UserMenu from './UserMenu';
 import ApiKeysModal from './ApiKeysModal';
 import ProfileModal from './ProfileModal';
 import { useAppContext } from '../contexts/AppContext';
-import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap, TestTube, Save, Clock } from 'lucide-react';
+import { Settings, Sparkles, AlertTriangle, LogIn, Play, Pause, Zap, TestTube, Save, Clock, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export const MainApp: React.FC = () => {
   const {
@@ -23,7 +23,7 @@ export const MainApp: React.FC = () => {
     apiKey,
     geminiConfigured,
     apiKeyError,
-    demoMode,
+    isProductionMode, // New: use production mode state
     analysisSessionId,
     
     // Auth & API Keys
@@ -39,7 +39,7 @@ export const MainApp: React.FC = () => {
     
     // Actions
     setApiKeyError,
-    setDemoMode,
+    setIsProductionMode, // New: use production mode setter
     resetAppState,
     handleStepClick,
     
@@ -75,14 +75,14 @@ export const MainApp: React.FC = () => {
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const toggleDemoMode = () => {
-    const newDemoMode = !demoMode;
-    setDemoMode(newDemoMode);
-    localStorage.setItem('demoMode', newDemoMode.toString());
+  const toggleProductionMode = () => {
+    const newMode = !isProductionMode;
+    setIsProductionMode(newMode);
     
-    if (newDemoMode) {
-      setApiKeyError('');
-    }
+    // Clear any existing errors when switching modes
+    setApiKeyError('');
+    
+    console.log(`🔄 Mode switched to: ${newMode ? 'Production' : 'Demo'}`);
   };
 
   const handleLogin = (userData: any) => {
@@ -102,12 +102,13 @@ export const MainApp: React.FC = () => {
     );
 
     if (assignedApis.length === 0) {
-      return 'Demo Mode';
+      return 'No APIs configured';
     }
 
-    const uniqueApis = [...new Set(assignedApis.map(type => 
-      apiUsageAssignment[type.key as keyof typeof apiUsageAssignment]
-    ))];
+    const uniqueApis = [...new Set(assignedApis.map(type => {
+      const assignment = apiUsageAssignment[type.key as keyof typeof apiUsageAssignment];
+      return assignment?.provider;
+    }))].filter(Boolean);
 
     if (uniqueApis.length === 1) {
       const apiName = uniqueApis[0];
@@ -139,7 +140,7 @@ export const MainApp: React.FC = () => {
             onTextContentChange={handleTextContentChange}
             onTextFileUpload={handleTextFileUpload}
             onNext={handleStep1Next}
-            geminiConfigured={geminiConfigured && !demoMode}
+            geminiConfigured={geminiConfigured && isProductionMode}
             sessionId={analysisSessionId}
           />
         );
@@ -151,7 +152,7 @@ export const MainApp: React.FC = () => {
             onUpdateTranscription={handleUpdateTranscription}
             onUpdateKeyPoints={handleUpdateKeyPoints}
             onNext={handleStep2Next}
-            demoMode={demoMode}
+            demoMode={!isProductionMode}
             geminiConfigured={geminiConfigured}
             apiKey={apiKey}
           />
@@ -207,25 +208,25 @@ export const MainApp: React.FC = () => {
     }
   };
 
-  const getGeminiStatusColor = () => {
-    if (demoMode) return 'text-yellow-600';
+  const getModeStatusColor = () => {
+    if (!isProductionMode) return 'text-yellow-600';
     if (apiKeyError) return 'text-red-600';
     if (geminiConfigured) return 'text-green-600';
-    return 'text-yellow-600';
+    return 'text-orange-600';
   };
 
-  const getGeminiStatusIcon = () => {
-    if (demoMode) return <Play className="w-4 h-4" />;
+  const getModeStatusIcon = () => {
+    if (!isProductionMode) return <Play className="w-4 h-4" />;
     if (apiKeyError) return <AlertTriangle className="w-4 h-4" />;
     if (geminiConfigured) return <Sparkles className="w-4 h-4" />;
-    return <Sparkles className="w-4 h-4" />;
+    return <AlertTriangle className="w-4 h-4" />;
   };
 
-  const getGeminiStatusText = () => {
-    if (demoMode) return 'Demo Mode';
-    if (apiKeyError) return 'API Error';
+  const getModeStatusText = () => {
+    if (!isProductionMode) return 'Demo Mode';
+    if (apiKeyError) return 'Configuration Error';
     if (geminiConfigured) return getApiUsageSummary();
-    return 'Demo Mode';
+    return 'APIs Required';
   };
 
   if (authLoading || sessionLoading) {
@@ -274,45 +275,46 @@ export const MainApp: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Mode indicator - More visible */}
+              {/* Mode Toggle - More prominent */}
               <div className={`flex items-center space-x-3 px-4 py-2 rounded-lg border-2 transition-all ${
-                demoMode 
-                  ? 'bg-yellow-50 border-yellow-300 text-yellow-800' 
-                  : 'bg-green-50 border-green-300 text-green-800'
+                isProductionMode 
+                  ? 'bg-green-50 border-green-300 text-green-800' 
+                  : 'bg-yellow-50 border-yellow-300 text-yellow-800'
               }`}>
                 <div className="flex items-center space-x-2">
                   <div className={`w-3 h-3 rounded-full ${
-                    demoMode ? 'bg-yellow-500' : 'bg-green-500'
+                    isProductionMode ? 'bg-green-500' : 'bg-yellow-500'
                   }`}></div>
                   <Zap className="w-4 h-4" />
                   <span className="font-bold text-sm">
-                    {demoMode ? 'DEMO MODE' : 'PROD MODE'}
+                    {isProductionMode ? 'PRODUCTION' : 'DEMO'}
                   </span>
                 </div>
                 <button
-                  onClick={toggleDemoMode}
+                  onClick={toggleProductionMode}
                   className={`p-1 rounded transition-colors ${
-                    demoMode 
-                      ? 'hover:bg-yellow-200' 
-                      : 'hover:bg-green-200'
+                    isProductionMode 
+                      ? 'hover:bg-green-200' 
+                      : 'hover:bg-yellow-200'
                   }`}
-                  title={demoMode ? 'Switch to production mode' : 'Switch to demo mode'}
+                  title={isProductionMode ? 'Switch to demo mode' : 'Switch to production mode'}
                 >
-                  {demoMode ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                  {isProductionMode ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                 </button>
               </div>
 
+              {/* API Status */}
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
-                  demoMode ? 'bg-yellow-500' : 
+                  !isProductionMode ? 'bg-yellow-500' : 
                   apiKeyError ? 'bg-red-500' : 
-                  geminiConfigured ? 'bg-green-500' : 'bg-yellow-500'
+                  geminiConfigured ? 'bg-green-500' : 'bg-orange-500'
                 }`}></div>
-                <div className={getGeminiStatusColor()}>
-                  {getGeminiStatusIcon()}
+                <div className={getModeStatusColor()}>
+                  {getModeStatusIcon()}
                 </div>
-                <span className={`text-sm ${getGeminiStatusColor()}`}>
-                  {getGeminiStatusText()}
+                <span className={`text-sm ${getModeStatusColor()}`}>
+                  {getModeStatusText()}
                 </span>
               </div>
               
@@ -325,7 +327,7 @@ export const MainApp: React.FC = () => {
                 />
               ) : (
                 <>
-                  {!demoMode && (
+                  {isProductionMode && (
                     <button
                       onClick={() => setShowApiKeyModal(true)}
                       className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -381,7 +383,7 @@ export const MainApp: React.FC = () => {
           )}
           
           {/* API Usage Assignment Info */}
-          {isAuthenticated && !demoMode && (
+          {isAuthenticated && isProductionMode && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -401,7 +403,7 @@ export const MainApp: React.FC = () => {
           )}
           
           {/* API Key Error Banner */}
-          {apiKeyError && !demoMode && (
+          {apiKeyError && isProductionMode && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
@@ -410,14 +412,20 @@ export const MainApp: React.FC = () => {
                   onClick={() => isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
                   className="text-sm text-red-600 hover:text-red-800 underline ml-2"
                 >
-                  Configure new API key
+                  Configure API keys
+                </button>
+                <button
+                  onClick={() => setIsProductionMode(false)}
+                  className="text-sm text-red-600 hover:text-red-800 underline ml-2"
+                >
+                  Switch to demo mode
                 </button>
               </div>
             </div>
           )}
 
           {/* Demo Mode Banner */}
-          {demoMode && (
+          {!isProductionMode && (
             <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-center space-x-2">
                 <Play className="w-4 h-4 text-yellow-600" />
@@ -425,10 +433,28 @@ export const MainApp: React.FC = () => {
                   <strong>Demo mode active</strong> - Free navigation between all steps • All features are simulated
                 </span>
                 <button
-                  onClick={toggleDemoMode}
+                  onClick={() => setIsProductionMode(true)}
                   className="text-sm text-yellow-600 hover:text-yellow-800 underline ml-2"
                 >
                   Switch to production mode
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Production Mode Configuration Required Banner */}
+          {isProductionMode && !geminiConfigured && !apiKeyError && (
+            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 text-orange-600" />
+                <span className="text-sm text-orange-700">
+                  <strong>Production mode requires API configuration</strong> - Please configure your API keys to use production features
+                </span>
+                <button
+                  onClick={() => isAuthenticated ? setShowApiKeysModal(true) : setShowApiKeyModal(true)}
+                  className="text-sm text-orange-600 hover:text-orange-800 underline ml-2"
+                >
+                  Configure APIs
                 </button>
               </div>
             </div>
@@ -441,7 +467,7 @@ export const MainApp: React.FC = () => {
         steps={steps} 
         currentStep={appState.currentStep}
         onStepClick={handleStepClick}
-        demoMode={demoMode}
+        demoMode={!isProductionMode}
       />
 
       {/* Main Content */}
@@ -463,7 +489,7 @@ export const MainApp: React.FC = () => {
         onLogin={handleLogin}
       />
 
-      {!demoMode && (
+      {isProductionMode && (
         <ApiKeyModal
           isOpen={showApiKeyModal}
           onClose={() => setShowApiKeyModal(false)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus, RotateCcw, Home } from 'lucide-react';
+import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
 import { generateMockKeyPoints } from '../../utils/mockData';
@@ -33,14 +33,7 @@ const Step4: React.FC<Step4Props> = ({
   geminiConfigured,
   apiKey
 }) => {
-  const { 
-    setApiKeyError, 
-    setDemoMode, 
-    resetAppState,
-    apiUsageAssignment,
-    apiKeys
-  } = useAppContext();
-  
+  const { setApiKeyError, apiUsageAssignment, apiKeys, isProductionMode } = useAppContext();
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
   const [editingKeyPoint, setEditingKeyPoint] = useState<string | null>(null);
   const [newKeyPoint, setNewKeyPoint] = useState({ title: '', description: '', speaker: '' });
@@ -57,203 +50,76 @@ const Step4: React.FC<Step4Props> = ({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [newSpeaker, setNewSpeaker] = useState({ name: '', color: '#3B82F6' });
   const [showAddSpeaker, setShowAddSpeaker] = useState(false);
-  const [isRegenerating, setIsRegenerating] = useState(false);
 
-  // Function to get API key and model for usage with proper validation
-  const getApiKeyAndModelForUsage = (usageType: 'analysis'): { apiKey: string | null; model: string | null; providerName: string } => {
-    console.log('🔍 Getting API configuration for:', usageType);
-    console.log('📊 Current assignment:', apiUsageAssignment[usageType]);
-    console.log('📊 Available API keys:', Object.keys(apiKeys));
-    console.log('📊 Demo mode:', demoMode);
+  // Get API configuration for analysis
+  const getAnalysisApiConfig = () => {
+    if (demoMode) {
+      return { apiKey: null, model: null, displayName: 'Demo Mode' };
+    }
 
-    const assignment = apiUsageAssignment[usageType];
+    const assignment = apiUsageAssignment.analysis;
     if (!assignment || !assignment.provider) {
-      console.log('❌ No assignment found for', usageType);
-      return { apiKey: null, model: null, providerName: 'Demo Mode' };
+      return { apiKey: null, model: null, displayName: 'Not configured' };
     }
 
     const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
     if (!providerConfig || !providerConfig.enabled) {
-      console.log('❌ Provider not enabled or not found:', assignment.provider);
-      return { apiKey: null, model: null, providerName: 'Demo Mode' };
+      return { apiKey: null, model: null, displayName: 'Not enabled' };
     }
 
-    if ('key' in providerConfig && providerConfig.key) {
-      console.log('✅ Found valid API key for', usageType, ':', assignment.provider, assignment.model);
-      
-      // Map provider names for display
+    if ('key' in providerConfig) {
       const providerDisplayNames: Record<string, string> = {
         'googleAI': 'Google AI',
         'openAI': 'OpenAI',
         'anthropic': 'Anthropic',
         'mistral': 'Mistral AI'
       };
-      
+
+      const modelDisplayNames: Record<string, string> = {
+        'gemini-2.5-flash': 'Gemini 2.5 Flash',
+        'gemini-1.5-pro': 'Gemini 1.5 Pro',
+        'gpt-4o': 'GPT-4o',
+        'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
+        'mistral-large': 'Mistral Large'
+      };
+
+      const providerName = providerDisplayNames[assignment.provider] || assignment.provider;
+      const modelName = assignment.model ? modelDisplayNames[assignment.model] || assignment.model : null;
+      const displayName = modelName ? `${providerName} (${modelName})` : providerName;
+
       return { 
-        apiKey: providerConfig.key,
+        apiKey: providerConfig.key, 
         model: assignment.model,
-        providerName: providerDisplayNames[assignment.provider] || assignment.provider
+        displayName 
       };
     }
 
-    console.log('❌ No valid API key found for', assignment.provider);
-    return { apiKey: null, model: null, providerName: 'Demo Mode' };
+    return { apiKey: null, model: null, displayName: 'No API key' };
   };
 
-  // Function to regenerate key points
-  const handleRegenerateKeyPoints = async () => {
-    if (!transcription) return;
-
-    console.log('🔄 Starting key points regeneration...');
-    setIsRegenerating(true);
-    setExtractionProgress({
-      status: 'extracting',
-      currentStep: 'Initializing regeneration...',
-      progress: 10,
-      api: 'Processing'
-    });
-
-    try {
-      const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
-      
-      console.log('🔍 Regeneration API config:', {
-        hasApiKey: !!analysisApiKey,
-        model: analysisModel,
-        provider: providerName,
-        demoMode
-      });
-      
-      if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-        console.log('🚀 Regenerating key points with assigned analysis API:', providerName, analysisModel);
-        
-        setExtractionProgress(prev => ({
-          ...prev,
-          currentStep: `Connecting to ${providerName}...`,
-          progress: 30,
-          api: analysisModel ? `${providerName} (${analysisModel})` : providerName
-        }));
-        
-        const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-        
-        setExtractionProgress(prev => ({
-          ...prev,
-          currentStep: 'Extracting new key points...',
-          progress: 60
-        }));
-        
-        const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
-        
-        if (extractedKeyPoints && extractedKeyPoints.length > 0) {
-          const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
-            id: `regenerated_${Date.now()}_${index}`,
-            text: point,
-            timestamp: 0,
-            speaker: transcription.speakers[0]?.name || 'Speaker',
-            category: 'insight' as const,
-            editable: true,
-            webLinks: []
-          }));
-          
-          setExtractionProgress(prev => ({
-            ...prev,
-            currentStep: `${extractedKeyPoints.length} new key points generated`,
-            progress: 100,
-            api: 'Completed'
-          }));
-          
-          setTimeout(() => {
-            onUpdateKeyPoints(formattedKeyPoints);
-            setExtractionProgress(prev => ({
-              ...prev,
-              status: 'completed'
-            }));
-            console.log('✅ Key points regenerated successfully:', extractedKeyPoints.length);
-          }, 500);
-        } else {
-          throw new Error('No key points returned from API');
-        }
-      } else {
-        // Demo mode regeneration
-        console.log('🎭 Regenerating key points in demo mode');
-        setExtractionProgress(prev => ({
-          ...prev,
-          currentStep: 'Generating demo key points...',
-          progress: 70,
-          api: 'Demo Mode'
-        }));
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const mockKeyPoints = generateMockKeyPoints();
-        onUpdateKeyPoints(mockKeyPoints);
-        
-        setExtractionProgress({
-          status: 'completed',
-          currentStep: `${mockKeyPoints.length} demo key points generated`,
-          progress: 100,
-          api: 'Demo Mode'
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error during key points regeneration:', error);
-      
-      const errorMessage = (error as Error).message;
-      
-      if (errorMessage.includes('429') || errorMessage.includes('quota')) {
-        setApiKeyError('API quota exceeded. Switching to demo mode.');
-        setDemoMode(true);
-      }
-      
-      setExtractionProgress({
-        status: 'error',
-        currentStep: 'Error during regeneration - using demo data',
-        progress: 0,
-        api: 'Error'
-      });
-      
-      // Fallback to demo data
-      setTimeout(() => {
-        const mockKeyPoints = generateMockKeyPoints();
-        onUpdateKeyPoints(mockKeyPoints);
-        setExtractionProgress({
-          status: 'completed',
-          currentStep: 'Demo data loaded (fallback)',
-          progress: 100,
-          api: 'Demo mode (fallback)'
-        });
-      }, 1000);
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  // Auto-extraction of key points if none exist - IMPROVED VERSION
+  // Auto-extraction of key points if none exist
   useEffect(() => {
     const autoExtractKeyPoints = async () => {
-      // Only run if we have transcription but no key points
       if (keyPoints.length === 0 && transcription && transcription.text) {
         console.log('🎯 Starting auto-extraction of key points...');
         
-        const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
+        const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
         
-        console.log('🔍 Auto-extraction API config:', {
-          hasApiKey: !!analysisApiKey,
-          model: analysisModel,
-          provider: providerName,
-          demoMode,
-          transcriptionLength: transcription.text.length
-        });
+        if (isProductionMode && !analysisApiKey) {
+          console.log('❌ Production mode requires analysis API configuration');
+          setApiKeyError('Production mode requires analysis API configuration. Please configure your API keys or switch to demo mode.');
+          return;
+        }
         
-        // Check if we should use real API or demo mode
-        if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+        if (isProductionMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
           try {
-            console.log('🚀 Using assigned analysis API for auto-extraction:', providerName, analysisModel);
+            console.log('🚀 Using production API for extraction:', displayName);
             
             setExtractionProgress({
               status: 'extracting',
-              currentStep: `Connecting to ${providerName}...`,
+              currentStep: 'Connecting to analysis API...',
               progress: 10,
-              api: analysisModel ? `${providerName} (${analysisModel})` : providerName
+              api: displayName
             });
             
             const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
@@ -282,7 +148,7 @@ const Step4: React.FC<Step4Props> = ({
             
             if (extractedKeyPoints && extractedKeyPoints.length > 0) {
               const formattedKeyPoints = extractedKeyPoints.map((point, index) => ({
-                id: `api_${Date.now()}_${index}`,
+                id: `production_${Date.now()}_${index}`,
                 text: point,
                 timestamp: 0,
                 speaker: transcription.speakers[0]?.name || 'Speaker',
@@ -303,85 +169,37 @@ const Step4: React.FC<Step4Props> = ({
                   ...prev,
                   status: 'completed'
                 }));
-                console.log('✅ Key points extracted with API:', extractedKeyPoints.length);
+                console.log('✅ Key points extracted with production API:', extractedKeyPoints.length);
               }, 500);
             } else {
-              console.log('⚠️ No key points returned from API - falling back to demo mode');
-              
+              console.log('⚠️ No key points returned from production API');
+              setApiKeyError('No key points could be extracted. Please check your API configuration.');
               setExtractionProgress({
                 status: 'error',
-                currentStep: 'No key points found - switching to demo mode',
+                currentStep: 'No key points found',
                 progress: 0,
-                api: 'API (No Results)'
+                api: displayName
               });
-              
-              setApiKeyError('API returned no key points. Switching to demo mode.');
-              setDemoMode(true);
-              
-              // Fallback to demo data
-              setTimeout(() => {
-                const mockKeyPoints = generateMockKeyPoints();
-                onUpdateKeyPoints(mockKeyPoints);
-                setExtractionProgress({
-                  status: 'completed',
-                  currentStep: 'Demo data loaded (fallback)',
-                  progress: 100,
-                  api: 'Demo mode (fallback)'
-                });
-              }, 2000);
             }
           } catch (error) {
-            console.error('❌ Error during API extraction:', error);
+            console.error('❌ Error during production API extraction:', error);
             
             const errorMessage = (error as Error).message;
             
-            // Check for quota-related errors
             if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
-              console.log('🚫 API quota exceeded - switching to demo mode');
-              setApiKeyError('API quota exceeded. Switching to demo mode.');
-              setDemoMode(true);
-              
-              setExtractionProgress({
-                status: 'error',
-                currentStep: 'API quota exceeded - switching to demo mode',
-                progress: 0,
-                api: 'API (Quota Exceeded)'
-              });
+              setApiKeyError('Analysis API quota exceeded. Please check your quota or switch to demo mode.');
             } else if (errorMessage.includes('Failed to fetch')) {
-              console.log('🌐 Network error - switching to demo mode');
-              setApiKeyError('Network error connecting to API. Switching to demo mode.');
-              setDemoMode(true);
-              
-              setExtractionProgress({
-                status: 'error',
-                currentStep: 'Network error - switching to demo mode',
-                progress: 0,
-                api: 'API (Network Error)'
-              });
+              setApiKeyError('Network error connecting to analysis API. Please check your connection.');
             } else {
-              console.log('⚠️ General API error');
-              setApiKeyError(`API error: ${errorMessage}`);
-              
-              setExtractionProgress({
-                status: 'error',
-                currentStep: `API error: ${errorMessage}`,
-                progress: 0,
-                api: 'API Error'
-              });
+              setApiKeyError(`Analysis API error: ${errorMessage}`);
             }
             
-            // Fallback to demo data after a short delay
-            console.log('🔄 Fallback to demo data');
-            setTimeout(() => {
-              const mockKeyPoints = generateMockKeyPoints();
-              onUpdateKeyPoints(mockKeyPoints);
-              setExtractionProgress({
-                status: 'completed',
-                currentStep: 'Demo data loaded (fallback)',
-                progress: 100,
-                api: 'Demo mode (fallback)'
-              });
-            }, 2000);
+            setExtractionProgress({
+              status: 'error',
+              currentStep: 'API error occurred',
+              progress: 0,
+              api: displayName
+            });
           }
         } else {
           // Demo mode
@@ -417,7 +235,7 @@ const Step4: React.FC<Step4Props> = ({
     };
 
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, apiUsageAssignment, apiKeys, setApiKeyError, setDemoMode]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints, isProductionMode]);
 
   if (!transcription) return null;
 
@@ -534,13 +352,22 @@ const Step4: React.FC<Step4Props> = ({
   };
 
   const handleCompleteWithAI = async () => {
+    if (isProductionMode) {
+      const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
+      
+      if (!analysisApiKey) {
+        setApiKeyError('Production mode requires analysis API configuration. Please configure your API keys.');
+        return;
+      }
+    }
+    
     setIsCompleting(true);
     
     try {
-      const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
-      
-      if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-        console.log('🚀 Completing with assigned analysis API:', providerName, analysisModel);
+      if (isProductionMode) {
+        const { apiKey: analysisApiKey, model: analysisModel } = getAnalysisApiConfig();
+        
+        console.log('🚀 Completing with production API...');
         
         const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
         const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
@@ -569,7 +396,7 @@ const Step4: React.FC<Step4Props> = ({
             console.log('ℹ️ No new key points found');
           }
         } else {
-          console.log('⚠️ No key points returned from API during completion');
+          console.log('⚠️ No key points returned from production API during completion');
         }
       } else {
         // Demo mode
@@ -613,13 +440,10 @@ const Step4: React.FC<Step4Props> = ({
       
       const errorMessage = (error as Error).message;
       
-      // Handle errors during manual completion
       if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
-        setApiKeyError('API quota exceeded during completion. Please try again later.');
-        setDemoMode(true);
+        setApiKeyError('Analysis API quota exceeded during completion. Please check your quota or switch to demo mode.');
       } else if (errorMessage.includes('Failed to fetch')) {
         setApiKeyError('Network error during completion. Please check your connection.');
-        setDemoMode(true);
       } else {
         setApiKeyError(`Error during AI completion: ${errorMessage}`);
       }
@@ -703,15 +527,15 @@ ${keyPoints.map((kp, index) =>
   };
 
   // Display extraction in progress
-  if ((extractionProgress.status === 'extracting' && keyPoints.length === 0) || isRegenerating) {
+  if (extractionProgress.status === 'extracting' && keyPoints.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            {isRegenerating ? 'Regenerating Key Points' : 'Key Points Extraction'}
+            Key Points Extraction
           </h2>
           <p className="text-lg text-gray-600">
-            {isRegenerating ? 'Creating new key points with AI analysis' : 'Intelligent analysis of your content in progress'}
+            Intelligent analysis of your content in progress
           </p>
         </div>
 
@@ -719,7 +543,7 @@ ${keyPoints.map((kp, index) =>
           <div className="text-center mb-6">
             <Loader2 className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {isRegenerating ? 'Regeneration in Progress' : 'Extraction in Progress'}
+              Extraction in Progress
             </h3>
             <p className="text-gray-600 mb-4">
               {extractionProgress.currentStep}
@@ -729,9 +553,9 @@ ${keyPoints.map((kp, index) =>
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
                 className={`h-3 rounded-full transition-all duration-500 ${
-                  extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
-                    : 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                  extractionProgress.api.includes('Demo') 
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                    : 'bg-gradient-to-r from-purple-600 to-blue-600' 
                 }`}
                 style={{ width: `${extractionProgress.progress}%` }}
               ></div>
@@ -742,7 +566,7 @@ ${keyPoints.map((kp, index) =>
               <span>•</span>
               <span className="flex items-center space-x-1">
                 <span className={`w-2 h-2 rounded-full ${
-                  extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-500' : 'bg-yellow-500'
+                  extractionProgress.api.includes('Demo') ? 'bg-yellow-500' : 'bg-purple-500'
                 }`}></span>
                 <span>{extractionProgress.api}</span>
               </span>
@@ -750,22 +574,22 @@ ${keyPoints.map((kp, index) =>
           </div>
 
           <div className={`border rounded-lg p-4 ${
-            extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-              ? 'bg-purple-50 border-purple-200' 
-              : 'bg-yellow-50 border-yellow-200'
+            extractionProgress.api.includes('Demo') 
+              ? 'bg-yellow-50 border-yellow-200' 
+              : 'bg-purple-50 border-purple-200'
           }`}>
             <h4 className={`font-medium mb-2 ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'text-purple-800' : 'text-yellow-800'
+              extractionProgress.api.includes('Demo') ? 'text-yellow-800' : 'text-purple-800'
             }`}>
-              {isRegenerating ? 'Regeneration Process' : 'Extraction Process'}
+              Extraction Process
             </h4>
             <div className={`space-y-2 text-sm ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'text-purple-700' : 'text-yellow-700'
+              extractionProgress.api.includes('Demo') ? 'text-yellow-700' : 'text-purple-700'
             }`}>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 10 
-                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('Demo') ? 'bg-yellow-600' : 'bg-purple-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>API Connection</span>
@@ -773,7 +597,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 30 
-                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('Demo') ? 'bg-yellow-600' : 'bg-purple-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Semantic content analysis</span>
@@ -781,7 +605,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 60 
-                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('Demo') ? 'bg-yellow-600' : 'bg-purple-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Main insights extraction</span>
@@ -789,7 +613,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 85 
-                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('Demo') ? 'bg-yellow-600' : 'bg-purple-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Key points structuring</span>
@@ -797,7 +621,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 100 
-                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('Demo') ? 'bg-yellow-600' : 'bg-purple-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Finalization</span>
@@ -823,35 +647,35 @@ ${keyPoints.map((kp, index) =>
       {/* Extraction status */}
       {extractionProgress.status === 'completed' && (
         <div className={`border rounded-xl p-4 mb-6 ${
-          extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-            ? 'bg-green-50 border-green-200' 
+          extractionProgress.api.includes('Demo') 
+            ? 'bg-yellow-50 border-yellow-200'
             : extractionProgress.api.includes('fallback')
               ? 'bg-orange-50 border-orange-200'
-              : 'bg-yellow-50 border-yellow-200'
+              : 'bg-green-50 border-green-200'
         }`}>
           <div className="flex items-center space-x-2">
             <Check className={`w-5 h-5 ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-                ? 'text-green-600' 
+              extractionProgress.api.includes('Demo') 
+                ? 'text-yellow-600'
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
-                  : 'text-yellow-600'
+                  : 'text-green-600'
             }`} />
             <span className={`font-medium ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-                ? 'text-green-800' 
+              extractionProgress.api.includes('Demo') 
+                ? 'text-yellow-800'
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-800'
-                  : 'text-yellow-800'
+                  : 'text-green-800'
             }`}>
               {extractionProgress.currentStep}
             </span>
             <span className={`text-sm ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
-                ? 'text-green-600' 
+              extractionProgress.api.includes('Demo') 
+                ? 'text-yellow-600'
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
-                  : 'text-yellow-600'
+                  : 'text-green-600'
             }`}>
               • {extractionProgress.api}
             </span>
@@ -873,12 +697,12 @@ ${keyPoints.map((kp, index) =>
         </div>
       )}
 
-      {/* Header with main actions and step controls */}
+      {/* Header with main actions */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-3">
           <button
             onClick={handleCompleteWithAI}
-            disabled={isCompleting}
+            disabled={isCompleting || (isProductionMode && !getAnalysisApiConfig().apiKey)}
             className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
           >
             {isCompleting ? (
@@ -892,38 +716,13 @@ ${keyPoints.map((kp, index) =>
           {/* API indicator */}
           <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
             <div className={`w-2 h-2 rounded-full ${
-              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-500' : 'bg-yellow-500'
+              demoMode ? 'bg-yellow-500' : 
+              getAnalysisApiConfig().apiKey ? 'bg-green-500' : 'bg-red-500'
             }`}></div>
             <span className="text-sm font-medium text-gray-700">
-              {extractionProgress.api || (demoMode ? 'Demo mode' : 'Not defined')}
+              {getAnalysisApiConfig().displayName}
             </span>
           </div>
-        </div>
-
-        {/* Step Control Actions */}
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleRegenerateKeyPoints}
-            disabled={isRegenerating || !transcription}
-            className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-all text-sm"
-            title="Regenerate key points with AI"
-          >
-            {isRegenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <RotateCcw className="w-4 h-4 mr-2" />
-            )}
-            {isRegenerating ? 'Regenerating...' : 'Restart Step'}
-          </button>
-
-          <button
-            onClick={resetAppState}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm"
-            title="Start over from the beginning"
-          >
-            <Home className="w-4 h-4 mr-2" />
-            Start Over
-          </button>
         </div>
       </div>
 
@@ -1196,20 +995,6 @@ ${keyPoints.map((kp, index) =>
           </div>
         </div>
       )}
-
-      {/* Step Control Information */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-800 mb-2">Step Control Options</h4>
-        <div className="text-sm text-blue-700 space-y-1">
-          <p><strong>Restart Step:</strong> Regenerate key points with AI using the same transcription</p>
-          <p><strong>Start Over:</strong> Return to Step 1 and begin the entire process again</p>
-          <p><strong>Complete with AI:</strong> Add additional key points to complement existing ones</p>
-          <p><strong>Current API:</strong> {(() => {
-            const { providerName, model } = getApiKeyAndModelForUsage('analysis');
-            return model ? `${providerName} (${model})` : providerName;
-          })()}</p>
-        </div>
-      </div>
 
       {/* Bottom actions */}
       <div className="flex justify-between items-center mt-8">

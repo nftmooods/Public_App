@@ -69,7 +69,7 @@ interface AppContextType {
   apiKey: string;
   geminiConfigured: boolean;
   apiKeyError: string;
-  demoMode: boolean;
+  isProductionMode: boolean; // New: explicit mode control
   analysisSessionId: string;
   
   // Auth & API Keys
@@ -88,7 +88,7 @@ interface AppContextType {
   setSteps: React.Dispatch<React.SetStateAction<Step[]>>;
   setAppState: React.Dispatch<React.SetStateAction<AppState>>;
   setApiKeyError: React.Dispatch<React.SetStateAction<string>>;
-  setDemoMode: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsProductionMode: React.Dispatch<React.SetStateAction<boolean>>; // New: mode setter
   resetAppState: () => void;
   updateStepStatus: (stepId: number, completed?: boolean, active?: boolean) => void;
   goToNextStep: () => void;
@@ -141,7 +141,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
-  const [demoMode, setDemoMode] = useState(true);
+  const [isProductionMode, setIsProductionMode] = useState(false); // New: explicit mode control (default to demo)
   const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
   const [apiUsageAssignment, setApiUsageAssignment] = useState<ApiUsageAssignment>(initialAppState.apiUsageAssignment);
 
@@ -175,17 +175,26 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return { apiKey: null, model: null };
   };
 
-  // Function to force re-verification of API configurations
-  const forceApiConfigurationVerification = () => {
-    console.log('🔍 Forcing API configuration re-verification...');
-    
-    // Force a re-evaluation of the API configuration by updating the assignment state
-    setApiUsageAssignment(prev => ({ ...prev }));
-    
-    // Clear any existing API errors
-    setApiKeyError('');
-    
-    console.log('✅ API configuration re-verification triggered');
+  // Function to check if production mode is properly configured
+  const checkProductionModeConfiguration = (): { isConfigured: boolean; missingApis: string[] } => {
+    if (!isProductionMode) {
+      return { isConfigured: true, missingApis: [] }; // Demo mode is always "configured"
+    }
+
+    const requiredUsageTypes: (keyof ApiUsageAssignment)[] = ['audio', 'analysis', 'writing', 'export'];
+    const missingApis: string[] = [];
+
+    for (const usageType of requiredUsageTypes) {
+      const { apiKey } = getApiKeyAndModelForUsage(usageType);
+      if (!apiKey) {
+        missingApis.push(usageType);
+      }
+    }
+
+    return {
+      isConfigured: missingApis.length === 0,
+      missingApis
+    };
   };
 
   // Function to completely reset the application
@@ -215,11 +224,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Clear errors
     setApiKeyError('');
     
-    // CRITICAL: Force API configuration re-verification
-    forceApiConfigurationVerification();
+    // Reset to demo mode by default
+    setIsProductionMode(false);
     
     console.log('✅ Application reset with session ID:', newSessionId);
-    console.log('🔍 API configuration verification forced');
   };
 
   // Load user session on authentication
@@ -290,36 +298,26 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     }
 
-    // Configure based on usage assignment
-    const hasAnyAssignedApi = Object.values(apiUsageAssignment).some(assignment => {
-      if (!assignment || !assignment.provider) return false;
-      const config = apiKeys[assignment.provider as keyof UserApiKeys];
-      return config && config.enabled && ('key' in config ? config.key : false);
-    });
-
-    if (hasAnyAssignedApi) {
-      console.log('🔧 APIs configured via usage assignment');
-      setGeminiConfigured(true);
-      setApiKeyError('');
-      setDemoMode(false);
-    } else {
-      // Fallback to old method for compatibility
-      const storedApiKey = localStorage.getItem('google_ai_api_key');
-      if (storedApiKey && storedApiKey.startsWith('AIza')) {
-        console.log('🔧 Configuring with stored API key');
-        setApiKey(storedApiKey);
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
+    // Update geminiConfigured based on production mode and API availability
+    if (isProductionMode) {
+      const { isConfigured } = checkProductionModeConfiguration();
+      setGeminiConfigured(isConfigured);
+      
+      if (!isConfigured) {
+        console.log('❌ Production mode enabled but APIs not properly configured');
       } else {
-        console.log('🎭 No valid API configuration found, using demo mode');
-        setGeminiConfigured(false);
-        setDemoMode(true);
+        console.log('✅ Production mode enabled with proper API configuration');
+        setApiKeyError(''); // Clear any previous errors
       }
+    } else {
+      // Demo mode
+      setGeminiConfigured(false);
+      setApiKeyError('');
+      console.log('🎭 Demo mode active');
     }
     
-    console.log('✅ Application state updated with API configuration verification');
-  }, [user, isAuthenticated, apiKeys, apiUsageAssignment]);
+    console.log('✅ Application state updated');
+  }, [user, isAuthenticated, apiKeys, apiUsageAssignment, isProductionMode]);
 
   const updateStepStatus = (stepId: number, completed: boolean = false, active: boolean = false) => {
     console.log(`📊 Updating step ${stepId}: completed=${completed}, active=${active}`);
@@ -333,7 +331,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleStepClick = (stepId: number) => {
-    if (demoMode) {
+    if (!isProductionMode) {
       // In demo mode, free navigation to all steps
       console.log(`🎭 Demo mode: Free navigation to step ${stepId}`);
       setAppState(prev => ({ ...prev, currentStep: stepId }));
@@ -391,7 +389,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setApiKey('');
       setGeminiConfigured(false);
       setApiKeyError('');
-      setDemoMode(true);
+      setIsProductionMode(false); // Reset to demo mode
       setApiUsageAssignment(initialAppState.apiUsageAssignment);
       // Complete application reset
       resetAppState();
@@ -406,16 +404,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     
     if (newApiKey && newApiKey.startsWith('AIza')) {
       localStorage.setItem('google_ai_api_key', newApiKey);
-      setGeminiConfigured(true);
-      setDemoMode(false);
+      if (isProductionMode) {
+        setGeminiConfigured(true);
+      }
     } else {
       localStorage.removeItem('google_ai_api_key');
       setGeminiConfigured(false);
-      setDemoMode(true);
     }
-    
-    // Force API configuration re-verification after saving
-    forceApiConfigurationVerification();
   };
 
   const handleApiKeysSave = async (newApiKeys: UserApiKeys, usageAssignment: ApiUsageAssignment) => {
@@ -423,24 +418,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       await saveApiKeys(newApiKeys);
       setApiUsageAssignment(usageAssignment);
       
-      // Update configuration based on usage assignment
-      const hasAnyAssignedApi = Object.values(usageAssignment).some(assignment => {
-        if (!assignment || !assignment.provider) return false;
-        const config = newApiKeys[assignment.provider as keyof UserApiKeys];
-        return config && config.enabled && ('key' in config ? config.key : false);
-      });
-      
-      if (hasAnyAssignedApi) {
-        setGeminiConfigured(true);
-        setApiKeyError('');
-        setDemoMode(false);
-      } else {
-        setGeminiConfigured(false);
-        setDemoMode(true);
+      // Update configuration based on production mode and usage assignment
+      if (isProductionMode) {
+        const hasAnyAssignedApi = Object.values(usageAssignment).some(assignment => {
+          if (!assignment || !assignment.provider) return false;
+          const config = newApiKeys[assignment.provider as keyof UserApiKeys];
+          return config && config.enabled && ('key' in config ? config.key : false);
+        });
+        
+        if (hasAnyAssignedApi) {
+          setGeminiConfigured(true);
+          setApiKeyError('');
+        } else {
+          setGeminiConfigured(false);
+          setApiKeyError('Production mode requires at least one configured API. Please configure your API keys or switch to demo mode.');
+        }
       }
-      
-      // Force API configuration re-verification after saving
-      forceApiConfigurationVerification();
     } catch (error) {
       console.error('Error saving API keys:', error);
       setApiKeyError('Error saving API keys');
@@ -531,6 +524,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Step handlers - API-managed processing in Step 1
   const handleStep1Next = async () => {
     console.log('🚀 Step1 API-managed processing - Session ID:', analysisSessionId);
+    
+    // Check if production mode is properly configured
+    if (isProductionMode) {
+      const { isConfigured, missingApis } = checkProductionModeConfiguration();
+      if (!isConfigured) {
+        const errorMessage = `Production mode requires API configuration for: ${missingApis.join(', ')}. Please configure your API keys or switch to demo mode.`;
+        setApiKeyError(errorMessage);
+        console.error('❌ Production mode not properly configured:', missingApis);
+        return;
+      }
+    }
+    
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
@@ -539,7 +544,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
       // If text is provided, use it directly
       if (appState.textContent.trim()) {
-        console.log('📝 Processing text content with assigned APIs...');
+        console.log('📝 Processing text content...');
         
         const textLength = appState.textContent.length;
         const estimatedTokens = Math.floor(textLength / 4);
@@ -562,76 +567,68 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         };
         
         // Extract key points from text using assigned analysis API
-        const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
-        if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-          try {
-            console.log('🎯 Extracting key points from text with assigned analysis API and model:', analysisModel);
-            const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-            const extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
-            
-            if (extractedKeyPoints && extractedKeyPoints.length > 0) {
-              keyPointsResult = extractedKeyPoints.map((point, index) => ({
-                id: `text_${Date.now()}_${index}`,
-                text: point,
-                timestamp: 0,
-                speaker: transcriptionResult.speakers[0]?.name || 'Speaker',
-                category: 'insight' as const,
-                editable: true,
-                webLinks: []
-              }));
-              console.log('✅ Key points extracted from text:', keyPointsResult.length);
+        if (isProductionMode) {
+          const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+          if (analysisApiKey && analysisApiKey.startsWith('AIza')) {
+            try {
+              console.log('🎯 Extracting key points from text with production API:', analysisModel);
+              const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+              const extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
+              
+              if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+                keyPointsResult = extractedKeyPoints.map((point, index) => ({
+                  id: `text_${Date.now()}_${index}`,
+                  text: point,
+                  timestamp: 0,
+                  speaker: transcriptionResult.speakers[0]?.name || 'Speaker',
+                  category: 'insight' as const,
+                  editable: true,
+                  webLinks: []
+                }));
+                console.log('✅ Key points extracted from text:', keyPointsResult.length);
+              }
+            } catch (error) {
+              console.error('❌ Error extracting key points from text:', error);
+              if (isQuotaError(error as Error)) {
+                setApiKeyError('Analysis API quota exceeded. Please check your quota or switch to demo mode.');
+                return;
+              }
+              setApiKeyError(`Analysis API error: ${(error as Error).message}`);
+              return;
             }
-          } catch (error) {
-            console.error('❌ Error extracting key points from text:', error);
-            if (isQuotaError(error as Error)) {
-              setApiKeyError('Analysis API quota exceeded. Switching to demo mode.');
-              setDemoMode(true);
-            }
-            // Continue without key points
+          } else {
+            setApiKeyError('Production mode requires a configured analysis API. Please configure your API keys.');
+            return;
           }
         }
         
-        console.log('✅ Text content processed with APIs');
+        console.log('✅ Text content processed');
       } else {
         // Get API key and model for audio processing
-        const { apiKey: audioApiKey, model: audioModel } = getApiKeyAndModelForUsage('audio');
-        
-        console.log('🔍 Audio processing configuration:', {
-          hasApiKey: !!audioApiKey,
-          model: audioModel,
-          demoMode,
-          audioFile: !!appState.audioFile,
-          audioUrl: !!appState.audioUrl,
-          youtubeUrl: !!appState.youtubeUrl
-        });
-        
-        // Use assigned API if configured and in production mode
-        if (!demoMode && audioApiKey && audioApiKey.startsWith('AIza')) {
+        if (isProductionMode) {
+          const { apiKey: audioApiKey, model: audioModel } = getApiKeyAndModelForUsage('audio');
+          
+          if (!audioApiKey || !audioApiKey.startsWith('AIza')) {
+            setApiKeyError('Production mode requires a configured audio API. Please configure your API keys.');
+            return;
+          }
+          
           try {
-            console.log('🚀 Using assigned audio API and model for transcription:', audioModel);
+            console.log('🚀 Using production audio API for transcription:', audioModel);
             
             const transcriptionService = TranscriptionServiceFactory.create(audioApiKey, audioModel);
             let transcriptionText = '';
             
             if (appState.audioFile) {
-              console.log('🎵 Transcribing audio file with assigned API:', appState.audioFile.name);
-              
-              // Handle large files with Files API
-              const fileSizeMB = appState.audioFile.size / (1024 * 1024);
-              if (fileSizeMB > 20) {
-                console.log('📁 Large file detected, using Files API for processing...');
-              }
-              
+              console.log('🎵 Transcribing audio file with production API:', appState.audioFile.name);
               transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             } else if (appState.audioUrl) {
-              console.log('🔗 Transcribing from audio URL with assigned API:', appState.audioUrl);
+              console.log('🔗 Transcribing from audio URL with production API:', appState.audioUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
             } else if (appState.youtubeUrl) {
-              console.log('📺 Transcribing from YouTube with assigned API:', appState.youtubeUrl);
+              console.log('📺 Transcribing from YouTube with production API:', appState.youtubeUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
-            
-            console.log('📄 Transcription result length:', transcriptionText.length);
             
             if (transcriptionText && transcriptionText.length > 0) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
@@ -653,9 +650,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               
               // Extract key points from transcription using assigned analysis API
               const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
-              if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+              if (analysisApiKey && analysisApiKey.startsWith('AIza')) {
                 try {
-                  console.log('🎯 Extracting key points from transcription with assigned analysis API and model:', analysisModel);
+                  console.log('🎯 Extracting key points from transcription with production API:', analysisModel);
                   const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
                   const extractedKeyPoints = await geminiService.extractKeyPoints(transcriptionText);
                   
@@ -674,34 +671,28 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 } catch (error) {
                   console.error('❌ Error extracting key points from transcription:', error);
                   if (isQuotaError(error as Error)) {
-                    setApiKeyError('Analysis API quota exceeded. Switching to demo mode.');
-                    setDemoMode(true);
+                    setApiKeyError('Analysis API quota exceeded. Please check your quota or switch to demo mode.');
+                    return;
                   }
-                  // Continue without key points
+                  setApiKeyError(`Analysis API error: ${(error as Error).message}`);
+                  return;
                 }
               }
               
-              console.log('✅ Audio transcription successful with assigned API');
+              console.log('✅ Audio transcription successful with production API');
             } else {
-              throw new Error('Empty transcription received from assigned API');
+              throw new Error('Empty transcription received from production API');
             }
             
           } catch (error) {
             console.error('❌ Audio API error:', error);
             
-            // Check if it's a quota error
             if (isQuotaError(error as Error)) {
-              setApiKeyError('Audio API quota exceeded. Switching to demo mode.');
-              setDemoMode(true);
-              setGeminiConfigured(false);
+              setApiKeyError('Audio API quota exceeded. Please check your quota or switch to demo mode.');
             } else {
               setApiKeyError(`Audio API error: ${(error as Error).message}`);
             }
-            
-            // Fallback to demo data
-            console.log('🔄 Fallback to demo data');
-            transcriptionResult = generateMockTranscription();
-            keyPointsResult = generateMockKeyPoints();
+            return;
           }
         } else {
           // Demo mode
@@ -711,8 +702,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
       }
       
-      // If no key points were extracted, use demo key points
-      if (keyPointsResult.length === 0) {
+      // If no key points were extracted in production mode, that's an error
+      if (isProductionMode && keyPointsResult.length === 0) {
+        setApiKeyError('No key points could be extracted. Please check your API configuration or switch to demo mode.');
+        return;
+      }
+      
+      // If no key points were extracted in demo mode, use demo key points
+      if (!isProductionMode && keyPointsResult.length === 0) {
         console.log('🎭 No key points extracted, using demo data');
         keyPointsResult = generateMockKeyPoints();
       }
@@ -771,14 +768,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleRegenerate = async () => {
+    if (isProductionMode) {
+      const { isConfigured, missingApis } = checkProductionModeConfiguration();
+      if (!isConfigured) {
+        const errorMessage = `Production mode requires API configuration for: ${missingApis.join(', ')}. Please configure your API keys or switch to demo mode.`;
+        setApiKeyError(errorMessage);
+        return;
+      }
+    }
+    
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
-      const { apiKey: writingApiKey, model: writingModel } = getApiKeyAndModelForUsage('writing');
-      
-      // Use assigned API if configured and in production mode
-      if (!demoMode && writingApiKey && writingApiKey.startsWith('AIza') && appState.transcription) {
-        console.log('🚀 Content generation with assigned writing API and model:', writingModel);
+      if (isProductionMode) {
+        const { apiKey: writingApiKey, model: writingModel } = getApiKeyAndModelForUsage('writing');
+        
+        if (!writingApiKey || !writingApiKey.startsWith('AIza') || !appState.transcription) {
+          setApiKeyError('Production mode requires a configured writing API and transcription data.');
+          return;
+        }
+        
+        console.log('🚀 Content generation with production writing API:', writingModel);
         
         const geminiService = GeminiServiceFactory.create(writingApiKey, writingModel);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
@@ -795,7 +805,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           isProcessing: false 
         }));
         
-        console.log('✅ Content generated with assigned writing API');
+        console.log('✅ Content generated with production writing API');
       } else {
         // Demo mode
         console.log('🎭 Content generation in demo mode');
@@ -814,19 +824,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('❌ Generation error:', error);
-      setApiKeyError(`Generation error: ${(error as Error).message}`);
       
-      // Fallback to demo content
-      const content = generateMockContent(
-        appState.contentSettings.format, 
-        appState.contentSettings.tone
-      );
+      if (isQuotaError(error as Error)) {
+        setApiKeyError('Writing API quota exceeded. Please check your quota or switch to demo mode.');
+      } else {
+        setApiKeyError(`Generation error: ${(error as Error).message}`);
+      }
       
-      setAppState(prev => ({ 
-        ...prev, 
-        generatedContent: content,
-        isProcessing: false 
-      }));
+      setAppState(prev => ({ ...prev, isProcessing: false }));
     }
   };
 
@@ -845,7 +850,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     apiKey,
     geminiConfigured,
     apiKeyError,
-    demoMode,
+    isProductionMode, // New: expose production mode state
     analysisSessionId,
     
     // Auth & API Keys
@@ -864,7 +869,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setSteps,
     setAppState,
     setApiKeyError,
-    setDemoMode,
+    setIsProductionMode, // New: expose production mode setter
     resetAppState,
     updateStepStatus,
     goToNextStep,
