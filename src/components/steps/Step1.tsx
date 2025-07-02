@@ -10,9 +10,9 @@ interface Step1Props {
   textFile: File | null;
   onUrlChange: (url: string) => void;
   onYoutubeUrlChange: (url: string) => void;
-  onFileUpload: (file: File) => void;
+  onFileUpload: (file: File | null) => void;
   onTextContentChange: (text: string) => void;
-  onTextFileUpload: (file: File) => void;
+  onTextFileUpload: (file: File | null) => void;
   onNext: () => void;
   geminiConfigured?: boolean;
   sessionId?: string;
@@ -227,6 +227,16 @@ const Step1: React.FC<Step1Props> = ({
     setError('');
     console.log('📝 Text content changed:', text.length, 'characters');
     onTextContentChange(text);
+  };
+
+  const handleRemoveAudioFile = () => {
+    console.log('🗑️ Removing audio file');
+    onFileUpload(null);
+  };
+
+  const handleRemoveTextFile = () => {
+    console.log('🗑️ Removing text file');
+    onTextFileUpload(null);
   };
 
   const canProceed = audioFile !== null || textContent.trim() !== '';
@@ -813,8 +823,8 @@ const Step1: React.FC<Step1Props> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => onFileUpload(null as any)}
-                    className="p-1 text-red-500 hover:text-red-700"
+                    onClick={handleRemoveAudioFile}
+                    className="p-1 text-red-500 hover:text-red-700 transition-colors"
                     title="Remove file"
                   >
                     <X className="w-4 h-4" />
@@ -890,8 +900,8 @@ const Step1: React.FC<Step1Props> = ({
                       <span className="text-sm font-medium text-purple-800">{textFile.name}</span>
                     </div>
                     <button
-                      onClick={() => onTextFileUpload(null as any)}
-                      className="p-1 text-red-500 hover:text-red-700"
+                      onClick={handleRemoveTextFile}
+                      className="p-1 text-red-500 hover:text-red-700 transition-colors"
                       title="Remove file"
                     >
                       <X className="w-3 h-3" />

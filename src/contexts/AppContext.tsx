@@ -183,8 +183,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Reset application state
     setAppState({
       ...initialAppState,
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
+      user,
+      isAuthenticated,
       apiUsageAssignment: apiUsageAssignment
     });
     
@@ -427,10 +427,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleFileUpload = (file: File | null) => {
+    console.log('📁 File upload handler called with:', file ? `${file.name} (${file.size} bytes)` : 'null');
+    
     if (file) {
-      console.log('📁 New file uploaded:', file.name, file.size, 'bytes');
-      // Complete state reset for new file
-      resetAppState();
+      console.log('📁 Setting new audio file:', file.name, file.size, 'bytes');
       setAppState(prev => ({ 
         ...prev, 
         audioFile: file,
@@ -438,13 +438,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         textContent: '',
         textFile: null,
         audioUrl: '',
-        youtubeUrl: '',
-        user: appState.user,
-        isAuthenticated: appState.isAuthenticated,
-        apiUsageAssignment: apiUsageAssignment
+        youtubeUrl: ''
       }));
     } else {
-      // Remove file
+      console.log('🗑️ Removing audio file');
       setAppState(prev => ({ 
         ...prev, 
         audioFile: null
@@ -453,40 +450,28 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleTextContentChange = (text: string) => {
-    if (text !== appState.textContent) {
-      console.log('📝 New text content entered:', text.length, 'characters');
-      // If it's a significant change, reset
-      if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
-        resetAppState();
-      }
-      setAppState(prev => ({ 
-        ...prev, 
-        textContent: text,
-        // Clear other sources if entering text
-        audioFile: text.trim() ? null : prev.audioFile,
-        textFile: text.trim() ? null : prev.textFile,
-        user: appState.user,
-        isAuthenticated: appState.isAuthenticated,
-        apiUsageAssignment: apiUsageAssignment
-      }));
-    }
+    console.log('📝 Text content change handler called with:', text.length, 'characters');
+    setAppState(prev => ({ 
+      ...prev, 
+      textContent: text,
+      // Clear other sources if entering text
+      audioFile: text.trim() ? null : prev.audioFile,
+      textFile: text.trim() ? null : prev.textFile
+    }));
   };
 
   const handleTextFileUpload = (file: File | null) => {
+    console.log('📄 Text file upload handler called with:', file ? `${file.name} (${file.size} bytes)` : 'null');
+    
     if (file) {
-      console.log('📄 New text file uploaded:', file.name, file.size, 'bytes');
-      // Complete state reset for new file
-      resetAppState();
+      console.log('📄 Setting new text file:', file.name, file.size, 'bytes');
       setAppState(prev => ({ 
         ...prev, 
         textFile: file,
         // Clear other sources
         audioFile: null,
         audioUrl: '',
-        youtubeUrl: '',
-        user: appState.user,
-        isAuthenticated: appState.isAuthenticated,
-        apiUsageAssignment: apiUsageAssignment
+        youtubeUrl: ''
       }));
       
       // Read text file content
@@ -498,7 +483,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       };
       reader.readAsText(file);
     } else {
-      // Remove file
+      console.log('🗑️ Removing text file');
       setAppState(prev => ({ 
         ...prev, 
         textFile: null,
