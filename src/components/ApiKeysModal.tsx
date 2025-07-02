@@ -22,12 +22,6 @@ const AVAILABLE_MODELS = {
       usageTypes: ['audio', 'analysis', 'writing', 'export']
     },
     { 
-      id: 'gemini-2.5-flash-lite-preview', 
-      name: 'Gemini 2.5 Flash-Lite Preview', 
-      description: 'Optimized for low-latency use cases, most cost-effective',
-      usageTypes: ['audio', 'analysis', 'writing', 'export']
-    },
-    { 
       id: 'gemini-1.5-pro', 
       name: 'Gemini 1.5 Pro', 
       description: 'Advanced model for complex audio and text tasks',
