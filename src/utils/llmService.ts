@@ -101,5 +101,3 @@ export abstract class BaseLLMService implements LLMService {
     return Math.floor(text.length / 4);
   }
 }
-
-export { BaseLLMService }
