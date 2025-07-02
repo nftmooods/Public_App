@@ -43,7 +43,8 @@ const Step1: React.FC<Step1Props> = ({
     apiKeys, 
     demoMode, 
     setApiKeyError,
-    setDemoMode 
+    setDemoMode,
+    appState
   } = useAppContext();
   
   const [dragActive, setDragActive] = useState(false);
@@ -55,6 +56,25 @@ const Step1: React.FC<Step1Props> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [cleanupInProgress, setCleanupInProgress] = useState(false);
+
+  // Monitor appState.isProcessing to maintain processing state
+  useEffect(() => {
+    if (appState.isProcessing && !isProcessing) {
+      console.log('🔄 AppState processing detected, maintaining processing UI');
+      setIsProcessing(true);
+      
+      // Initialize processing steps if not already set
+      if (processingSteps.length === 0) {
+        const steps = getProcessingSteps();
+        setProcessingSteps(steps);
+        setCurrentStepIndex(0);
+        setAnalysisProgress(10);
+      }
+    } else if (!appState.isProcessing && isProcessing) {
+      console.log('✅ AppState processing completed, maintaining UI until transition');
+      // Don't immediately stop processing UI - let the natural flow handle it
+    }
+  }, [appState.isProcessing, isProcessing, processingSteps.length]);
 
   // Reset state when sessionId changes (new content)
   useEffect(() => {
@@ -456,11 +476,10 @@ const Step1: React.FC<Step1Props> = ({
       // Complete the progress
       setAnalysisProgress(100);
       
-      // Wait a bit then move to next step
+      // Wait a bit then trigger the actual processing
       setTimeout(() => {
-        setIsProcessing(false);
-        setCleanupInProgress(false);
-        onNext(); // This should trigger the move to step 2 (Key Points & Speakers)
+        console.log('🚀 Triggering actual API processing...');
+        onNext(); // This will trigger the actual API processing in AppContext
       }, 1000);
       
     } catch (error) {
@@ -484,7 +503,8 @@ const Step1: React.FC<Step1Props> = ({
     }
   };
 
-  if (isProcessing) {
+  // Display processing screen when either local processing or app processing is active
+  if (isProcessing || appState.isProcessing) {
     return (
       <div className="max-w-5xl mx-auto p-4 h-screen flex flex-col">
         <div className="text-center mb-6">
