@@ -427,7 +427,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleFileUpload = (file: File) => {
-    console.log('📁 New file uploaded:', file.name);
+    console.log('📁 New file uploaded:', file.name, file.size, 'bytes');
     // Complete state reset for new file
     resetAppState();
     setAppState(prev => ({ 
@@ -446,7 +446,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const handleTextContentChange = (text: string) => {
     if (text !== appState.textContent) {
-      console.log('📝 New text content entered');
+      console.log('📝 New text content entered:', text.length, 'characters');
       // If it's a significant change, reset
       if (appState.textContent && text.length > 0 && Math.abs(text.length - appState.textContent.length) > 100) {
         resetAppState();
@@ -465,7 +465,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleTextFileUpload = (file: File) => {
-    console.log('📄 New text file uploaded:', file.name);
+    console.log('📄 New text file uploaded:', file.name, file.size, 'bytes');
     // Complete state reset for new file
     resetAppState();
     setAppState(prev => ({ 
@@ -484,6 +484,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
+      console.log('📄 Text file content loaded:', content.length, 'characters');
       setAppState(prev => ({ ...prev, textContent: content }));
     };
     reader.readAsText(file);

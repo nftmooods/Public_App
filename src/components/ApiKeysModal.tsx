@@ -48,6 +48,12 @@ const AVAILABLE_MODELS = {
       usageTypes: ['audio']
     },
     { 
+      id: 'o3', 
+      name: 'o3', 
+      description: 'Latest and most advanced reasoning model',
+      usageTypes: ['analysis', 'writing', 'export']
+    },
+    { 
       id: 'gpt-4o', 
       name: 'GPT-4o', 
       description: 'Latest multimodal model',
@@ -62,7 +68,7 @@ const AVAILABLE_MODELS = {
     { 
       id: 'o1', 
       name: 'o1', 
-      description: 'Latest reasoning model',
+      description: 'Advanced reasoning model',
       usageTypes: ['analysis', 'writing', 'export']
     },
     { 
