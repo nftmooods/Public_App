@@ -16,6 +16,7 @@ interface ApiKeysModalProps {
 const AVAILABLE_MODELS = {
   googleAI: [
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Latest model, fast and efficient for text processing' },
+    { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Flash-Lite Preview', description: 'Optimized for low-latency use cases, most cost-effective' },
     { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Advanced model for complex audio and text tasks' },
     { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Fast model for quick responses' }
   ],
@@ -88,6 +89,7 @@ const ApiKeysModal: React.FC<ApiKeysModalProps> = ({
       capabilities: ['audio'],
       models: [
         { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Latest model for audio processing' },
+        { id: 'gemini-2.5-flash-lite-preview-06-17', name: 'Gemini 2.5 Flash-Lite Preview', description: 'Optimized for low-latency, most cost-effective' },
         { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Advanced model for complex audio tasks' }
       ]
     }
