@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { BaseLLMService } from './llmService';
 
 export interface GeminiTranscriptionResult {
   text: string;
@@ -16,15 +15,19 @@ export interface GeminiSegment {
   speaker?: string;
 }
 
-export class GeminiService extends BaseLLMService {
+export class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
-  
+  private apiKey: string | null = null;
+  private modelName: string;
+
   constructor(apiKey?: string, modelName?: string) {
-    super(apiKey, modelName);
-    
     if (apiKey) {
+      this.apiKey = apiKey;
       this.genAI = new GoogleGenerativeAI(apiKey);
-      console.log(`🔧 Gemini service initialized with API key and model: ${this.modelName || 'gemini-2.5-flash'}`);
+      this.modelName = modelName || 'gemini-2.5-flash'; // Default to 2.5 Flash
+      console.log(`🔧 Gemini service initialized with API key and model: ${this.modelName}`);
+    } else {
+      this.modelName = 'gemini-2.5-flash';
     }
   }
 
@@ -46,7 +49,7 @@ export class GeminiService extends BaseLLMService {
     }
 
     try {
-      console.log(`🎵 Starting ${this.modelName || 'gemini-2.5-flash'} transcription for:`, audioFile.name);
+      console.log(`🎵 Starting ${this.modelName} transcription for:`, audioFile.name);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
       
@@ -83,7 +86,7 @@ export class GeminiService extends BaseLLMService {
       
       // Use the specified model for transcription
       const model = this.genAI.getGenerativeModel({ 
-        model: this.modelName || 'gemini-2.5-flash',
+        model: this.modelName,
         generationConfig: {
           temperature: 0.1, // Low temperature for consistent transcription
           topP: 0.8,
@@ -96,7 +99,7 @@ export class GeminiService extends BaseLLMService {
       const transcriptionPrompt = this.buildOptimizedTranscriptionPrompt(options);
       console.log('📝 Optimized transcription prompt built');
 
-      console.log(`🚀 Sending request to ${this.modelName || 'gemini-2.5-flash'}...`);
+      console.log(`🚀 Sending request to ${this.modelName}...`);
       
       // Create the request with proper MIME type using the correct API format
       const mimeType = this.detectMimeType(audioFile);
@@ -122,7 +125,7 @@ export class GeminiService extends BaseLLMService {
       const response = await result.response;
       const transcriptionText = response.text();
 
-      console.log(`✅ ${this.modelName || 'gemini-2.5-flash'} transcription completed`);
+      console.log(`✅ ${this.modelName} transcription completed`);
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
 
       // Parse response to extract different information
@@ -137,7 +140,7 @@ export class GeminiService extends BaseLLMService {
       };
 
     } catch (error) {
-      console.error(`❌ Error during ${this.modelName || 'gemini-2.5-flash'} transcription:`, error);
+      console.error(`❌ Error during ${this.modelName} transcription:`, error);
       
       // Analyze error type with more specific error handling
       if (error instanceof Error) {
@@ -153,12 +156,10 @@ export class GeminiService extends BaseLLMService {
           throw new Error('Unsupported media type. Please use supported audio/video formats.');
         } else if (error.message.includes('500')) {
           throw new Error('Gemini service temporarily unavailable. Please try again later.');
-        } else if (error.message.includes('not found for API version') || error.message.includes('is not supported')) {
-          throw new Error(`Model ${this.modelName || 'gemini-2.5-flash'} not found or not supported. Please check the model name.`);
         }
       }
       
-      throw new Error(`${this.modelName || 'gemini-2.5-flash'} transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`${this.modelName} transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -184,7 +185,7 @@ export class GeminiService extends BaseLLMService {
     let uploadedFileName: string | null = null;
 
     try {
-      console.log(`📁 Using Files API for large file transcription with ${this.modelName || 'gemini-2.5-flash'}...`);
+      console.log(`📁 Using Files API for large file transcription with ${this.modelName}...`);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       
       // Step 1: Upload file using Files API
@@ -241,11 +242,11 @@ export class GeminiService extends BaseLLMService {
       }
       
       // Step 3: Generate content using the uploaded file
-      console.log(`🚀 Generating transcription with uploaded file using ${this.modelName || 'gemini-2.5-flash'}...`);
+      console.log(`🚀 Generating transcription with uploaded file using ${this.modelName}...`);
       onProgressUpdate?.('Audio transcription (Files API)...', 70);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: this.modelName || 'gemini-2.5-flash',
+        model: this.modelName,
         generationConfig: {
           temperature: 0.1,
           topP: 0.8,
@@ -277,7 +278,7 @@ export class GeminiService extends BaseLLMService {
       const response = await result.response;
       const transcriptionText = response.text();
       
-      console.log(`✅ ${this.modelName || 'gemini-2.5-flash'} transcription completed via Files API`);
+      console.log(`✅ ${this.modelName} transcription completed via Files API`);
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
       
       // Parse response
@@ -309,7 +310,7 @@ export class GeminiService extends BaseLLMService {
       };
       
     } catch (error) {
-      console.error(`❌ Error with Files API transcription using ${this.modelName || 'gemini-2.5-flash'}:`, error);
+      console.error(`❌ Error with Files API transcription using ${this.modelName}:`, error);
       
       // Clean up uploaded file in case of error
       if (uploadedFileName && this.genAI?.files) {
@@ -335,8 +336,6 @@ export class GeminiService extends BaseLLMService {
           throw new Error('Unsupported file format for Files API.');
         } else if (error.message.includes('processing failed')) {
           throw new Error('File processing failed on Gemini servers. Please try again or use a different file.');
-        } else if (error.message.includes('not found for API version') || error.message.includes('is not supported')) {
-          throw new Error(`Model ${this.modelName || 'gemini-2.5-flash'} not found or not supported. Please check the model name.`);
         }
       }
       
@@ -511,7 +510,7 @@ Please ensure accuracy and completeness in your transcription. Focus on clarity 
     segments?: GeminiSegment[];
     keyPoints?: string[];
   } {
-    console.log(`🔍 Parsing ${this.modelName || 'gemini-2.5-flash'} response...`);
+    console.log(`🔍 Parsing ${this.modelName} response...`);
     
     const sections = {
       transcription: '',
@@ -652,16 +651,40 @@ Please ensure accuracy and completeness in your transcription. Focus on clarity 
     });
   }
 
+  private detectLanguage(text: string): string {
+    // Simplified language detection for French and English only
+    const languagePatterns = {
+      'French': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être|mais|tout|vous|ils|nous|comme|peut|plus|temps|très|bien|encore|aussi|autre|après|deux|même|faire|dire|ici|où|comment|pourquoi|quand|alors|depuis|pendant|avant|maintenant|toujours|jamais|souvent|parfois|quelque|chose|personne|rien|tout|tous|toute|toutes|chaque|plusieurs|beaucoup|peu|assez|trop|moins|plus|autant|tant|si|oui|non|peut-être|sûrement|certainement|probablement|évidemment|naturellement|heureusement|malheureusement|finalement|enfin|d'abord|ensuite|puis|après|avant|pendant|depuis|jusqu'à|vers|chez|contre|sans|avec|pour|par|selon|malgré|grâce|à|cause|de|afin|de|dans|le|but|de)\b/gi,
+      'English': /\b(the|and|to|of|a|in|that|is|it|you|for|with|on|as|be|at|by|this|have|from|or|one|had|but|words|not|what|all|were|they|we|when|your|can|said|each|which|she|do|how|their|if|will|up|other|about|out|many|then|them|these|so|some|her|would|make|like|into|him|has|two|more|very|what|know|just|first|get|over|think|also|back|after|use|work|life|only|new|way|could|good|water|been|need|should|home|around|right|high|every|another|small|found|still|between|through|where|much|before|move|too|any|same|tell|does|set|three|want|air|well|play|end|put|why|again|turn|here|off|went|old|number|great|men|say|little|came|show|large|often|together|asked|house|don't|world|going|school|important|until|form|food|keep|children|feet|land|side|without|boy|once|animal|enough|took|sometimes|four|head|above|kind|began|almost|live|page|got|earth|far|hand|year|mother|light|country|father|let|night|picture|being|study|second|book|carry|science|eat|room|friend|idea|fish|mountain|stop|base|hear|horse|cut|sure|watch|color|wood|main|plain|girl|usual|young|ready|red|list|though|feel|talk|bird|soon|body|dog|family|direct|leave|song|measure|door|product|black|short|numeral|class|wind|question|happen|complete|ship|area|half|rock|order|fire|south|problem|piece|told|knew|pass|since|top|whole|king|space|heard|best|hour|better|during|hundred|five|remember|step|early|hold|west|ground|interest|reach|fast|verb|sing|listen|six|table|travel|less|morning|ten|simple|several|vowel|toward|war|lay|against|pattern|slow|center|love|person|money|serve|appear|road|map|rain|rule|govern|pull|cold|notice|voice|unit|power|town|fine|certain|fly|fall|lead|cry|dark|machine|note|wait|plan|figure|star|box|noun|field|rest|correct|able|pound|done|beauty|drive|stood|contain|front|teach|week|final|gave|green|quick|develop|ocean|warm|free|minute|strong|special|mind|behind|clear|tail|produce|fact|street|inch|multiply|nothing|course|stay|wheel|full|force|blue|object|decide|surface|deep|moon|island|foot|system|busy|test|record|boat|common|gold|possible|plane|stead|dry|wonder|laugh|thousands|ago|ran|check|game|shape|equate|hot|miss|brought|heat|snow|tire|bring|yes|distant|fill|east|paint|language|among|grand|ball|yet|wave|drop|heart|present|heavy|dance|engine|position|arm|wide|sail|material|size|vary|settle|speak|weight|general|ice|matter|circle|pair|include|divide|syllable|felt|perhaps|pick|sudden|count|square|reason|length|represent|art|subject|region|energy|hunt|probable|bed|brother|egg|ride|cell|believe|fraction|forest|sit|race|window|store|summer|train|sleep|prove|lone|leg|exercise|wall|catch|mount|wish|sky|board|joy|winter|sat|written|wild|instrument|kept|glass|grass|cow|job|edge|sign|visit|past|soft|fun|bright|gas|weather|month|million|bear|finish|happy|hope|flower|clothe|strange|gone|jump|baby|eight|village|meet|root|buy|raise|solve|metal|whether|push|seven|paragraph|third|shall|held|hair|describe|cook|floor|either|result|burn|hill|safe|cat|century|consider|type|law|bit|coast|copy|phrase|silent|tall|sand|soil|roll|temperature|finger|industry|value|fight|lie|beat|excite|natural|view|sense|ear|else|quite|broke|case|middle|kill|son|lake|moment|scale|loud|spring|observe|child|straight|consonant|nation|dictionary|milk|speed|method|organ|pay|age|section|dress|cloud|surprise|quiet|stone|tiny|climb|bad|oil|blood|touch|grew|cent|mix|team|wire|cost|lost|brown|wear|garden|equal|sent|choose|fell|fit|flow|fair|bank|collect|save|control|decimal|gentle|woman|captain|practice|separate|difficult|doctor|please|protect|noon|whose|locate|ring|character|insect|caught|period|indicate|radio|spoke|atom|human|history|effect|electric|expect|crop|modern|element|hit|student|corner|party|supply|bone|rail|imagine|provide|agree|thus|capital|chair|danger|fruit|rich|thick|soldier|process|operate|guess|necessary|sharp|wing|create|neighbor|wash|bat|rather|crowd|corn|compare|poem|string|bell|depend|meat|rub|tube|famous|dollar|stream|fear|sight|thin|triangle|planet|hurry|chief|colony|clock|mine|tie|enter|major|fresh|search|send|yellow|gun|allow|print|dead|spot|desert|suit|current|lift|rose|continue|block|chart|hat|sell|success|company|subtract|event|particular|deal|swim|term|opposite|wife|shoe|shoulder|spread|arrange|camp|invent|cotton|born|determine|quart|nine|truck|noise|level|chance|gather|shop|stretch|throw|shine|property|column|molecule|select|wrong|gray|repeat|require|broad|prepare|salt|nose|plural|anger|claim|continent|oxygen|sugar|death|pretty|skill|women|season|solution|magnet|silver|thank|branch|match|suffix|especially|afraid|huge|sister|steel|discuss|forward|similar|guide|experience|score|apple|bought|led|pitch|coat|mass|card|band|rope|slip|win|dream|evening|condition|feed|tool|total|basic|smell|valley|double|seat|arrive|master|track|parent|shore|division|sheet|substance|favor|connect|post|spend|chord|fat|glad|original|share|station|dad|bread|charge|proper|bar|offer|segment|slave|duck|instant|market|degree|populate|chick|dear|enemy|reply|drink|occur|support|speech|nature|range|steam|motion|path|liquid|log|meant|quotient|teeth|shell|neck)\b/gi
+    };
+
+    let maxMatches = 0;
+    let detectedLanguage = 'English';
+
+    for (const [lang, pattern] of Object.entries(languagePatterns)) {
+      const matches = text.match(pattern);
+      const matchCount = matches ? matches.length : 0;
+      
+      if (matchCount > maxMatches) {
+        maxMatches = matchCount;
+        detectedLanguage = lang;
+      }
+    }
+
+    return detectedLanguage;
+  }
+
+  // Method to extract key points from existing transcription
   async extractKeyPoints(transcription: string): Promise<string[]> {
     if (!this.genAI) {
       throw new Error('Gemini service not configured.');
     }
 
     try {
-      console.log(`🎯 Extracting key points with ${this.modelName || 'gemini-2.5-flash'}...`);
+      console.log(`🎯 Extracting key points with ${this.modelName}...`);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: this.modelName || 'gemini-2.5-flash',
+        model: this.modelName,
         generationConfig: {
           temperature: 0.2,
           topP: 0.8,
@@ -707,18 +730,11 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
 
     } catch (error) {
       console.error('❌ Error during key points extraction:', error);
-      
-      // Check for model-specific errors
-      if (error instanceof Error) {
-        if (error.message.includes('not found for API version') || error.message.includes('is not supported')) {
-          throw new Error(`Model ${this.modelName || 'gemini-2.5-flash'} not found or not supported. Please check the model name.`);
-        }
-      }
-      
-      throw error;
+      return [];
     }
   }
 
+  // Method to generate content based on transcription
   async generateContent(
     transcription: string,
     keyPoints: string[],
@@ -735,11 +751,11 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
     }
 
     try {
-      console.log(`📝 Generating content with ${this.modelName || 'gemini-2.5-flash'}...`);
+      console.log(`📝 Generating content with ${this.modelName}...`);
       console.log('🎯 Format:', settings.format, '| Tone:', settings.tone);
       
       const model = this.genAI.getGenerativeModel({ 
-        model: this.modelName || 'gemini-2.5-flash',
+        model: this.modelName,
         generationConfig: {
           temperature: 0.7, // Higher temperature for creative content generation
           topP: 0.9,
@@ -788,25 +804,18 @@ Please create comprehensive, professional content that would be suitable for pub
 
     } catch (error) {
       console.error('❌ Error during content generation:', error);
-      
-      // Check for model-specific errors
-      if (error instanceof Error) {
-        if (error.message.includes('not found for API version') || error.message.includes('is not supported')) {
-          throw new Error(`Model ${this.modelName || 'gemini-2.5-flash'} not found or not supported. Please check the model name.`);
-        }
-      }
-      
       throw new Error(`Content generation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
+  // Method to count tokens in content
   async countTokens(content: string): Promise<number> {
     if (!this.genAI) {
       throw new Error('Gemini service not configured.');
     }
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: this.modelName || 'gemini-2.5-flash' });
+      const model = this.genAI.getGenerativeModel({ model: this.modelName });
       
       const countTokensResponse = await model.countTokens({
         contents: [{ role: 'user', parts: [{ text: content }] }]
