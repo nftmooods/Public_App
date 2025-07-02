@@ -175,6 +175,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return { apiKey: null, model: null };
   };
 
+  // Function to force re-verification of API configurations
+  const forceApiConfigurationVerification = () => {
+    console.log('🔍 Forcing API configuration re-verification...');
+    
+    // Force a re-evaluation of the API configuration by updating the assignment state
+    setApiUsageAssignment(prev => ({ ...prev }));
+    
+    // Clear any existing API errors
+    setApiKeyError('');
+    
+    console.log('✅ API configuration re-verification triggered');
+  };
+
   // Function to completely reset the application
   const resetAppState = async () => {
     console.log('🔄 Complete application reset');
@@ -202,7 +215,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Clear errors
     setApiKeyError('');
     
+    // CRITICAL: Force API configuration re-verification
+    forceApiConfigurationVerification();
+    
     console.log('✅ Application reset with session ID:', newSessionId);
+    console.log('🔍 API configuration verification forced');
   };
 
   // Load user session on authentication
@@ -243,8 +260,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   }, [appState, user?.id, isAuthenticated]);
 
-  // Update application state with authentication data
+  // Update application state with authentication data and API configuration verification
   useEffect(() => {
+    console.log('🔄 Updating application state with authentication and API data...');
+    
     setAppState(prev => ({
       ...prev,
       user,
@@ -266,6 +285,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           writing: { provider: singleProvider, model: null },
           export: { provider: singleProvider, model: null }
         };
+        console.log('🔧 Auto-assigning single API to all usage types:', singleProvider);
         setApiUsageAssignment(newAssignment);
       }
     }
@@ -297,6 +317,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setDemoMode(true);
       }
     }
+    
+    console.log('✅ Application state updated with API configuration verification');
   }, [user, isAuthenticated, apiKeys, apiUsageAssignment]);
 
   const updateStepStatus = (stepId: number, completed: boolean = false, active: boolean = false) => {
@@ -391,6 +413,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       setGeminiConfigured(false);
       setDemoMode(true);
     }
+    
+    // Force API configuration re-verification after saving
+    forceApiConfigurationVerification();
   };
 
   const handleApiKeysSave = async (newApiKeys: UserApiKeys, usageAssignment: ApiUsageAssignment) => {
@@ -413,6 +438,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setGeminiConfigured(false);
         setDemoMode(true);
       }
+      
+      // Force API configuration re-verification after saving
+      forceApiConfigurationVerification();
     } catch (error) {
       console.error('Error saving API keys:', error);
       setApiKeyError('Error saving API keys');
