@@ -531,7 +531,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
-            if (transcriptionText) {
+            if (transcriptionText && transcriptionText.trim()) {
               const parsedData = parseTranscriptionWithSpeakers(transcriptionText);
               const estimatedTokens = Math.floor(transcriptionText.length / 4);
               const estimatedCost = 0; // Free in Beta Test
@@ -581,7 +581,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               
               console.log('✅ Audio transcription successful with assigned API');
             } else {
-              throw new Error('Empty transcription received from assigned API');
+              // Handle empty transcription gracefully
+              console.log('⚠️ Empty transcription received from API, switching to demo mode');
+              setApiKeyError('The audio file appears to be silent or could not be transcribed. Continuing with demo content.');
+              setDemoMode(true);
+              setGeminiConfigured(false);
+              
+              // Use demo data as fallback
+              transcriptionResult = generateMockTranscription();
+              keyPointsResult = generateMockKeyPoints();
             }
             
           } catch (error) {
