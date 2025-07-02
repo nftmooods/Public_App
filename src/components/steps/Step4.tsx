@@ -59,51 +59,78 @@ const Step4: React.FC<Step4Props> = ({
   const [showAddSpeaker, setShowAddSpeaker] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
-  // Function to get API key and model for usage
-  const getApiKeyAndModelForUsage = (usageType: 'analysis'): { apiKey: string | null; model: string | null } => {
+  // Function to get API key and model for usage with proper validation
+  const getApiKeyAndModelForUsage = (usageType: 'analysis'): { apiKey: string | null; model: string | null; providerName: string } => {
+    console.log('🔍 Getting API configuration for:', usageType);
+    console.log('📊 Current assignment:', apiUsageAssignment[usageType]);
+    console.log('📊 Available API keys:', Object.keys(apiKeys));
+    console.log('📊 Demo mode:', demoMode);
+
     const assignment = apiUsageAssignment[usageType];
     if (!assignment || !assignment.provider) {
-      return { apiKey: null, model: null };
+      console.log('❌ No assignment found for', usageType);
+      return { apiKey: null, model: null, providerName: 'Demo Mode' };
     }
 
     const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
     if (!providerConfig || !providerConfig.enabled) {
-      return { apiKey: null, model: null };
+      console.log('❌ Provider not enabled or not found:', assignment.provider);
+      return { apiKey: null, model: null, providerName: 'Demo Mode' };
     }
 
-    if ('key' in providerConfig) {
+    if ('key' in providerConfig && providerConfig.key) {
+      console.log('✅ Found valid API key for', usageType, ':', assignment.provider, assignment.model);
+      
+      // Map provider names for display
+      const providerDisplayNames: Record<string, string> = {
+        'googleAI': 'Google AI',
+        'openAI': 'OpenAI',
+        'anthropic': 'Anthropic',
+        'mistral': 'Mistral AI'
+      };
+      
       return { 
         apiKey: providerConfig.key,
-        model: assignment.model
+        model: assignment.model,
+        providerName: providerDisplayNames[assignment.provider] || assignment.provider
       };
     }
 
-    return { apiKey: null, model: null };
+    console.log('❌ No valid API key found for', assignment.provider);
+    return { apiKey: null, model: null, providerName: 'Demo Mode' };
   };
 
   // Function to regenerate key points
   const handleRegenerateKeyPoints = async () => {
     if (!transcription) return;
 
+    console.log('🔄 Starting key points regeneration...');
     setIsRegenerating(true);
     setExtractionProgress({
       status: 'extracting',
-      currentStep: 'Regenerating key points...',
+      currentStep: 'Initializing regeneration...',
       progress: 10,
       api: 'Processing'
     });
 
     try {
-      const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+      const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
+      
+      console.log('🔍 Regeneration API config:', {
+        hasApiKey: !!analysisApiKey,
+        model: analysisModel,
+        provider: providerName,
+        demoMode
+      });
       
       if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-        console.log('🔄 Regenerating key points with assigned analysis API and model:', analysisModel);
+        console.log('🚀 Regenerating key points with assigned analysis API:', providerName, analysisModel);
         
         setExtractionProgress(prev => ({
           ...prev,
-          currentStep: 'Connecting to analysis API...',
+          currentStep: `Connecting to ${providerName}...`,
           progress: 30,
-          api: analysisModel ? `Analysis API (${analysisModel})` : 'Analysis API'
+          api: analysisModel ? `${providerName} (${analysisModel})` : providerName
         }));
         
         const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
@@ -200,24 +227,33 @@ const Step4: React.FC<Step4Props> = ({
     }
   };
 
-  // Auto-extraction of key points if none exist
+  // Auto-extraction of key points if none exist - IMPROVED VERSION
   useEffect(() => {
     const autoExtractKeyPoints = async () => {
+      // Only run if we have transcription but no key points
       if (keyPoints.length === 0 && transcription && transcription.text) {
         console.log('🎯 Starting auto-extraction of key points...');
-        console.log('📊 Demo mode:', demoMode, '| Gemini configured:', geminiConfigured, '| API Key present:', !!apiKey);
         
-        const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+        const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
         
+        console.log('🔍 Auto-extraction API config:', {
+          hasApiKey: !!analysisApiKey,
+          model: analysisModel,
+          provider: providerName,
+          demoMode,
+          transcriptionLength: transcription.text.length
+        });
+        
+        // Check if we should use real API or demo mode
         if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
           try {
-            console.log('🚀 Using assigned analysis API for extraction...');
+            console.log('🚀 Using assigned analysis API for auto-extraction:', providerName, analysisModel);
             
             setExtractionProgress({
               status: 'extracting',
-              currentStep: 'Connecting to analysis API...',
+              currentStep: `Connecting to ${providerName}...`,
               progress: 10,
-              api: analysisModel ? `Analysis API (${analysisModel})` : 'Analysis API'
+              api: analysisModel ? `${providerName} (${analysisModel})` : providerName
             });
             
             const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
@@ -381,7 +417,7 @@ const Step4: React.FC<Step4Props> = ({
     };
 
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, geminiConfigured, apiKey, setApiKeyError, setDemoMode]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints, demoMode, apiUsageAssignment, apiKeys, setApiKeyError, setDemoMode]);
 
   if (!transcription) return null;
 
@@ -501,10 +537,10 @@ const Step4: React.FC<Step4Props> = ({
     setIsCompleting(true);
     
     try {
-      const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+      const { apiKey: analysisApiKey, model: analysisModel, providerName } = getApiKeyAndModelForUsage('analysis');
       
       if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
-        console.log('🚀 Completing with assigned analysis API...');
+        console.log('🚀 Completing with assigned analysis API:', providerName, analysisModel);
         
         const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
         const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
@@ -693,7 +729,7 @@ ${keyPoints.map((kp, index) =>
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
               <div 
                 className={`h-3 rounded-full transition-all duration-500 ${
-                  extractionProgress.api.includes('API') 
+                  extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
                     ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
                     : 'bg-gradient-to-r from-yellow-500 to-orange-500'
                 }`}
@@ -706,7 +742,7 @@ ${keyPoints.map((kp, index) =>
               <span>•</span>
               <span className="flex items-center space-x-1">
                 <span className={`w-2 h-2 rounded-full ${
-                  extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
+                  extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-500' : 'bg-yellow-500'
                 }`}></span>
                 <span>{extractionProgress.api}</span>
               </span>
@@ -714,22 +750,22 @@ ${keyPoints.map((kp, index) =>
           </div>
 
           <div className={`border rounded-lg p-4 ${
-            extractionProgress.api.includes('API') 
+            extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
               ? 'bg-purple-50 border-purple-200' 
               : 'bg-yellow-50 border-yellow-200'
           }`}>
             <h4 className={`font-medium mb-2 ${
-              extractionProgress.api.includes('API') ? 'text-purple-800' : 'text-yellow-800'
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'text-purple-800' : 'text-yellow-800'
             }`}>
               {isRegenerating ? 'Regeneration Process' : 'Extraction Process'}
             </h4>
             <div className={`space-y-2 text-sm ${
-              extractionProgress.api.includes('API') ? 'text-purple-700' : 'text-yellow-700'
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'text-purple-700' : 'text-yellow-700'
             }`}>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 10 
-                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>API Connection</span>
@@ -737,7 +773,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 30 
-                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Semantic content analysis</span>
@@ -745,7 +781,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 60 
-                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Main insights extraction</span>
@@ -753,7 +789,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 85 
-                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Key points structuring</span>
@@ -761,7 +797,7 @@ ${keyPoints.map((kp, index) =>
               <div className="flex items-center space-x-2">
                 <div className={`w-2 h-2 rounded-full ${
                   extractionProgress.progress >= 100 
-                    ? (extractionProgress.api.includes('API') ? 'bg-purple-600' : 'bg-yellow-600')
+                    ? (extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-600' : 'bg-yellow-600')
                     : 'bg-gray-300'
                 }`}></div>
                 <span>Finalization</span>
@@ -787,7 +823,7 @@ ${keyPoints.map((kp, index) =>
       {/* Extraction status */}
       {extractionProgress.status === 'completed' && (
         <div className={`border rounded-xl p-4 mb-6 ${
-          extractionProgress.api.includes('API') 
+          extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
             ? 'bg-green-50 border-green-200' 
             : extractionProgress.api.includes('fallback')
               ? 'bg-orange-50 border-orange-200'
@@ -795,14 +831,14 @@ ${keyPoints.map((kp, index) =>
         }`}>
           <div className="flex items-center space-x-2">
             <Check className={`w-5 h-5 ${
-              extractionProgress.api.includes('API') 
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
                 ? 'text-green-600' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
                   : 'text-yellow-600'
             }`} />
             <span className={`font-medium ${
-              extractionProgress.api.includes('API') 
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
                 ? 'text-green-800' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-800'
@@ -811,7 +847,7 @@ ${keyPoints.map((kp, index) =>
               {extractionProgress.currentStep}
             </span>
             <span className={`text-sm ${
-              extractionProgress.api.includes('API') 
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral')
                 ? 'text-green-600' 
                 : extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
@@ -856,7 +892,7 @@ ${keyPoints.map((kp, index) =>
           {/* API indicator */}
           <div className="flex items-center space-x-2 bg-gray-50 rounded-lg px-3 py-2">
             <div className={`w-2 h-2 rounded-full ${
-              extractionProgress.api.includes('API') ? 'bg-purple-500' : 'bg-yellow-500'
+              extractionProgress.api.includes('API') || extractionProgress.api.includes('Google') || extractionProgress.api.includes('OpenAI') || extractionProgress.api.includes('Anthropic') || extractionProgress.api.includes('Mistral') ? 'bg-purple-500' : 'bg-yellow-500'
             }`}></div>
             <span className="text-sm font-medium text-gray-700">
               {extractionProgress.api || (demoMode ? 'Demo mode' : 'Not defined')}
@@ -1168,6 +1204,10 @@ ${keyPoints.map((kp, index) =>
           <p><strong>Restart Step:</strong> Regenerate key points with AI using the same transcription</p>
           <p><strong>Start Over:</strong> Return to Step 1 and begin the entire process again</p>
           <p><strong>Complete with AI:</strong> Add additional key points to complement existing ones</p>
+          <p><strong>Current API:</strong> {(() => {
+            const { providerName, model } = getApiKeyAndModelForUsage('analysis');
+            return model ? `${providerName} (${model})` : providerName;
+          })()}</p>
         </div>
       </div>
 
