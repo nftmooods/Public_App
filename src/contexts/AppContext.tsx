@@ -752,6 +752,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         isProcessing: false 
       }));
       
+      // Save to database if user is authenticated
+      if (user) {
+        console.log('💾 Saving transcription and key points to database...');
+        await saveUserSession({
+          ...appState,
+          transcription: transcriptionResult,
+          keyPoints: keyPointsResult,
+          currentStep: 2
+        });
+        console.log('✅ Content saved to database');
+      }
+      
       // Automatically move to next step (Key Points & Speakers)
       console.log('➡️ Calling goToNextStep()');
       setTimeout(() => {

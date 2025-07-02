@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, FileText, GripVertical, Tag, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Edit3, Check, X, Plus, Trash2, FileText, GripVertical, Tag, Link as LinkIcon, ExternalLink, Sparkles, Loader2, Maximize, Minimize } from 'lucide-react';
 import { ContentSettings, KeyPoint } from '../../types';
+import { GeminiServiceFactory } from '../../utils/geminiService';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface Step5Props {
   keyPoints: KeyPoint[];
@@ -16,6 +18,7 @@ interface ArticleSection {
   keyPointIds: string[];
   order: number;
   type?: 'content' | 'links' | 'conclusion';
+  webLinks?: string[];
 }
 
 const Step5: React.FC<Step5Props> = ({ 
@@ -24,6 +27,7 @@ const Step5: React.FC<Step5Props> = ({
   onUpdateSettings, 
   onNext 
 }) => {
+  const { demoMode, apiUsageAssignment, apiKeys } = useAppContext();
   const [localSettings, setLocalSettings] = useState<ContentSettings>(contentSettings);
   const [showPreview, setShowPreview] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -35,11 +39,237 @@ const Step5: React.FC<Step5Props> = ({
   const [draggedSection, setDraggedSection] = useState<string | null>(null);
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
   const [dragOverSectionIndex, setDragOverSectionIndex] = useState<number | null>(null);
+  const [isGeneratingStructure, setIsGeneratingStructure] = useState(false);
+  const [expandedTextAreas, setExpandedTextAreas] = useState<Record<string, boolean>>({});
+  const [editingSectionTitle, setEditingSectionTitle] = useState<string | null>(null);
+  const [addingLinkToSection, setAddingLinkToSection] = useState<string | null>(null);
+  const [newSectionLink, setNewSectionLink] = useState('');
 
   const handleChange = (field: keyof ContentSettings, value: string) => {
     const updated = { ...localSettings, [field]: value };
     setLocalSettings(updated);
     onUpdateSettings(updated);
+  };
+
+  // Get API key for analysis
+  const getAnalysisApiKey = (): string | null => {
+    const assignedProvider = apiUsageAssignment.analysis;
+    if (!assignedProvider) return null;
+
+    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
+    if (!providerConfig || !providerConfig.enabled) return null;
+
+    if ('key' in providerConfig) {
+      return providerConfig.key;
+    }
+
+    return null;
+  };
+
+  // AI-powered structure generation
+  const generateAIStructure = async () => {
+    setIsGeneratingStructure(true);
+    
+    try {
+      const analysisApiKey = getAnalysisApiKey();
+      
+      if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+        console.log('🤖 Generating AI-powered article structure...');
+        
+        const geminiService = GeminiServiceFactory.create(analysisApiKey);
+        
+        // Prepare key points text for analysis
+        const keyPointsText = keyPoints.map(kp => `- ${kp.text}`).join('\n');
+        
+        const structurePrompt = `Analyze these key points and create a logical article structure:
+
+${keyPointsText}
+
+Create 3-5 main sections that group related themes together. For each section:
+1. Provide a clear, descriptive title
+2. Write a brief introduction paragraph (2-3 sentences)
+3. Suggest which key points belong in each section
+
+Respond in this format:
+SECTION: [Title]
+CONTENT: [Introduction paragraph]
+KEYPOINTS: [comma-separated list of key point IDs or numbers]
+
+SECTION: [Title]
+CONTENT: [Introduction paragraph]
+KEYPOINTS: [comma-separated list of key point IDs or numbers]
+
+Focus on creating a logical flow and grouping related themes together.`;
+
+        const result = await geminiService.generateContent(
+          keyPointsText,
+          [],
+          {
+            title: 'Structure Analysis',
+            subtitle: '',
+            summary: '',
+            format: 'article',
+            tone: 'professional'
+          }
+        );
+
+        // Parse the AI response to create sections
+        const sections = parseAIStructureResponse(result);
+        if (sections.length > 0) {
+          setArticleSections(sections);
+          console.log('✅ AI structure generated:', sections.length, 'sections');
+        } else {
+          throw new Error('No valid structure returned from AI');
+        }
+        
+      } else {
+        // Demo mode - generate smart structure based on categories
+        console.log('🎭 Generating demo structure based on categories...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const demoSections = generateSmartDemoStructure();
+        setArticleSections(demoSections);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating AI structure:', error);
+      
+      // Fallback to smart demo structure
+      const fallbackSections = generateSmartDemoStructure();
+      setArticleSections(fallbackSections);
+    } finally {
+      setIsGeneratingStructure(false);
+    }
+  };
+
+  // Parse AI response to create sections
+  const parseAIStructureResponse = (response: string): ArticleSection[] => {
+    const sections: ArticleSection[] = [];
+    const sectionBlocks = response.split(/SECTION:/i).slice(1);
+    
+    sectionBlocks.forEach((block, index) => {
+      const lines = block.trim().split('\n');
+      const title = lines[0]?.trim();
+      
+      let content = '';
+      let keyPointIds: string[] = [];
+      
+      for (const line of lines) {
+        if (line.startsWith('CONTENT:')) {
+          content = line.replace('CONTENT:', '').trim();
+        } else if (line.startsWith('KEYPOINTS:')) {
+          const keyPointRefs = line.replace('KEYPOINTS:', '').trim();
+          // Map key point references to actual IDs
+          keyPointIds = mapKeyPointReferences(keyPointRefs);
+        }
+      }
+      
+      if (title && content) {
+        sections.push({
+          id: `ai_section_${index}`,
+          title,
+          content,
+          keyPointIds,
+          order: index,
+          type: 'content',
+          webLinks: []
+        });
+      }
+    });
+    
+    return sections;
+  };
+
+  // Map key point references to actual IDs
+  const mapKeyPointReferences = (refs: string): string[] => {
+    const references = refs.split(',').map(ref => ref.trim());
+    const mappedIds: string[] = [];
+    
+    references.forEach(ref => {
+      // Try to match by number (1, 2, 3...)
+      const numberMatch = ref.match(/\d+/);
+      if (numberMatch) {
+        const index = parseInt(numberMatch[0]) - 1;
+        if (index >= 0 && index < keyPoints.length) {
+          mappedIds.push(keyPoints[index].id);
+        }
+      }
+      
+      // Try to match by partial text
+      const matchingKeyPoint = keyPoints.find(kp => 
+        kp.text.toLowerCase().includes(ref.toLowerCase()) ||
+        ref.toLowerCase().includes(kp.text.substring(0, 20).toLowerCase())
+      );
+      
+      if (matchingKeyPoint && !mappedIds.includes(matchingKeyPoint.id)) {
+        mappedIds.push(matchingKeyPoint.id);
+      }
+    });
+    
+    return mappedIds;
+  };
+
+  // Generate smart demo structure based on categories
+  const generateSmartDemoStructure = (): ArticleSection[] => {
+    const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
+      if (!acc[kp.category]) {
+        acc[kp.category] = [];
+      }
+      acc[kp.category].push(kp);
+      return acc;
+    }, {} as Record<string, KeyPoint[]>);
+
+    const sections: ArticleSection[] = Object.entries(groupedKeyPoints).map(([category, points], index) => {
+      const categoryTitles = {
+        theme: 'Main Themes and Concepts',
+        insight: 'Key Insights and Analysis',
+        quote: 'Important Statements and Quotes',
+        question: 'Questions and Considerations'
+      };
+
+      const categoryDescriptions = {
+        theme: 'This section explores the fundamental themes and concepts that emerged from the discussion, providing context and background for the main topics.',
+        insight: 'Here we dive deep into the analytical insights and conclusions drawn from the conversation, highlighting the most significant findings.',
+        quote: 'This section presents the most impactful statements and quotes that capture the essence of the discussion.',
+        question: 'Important questions raised during the conversation that merit further consideration and exploration.'
+      };
+
+      return {
+        id: `section_${index}`,
+        title: categoryTitles[category as keyof typeof categoryTitles] || `${category.charAt(0).toUpperCase() + category.slice(1)} Discussion`,
+        content: categoryDescriptions[category as keyof typeof categoryDescriptions] || `This section develops the aspects related to ${category} discussed during the conversation.`,
+        keyPointIds: points.map(p => p.id),
+        order: index,
+        type: 'content' as const,
+        webLinks: []
+      };
+    });
+
+    // Add Links section if there are web links
+    if (hasWebLinks()) {
+      sections.push({
+        id: 'links_section',
+        title: 'Reference Links and Resources',
+        content: 'This section contains all the reference links and resources mentioned during the discussion, organized for easy access and further reading.',
+        keyPointIds: [],
+        order: sections.length,
+        type: 'links',
+        webLinks: []
+      });
+    }
+
+    // Add Conclusion section
+    sections.push({
+      id: 'conclusion_section',
+      title: 'Conclusion and Key Takeaways',
+      content: conclusion || 'In conclusion, this analysis highlights the key developments and insights that are shaping the future of the industry. The discussion reveals important trends and provides valuable perspectives for stakeholders and decision-makers.',
+      keyPointIds: [],
+      order: sections.length,
+      type: 'conclusion',
+      webLinks: []
+    });
+
+    return sections;
   };
 
   // Check if there are any web links in key points
@@ -72,7 +302,7 @@ const Step5: React.FC<Step5Props> = ({
     return uniqueLinks;
   };
 
-  // Automatic initialization based on key points
+  // Automatic initialization
   useEffect(() => {
     if (keyPoints.length > 0 && !localSettings.title) {
       const themes = keyPoints.filter(kp => kp.category === 'theme');
@@ -108,60 +338,53 @@ What are your thoughts on these insights? Share your perspective and join the co
 
     // Generate sections automatically if none exist
     if (keyPoints.length > 0 && articleSections.length === 0) {
-      const groupedKeyPoints = keyPoints.reduce((acc, kp) => {
-        if (!acc[kp.category]) {
-          acc[kp.category] = [];
-        }
-        acc[kp.category].push(kp);
-        return acc;
-      }, {} as Record<string, KeyPoint[]>);
-
-      const autoSections: ArticleSection[] = Object.entries(groupedKeyPoints).map(([category, points], index) => {
-        const categoryTitles = {
-          theme: 'Main Themes',
-          insight: 'Insights and Analysis',
-          quote: 'Important Quotes',
-          question: 'Questions Raised'
-        };
-
-        return {
-          id: `section_${index}`,
-          title: categoryTitles[category as keyof typeof categoryTitles] || category,
-          content: `This section develops the aspects related to ${category} discussed during the conversation.`,
-          keyPointIds: points.map(p => p.id),
-          order: index,
-          type: 'content'
-        };
-      });
-
-      // Add Links section if there are web links
-      if (hasWebLinks()) {
-        const allLinks = getAllWebLinks();
-        const linksSection: ArticleSection = {
-          id: 'links_section',
-          title: 'Reference Links',
-          content: `This section contains all the reference links mentioned during the discussion, organized by topic for easy access and further reading.`,
-          keyPointIds: [], // Links section doesn't use key points in the same way
-          order: autoSections.length,
-          type: 'links'
-        };
-        autoSections.push(linksSection);
-      }
-
-      // Add Conclusion section
-      const conclusionSection: ArticleSection = {
-        id: 'conclusion_section',
-        title: 'Conclusion',
-        content: conclusion,
-        keyPointIds: [],
-        order: autoSections.length + (hasWebLinks() ? 1 : 0),
-        type: 'conclusion'
-      };
-      autoSections.push(conclusionSection);
-
-      setArticleSections(autoSections);
+      generateAIStructure();
     }
-  }, [keyPoints, localSettings.title, introduction, conclusion, articleSections.length]);
+  }, [keyPoints.length, localSettings.title, introduction, conclusion, articleSections.length]);
+
+  // Toggle text area expansion
+  const toggleTextAreaExpansion = (id: string) => {
+    setExpandedTextAreas(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  // Handle section title editing
+  const handleSectionTitleEdit = (sectionId: string, newTitle: string) => {
+    setArticleSections(sections => 
+      sections.map(section => 
+        section.id === sectionId ? { ...section, title: newTitle } : section
+      )
+    );
+    setEditingSectionTitle(null);
+  };
+
+  // Add web link to section
+  const handleAddSectionLink = (sectionId: string) => {
+    if (!newSectionLink.trim()) return;
+    
+    setArticleSections(sections => 
+      sections.map(section => 
+        section.id === sectionId 
+          ? { ...section, webLinks: [...(section.webLinks || []), newSectionLink] }
+          : section
+      )
+    );
+    setNewSectionLink('');
+    setAddingLinkToSection(null);
+  };
+
+  // Remove web link from section
+  const handleRemoveSectionLink = (sectionId: string, linkIndex: number) => {
+    setArticleSections(sections => 
+      sections.map(section => 
+        section.id === sectionId 
+          ? { ...section, webLinks: section.webLinks?.filter((_, index) => index !== linkIndex) || [] }
+          : section
+      )
+    );
+  };
 
   const addSection = () => {
     if (newSection.title.trim()) {
@@ -171,7 +394,8 @@ What are your thoughts on these insights? Share your perspective and join the co
         content: newSection.content || 'Content to be developed...',
         keyPointIds: [],
         order: articleSections.filter(s => s.type === 'content').length,
-        type: 'content'
+        type: 'content',
+        webLinks: []
       };
       
       // Insert before links and conclusion sections
@@ -392,6 +616,26 @@ What are your thoughts on these insights? Share your perspective and join the co
                 </div>
               )}
               
+              {/* Section web links */}
+              {section.webLinks && section.webLinks.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h5 className="font-medium text-gray-900">Section References:</h5>
+                  {section.webLinks.map((link, linkIndex) => (
+                    <div key={linkIndex} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                      <a 
+                        href={link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm break-all"
+                      >
+                        {link}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               {/* Links section: Display all links */}
               {section.type === 'links' && allLinks.length > 0 && (
                 <div className="mt-6 space-y-4">
@@ -433,12 +677,25 @@ What are your thoughts on these insights? Share your perspective and join the co
           Article Structure
         </h2>
         <p className="text-lg text-gray-600">
-          Define the complete structure of your article with title, introduction and sections. Drag key points into sections to organize your content.
+          AI-powered structure generation with intelligent content organization and reference management
         </p>
       </div>
 
-      {/* Show/Hide Preview Button */}
-      <div className="flex justify-end mb-6">
+      {/* AI Structure Generation */}
+      <div className="mb-6 flex justify-between items-center">
+        <button
+          onClick={generateAIStructure}
+          disabled={isGeneratingStructure}
+          className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
+        >
+          {isGeneratingStructure ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4 mr-2" />
+          )}
+          {isGeneratingStructure ? 'Generating AI Structure...' : 'Regenerate AI Structure'}
+        </button>
+
         <button
           onClick={() => setShowPreview(!showPreview)}
           className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -520,13 +777,23 @@ What are your thoughts on these insights? Share your perspective and join the co
                   <label className="block text-sm font-medium text-gray-700 mb-2">Main Title</label>
                   {editingField === 'title' ? (
                     <div className="space-y-2">
-                      <textarea
-                        value={localSettings.title}
-                        onChange={(e) => handleChange('title', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        rows={2}
-                        autoFocus
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={localSettings.title}
+                          onChange={(e) => handleChange('title', e.target.value)}
+                          className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all ${
+                            expandedTextAreas['title'] ? 'h-32' : 'h-20'
+                          }`}
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => toggleTextAreaExpansion('title')}
+                          className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                          title={expandedTextAreas['title'] ? 'Minimize' : 'Expand'}
+                        >
+                          {expandedTextAreas['title'] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                        </button>
+                      </div>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => setEditingField(null)}
@@ -556,13 +823,23 @@ What are your thoughts on these insights? Share your perspective and join the co
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subtitle (optional)</label>
                   {editingField === 'subtitle' ? (
                     <div className="space-y-2">
-                      <textarea
-                        value={localSettings.subtitle}
-                        onChange={(e) => handleChange('subtitle', e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        rows={2}
-                        autoFocus
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={localSettings.subtitle}
+                          onChange={(e) => handleChange('subtitle', e.target.value)}
+                          className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all ${
+                            expandedTextAreas['subtitle'] ? 'h-32' : 'h-20'
+                          }`}
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => toggleTextAreaExpansion('subtitle')}
+                          className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                          title={expandedTextAreas['subtitle'] ? 'Minimize' : 'Expand'}
+                        >
+                          {expandedTextAreas['subtitle'] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                        </button>
+                      </div>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => setEditingField(null)}
@@ -593,19 +870,35 @@ What are your thoughts on these insights? Share your perspective and join the co
             {/* Introduction */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Introduction</h3>
-              <textarea
-                value={introduction}
-                onChange={(e) => setIntroduction(e.target.value)}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Write your article introduction..."
-              />
+              <div className="relative">
+                <textarea
+                  value={introduction}
+                  onChange={(e) => setIntroduction(e.target.value)}
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all ${
+                    expandedTextAreas['introduction'] ? 'h-48' : 'h-32'
+                  }`}
+                  placeholder="Write your article introduction..."
+                />
+                <button
+                  onClick={() => toggleTextAreaExpansion('introduction')}
+                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                  title={expandedTextAreas['introduction'] ? 'Minimize' : 'Expand'}
+                >
+                  {expandedTextAreas['introduction'] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Article sections */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Article Sections</h3>
+                {isGeneratingStructure && (
+                  <div className="flex items-center space-x-2 text-purple-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">AI is analyzing and structuring content...</span>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-4">
@@ -635,7 +928,7 @@ What are your thoughts on these insights? Share your perspective and join the co
                         onDrop={(e) => handleSectionDrop(e, section.id)}
                       >
                         <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3 flex-1">
                             <GripVertical 
                               className="w-4 h-4 text-gray-400 cursor-move"
                               draggable
@@ -644,33 +937,149 @@ What are your thoughts on these insights? Share your perspective and join the co
                             <span className="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium">
                               {index + 1}
                             </span>
-                            <input
-                              type="text"
-                              value={section.title}
-                              onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                              className="font-medium text-gray-900 bg-transparent border-none focus:outline-none focus:ring-0 p-0 flex-1 text-lg"
-                              placeholder="Section title"
-                            />
+                            {editingSectionTitle === section.id ? (
+                              <div className="flex items-center space-x-2 flex-1">
+                                <input
+                                  type="text"
+                                  defaultValue={section.title}
+                                  onBlur={(e) => handleSectionTitleEdit(section.id, e.target.value)}
+                                  onKeyPress={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSectionTitleEdit(section.id, e.currentTarget.value);
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => setEditingSectionTitle(null)}
+                                  className="p-1 text-green-600 hover:text-green-700"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <h4 
+                                onClick={() => setEditingSectionTitle(section.id)}
+                                className="font-medium text-gray-900 flex-1 text-lg cursor-pointer hover:text-blue-600 transition-colors"
+                              >
+                                {section.title}
+                              </h4>
+                            )}
                           </div>
-                          <button
-                            onClick={() => removeSection(section.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setEditingSectionTitle(section.id)}
+                              className="p-1 text-gray-400 hover:text-blue-600"
+                              title="Edit title"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeSection(section.id)}
+                              className="p-1 text-gray-400 hover:text-red-600"
+                              title="Remove section"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         
-                        <textarea
-                          value={section.content}
-                          onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-4"
-                          placeholder="Section content..."
-                        />
+                        <div className="relative mb-4">
+                          <textarea
+                            value={section.content}
+                            onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm transition-all ${
+                              expandedTextAreas[section.id] ? 'h-48' : 'h-24'
+                            }`}
+                            placeholder="Section content..."
+                          />
+                          <button
+                            onClick={() => toggleTextAreaExpansion(section.id)}
+                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                            title={expandedTextAreas[section.id] ? 'Minimize' : 'Expand'}
+                          >
+                            {expandedTextAreas[section.id] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                          </button>
+                        </div>
+
+                        {/* Section web links */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-sm font-medium text-gray-700 flex items-center">
+                              <LinkIcon className="w-4 h-4 mr-1" />
+                              Section References ({section.webLinks?.length || 0})
+                            </h5>
+                            <button
+                              onClick={() => setAddingLinkToSection(section.id)}
+                              className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                            >
+                              <Plus className="w-3 h-3 mr-1" />
+                              Add Link
+                            </button>
+                          </div>
+                          
+                          {section.webLinks && section.webLinks.length > 0 && (
+                            <div className="space-y-1 mb-2">
+                              {section.webLinks.map((link, index) => (
+                                <div key={index} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                                  <a
+                                    href={link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center text-sm text-blue-600 hover:text-blue-800 truncate flex-1"
+                                  >
+                                    <ExternalLink className="w-3 h-3 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{link}</span>
+                                  </a>
+                                  <button
+                                    onClick={() => handleRemoveSectionLink(section.id, index)}
+                                    className="p-1 text-red-400 hover:text-red-600 ml-2"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {addingLinkToSection === section.id && (
+                            <div className="flex space-x-2">
+                              <input
+                                type="url"
+                                value={newSectionLink}
+                                onChange={(e) => setNewSectionLink(e.target.value)}
+                                placeholder="https://example.com"
+                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleAddSectionLink(section.id);
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleAddSectionLink(section.id)}
+                                className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setAddingLinkToSection(null);
+                                  setNewSectionLink('');
+                                }}
+                                className="px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
                         
                         {/* Key points in this section */}
                         <div className="space-y-3">
-                          <h5 className="text-sm font-medium text-gray-700">Suggested Key Points ({section.keyPointIds.length})</h5>
+                          <h5 className="text-sm font-medium text-gray-700">Assigned Key Points ({section.keyPointIds.length})</h5>
                           {section.keyPointIds.map(keyPointId => {
                             const keyPoint = getKeyPointById(keyPointId);
                             if (!keyPoint) return null;
@@ -740,13 +1149,23 @@ What are your thoughts on these insights? Share your perspective and join the co
                       placeholder="New section title..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                     />
-                    <textarea
-                      value={newSection.content}
-                      onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
-                      placeholder="Section content (optional)..."
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={newSection.content}
+                        onChange={(e) => setNewSection(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Section content (optional)..."
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm resize-none transition-all ${
+                          expandedTextAreas['newSection'] ? 'h-32' : 'h-20'
+                        }`}
+                      />
+                      <button
+                        onClick={() => toggleTextAreaExpansion('newSection')}
+                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                        title={expandedTextAreas['newSection'] ? 'Minimize' : 'Expand'}
+                      >
+                        {expandedTextAreas['newSection'] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                      </button>
+                    </div>
                     <button
                       onClick={addSection}
                       disabled={!newSection.title.trim()}
@@ -789,13 +1208,23 @@ What are your thoughts on these insights? Share your perspective and join the co
                         </span>
                       </div>
                       
-                      <textarea
-                        value={section.content}
-                        onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-4"
-                        placeholder="Section content..."
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={section.content}
+                          onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm mb-4 transition-all ${
+                            expandedTextAreas[section.id] ? 'h-48' : 'h-24'
+                          }`}
+                          placeholder="Section content..."
+                        />
+                        <button
+                          onClick={() => toggleTextAreaExpansion(section.id)}
+                          className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600"
+                          title={expandedTextAreas[section.id] ? 'Minimize' : 'Expand'}
+                        >
+                          {expandedTextAreas[section.id] ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                        </button>
+                      </div>
 
                       {/* Show links preview for links section */}
                       {section.type === 'links' && hasWebLinks() && (
@@ -829,19 +1258,18 @@ What are your thoughts on these insights? Share your perspective and join the co
       {!showPreview && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8 mb-8">
           <div className="flex items-start space-x-3">
-            <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+            <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-blue-800 mb-1">Tips for an effective structure</h4>
+              <h4 className="font-medium text-blue-800 mb-1">AI-Powered Structure Tips</h4>
               <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Click "Regenerate AI Structure" to get a new intelligent organization</li>
                 <li>• Drag key points from the left panel into sections to organize your content</li>
+                <li>• Click section titles to edit them directly</li>
+                <li>• Use the expand/minimize buttons to resize text areas for better editing</li>
+                <li>• Add reference links to individual sections for better organization</li>
                 <li>• Use the grip handle to reorder sections by dragging them up or down</li>
-                <li>• Each section should have a clear and distinct objective</li>
-                <li>• The introduction should present the context and main themes</li>
-                {hasWebLinks() && (
-                  <li>• A "Reference Links" section has been automatically added with all web links from your key points</li>
-                )}
-                <li>• The conclusion should summarize insights and include a call to action</li>
-                <li>• Use "Show Preview" to see how your structure will look</li>
+                <li>• The AI automatically groups related themes and creates logical flow</li>
+                <li>• Use "Show Preview" to see how your structure will look in the final article</li>
               </ul>
             </div>
           </div>

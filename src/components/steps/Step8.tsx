@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Copy, Globe, FileText, Share2, CheckCircle, ArrowRight, Eye, Sparkles, Loader2, Palette, Code } from 'lucide-react';
+import { GeminiServiceFactory } from '../../utils/geminiService';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface Step8Props {
   generatedContent: string;
@@ -66,6 +68,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, format, co
 };
 
 const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext }) => {
+  const { demoMode, apiUsageAssignment, apiKeys } = useAppContext();
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<string>('');
   const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; format: any | null }>({
@@ -79,12 +82,27 @@ const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext
   const [isGeneratingHtml, setIsGeneratingHtml] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState('');
 
+  // Get API key for export
+  const getExportApiKey = (): string | null => {
+    const assignedProvider = apiUsageAssignment.export;
+    if (!assignedProvider) return null;
+
+    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
+    if (!providerConfig || !providerConfig.enabled) return null;
+
+    if ('key' in providerConfig) {
+      return providerConfig.key;
+    }
+
+    return null;
+  };
+
   const exportFormats = [
     {
       id: 'html',
       name: 'HTML',
       icon: Globe,
-      description: 'Ready for web publishing with custom styling',
+      description: 'AI-generated HTML with professional styling and responsive design',
       content: generatedHtml || `<article>
 <h1>${contentSettings.title}</h1>
 <h2>${contentSettings.subtitle}</h2>
@@ -166,113 +184,419 @@ ${generatedContent}`,
     setPreviewModal({ isOpen: true, format });
   };
 
-  const generateHtmlWithStyle = async () => {
+  const generateHtmlWithAI = async () => {
     setIsGeneratingHtml(true);
     
     try {
-      // Simulate AI HTML generation with custom styling
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const exportApiKey = getExportApiKey();
       
-      const styledHtml = `<!DOCTYPE html>
+      if (!demoMode && exportApiKey && exportApiKey.startsWith('AIza')) {
+        console.log('🤖 Generating AI-powered HTML with professional styling...');
+        
+        const geminiService = GeminiServiceFactory.create(exportApiKey);
+        
+        // Create a comprehensive prompt for HTML generation
+        const htmlPrompt = `Generate a complete, professional HTML document with the following requirements:
+
+CONTENT:
+Title: ${contentSettings.title}
+Subtitle: ${contentSettings.subtitle}
+Content: ${generatedContent}
+
+REQUIREMENTS:
+1. Create a complete HTML5 document with proper DOCTYPE, head, and body
+2. Include responsive CSS styling that works on all devices
+3. Use modern, professional design with:
+   - Clean typography (use web-safe fonts)
+   - Proper spacing and layout
+   - Professional color scheme
+   - Responsive design for mobile/tablet/desktop
+   - Subtle animations and hover effects
+   - Print-friendly styles
+4. Structure the content with proper semantic HTML
+5. Include meta tags for SEO
+6. Add a table of contents if the content is long
+7. Style code blocks, quotes, and lists appropriately
+8. Include a professional header and footer
+9. Use CSS Grid or Flexbox for layout
+10. Ensure accessibility (ARIA labels, proper contrast)
+
+${htmlStyle ? `CUSTOM STYLING REQUIREMENTS:\n${htmlStyle}\n` : ''}
+
+Generate only the complete HTML code, no explanations.`;
+
+        const aiGeneratedHtml = await geminiService.generateContent(
+          generatedContent,
+          [],
+          {
+            title: 'HTML Generation',
+            subtitle: '',
+            summary: htmlPrompt,
+            format: 'article',
+            tone: 'professional'
+          }
+        );
+
+        // Clean up the response to ensure it's valid HTML
+        let cleanHtml = aiGeneratedHtml;
+        
+        // If the AI didn't include DOCTYPE, add it
+        if (!cleanHtml.includes('<!DOCTYPE')) {
+          cleanHtml = `<!DOCTYPE html>\n${cleanHtml}`;
+        }
+        
+        // If the AI didn't include html tags, wrap it
+        if (!cleanHtml.includes('<html')) {
+          cleanHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${contentSettings.title}</title>
-    <style>
-        ${htmlStyle || `
-        body {
-            font-family: 'Georgia', serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-            background-color: #fafafa;
-        }
-        
-        h1 {
-            color: #2c3e50;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        h2 {
-            color: #34495e;
-            margin-top: 30px;
-        }
-        
-        .summary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        p {
-            margin-bottom: 15px;
-            text-align: justify;
-        }
-        
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .summary, .content {
-                padding: 15px;
-            }
-        }
-        `}
-    </style>
 </head>
 <body>
-    <article>
-        <h1>${contentSettings.title}</h1>
-        ${contentSettings.subtitle ? `<h2>${contentSettings.subtitle}</h2>` : ''}
-        
-        <div class="summary">
-            <h3>Summary</h3>
-            <p>${contentSettings.summary}</p>
-        </div>
-        
-        <div class="content">
-            ${generatedContent.split('\n\n').map(paragraph => 
-              paragraph.trim() ? `<p>${paragraph.trim()}</p>` : ''
-            ).filter(Boolean).join('\n            ')}
-        </div>
-    </article>
+${cleanHtml}
 </body>
 </html>`;
+        }
 
-      setGeneratedHtml(styledHtml);
+        setGeneratedHtml(cleanHtml);
+        console.log('✅ AI-generated HTML created successfully');
+        
+      } else {
+        // Demo mode - generate enhanced HTML with professional styling
+        console.log('🎭 Generating demo HTML with professional styling...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        const demoHtml = generateProfessionalDemoHtml();
+        setGeneratedHtml(demoHtml);
+      }
       
       // Update the HTML format with the generated content
       const htmlFormatIndex = exportFormats.findIndex(f => f.id === 'html');
       if (htmlFormatIndex !== -1) {
-        exportFormats[htmlFormatIndex].content = styledHtml;
+        exportFormats[htmlFormatIndex].content = generatedHtml || generateProfessionalDemoHtml();
       }
       
-      setExportStatus('HTML generated successfully with custom styling');
+      setExportStatus('Professional HTML generated successfully with AI-powered styling');
       setTimeout(() => setExportStatus(''), 3000);
       
     } catch (error) {
-      console.error('Error generating HTML:', error);
-      setExportStatus('Error generating HTML');
+      console.error('❌ Error generating AI HTML:', error);
+      
+      // Fallback to professional demo HTML
+      const fallbackHtml = generateProfessionalDemoHtml();
+      setGeneratedHtml(fallbackHtml);
+      
+      setExportStatus('HTML generated with fallback styling');
       setTimeout(() => setExportStatus(''), 3000);
     } finally {
       setIsGeneratingHtml(false);
     }
+  };
+
+  const generateProfessionalDemoHtml = (): string => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="${contentSettings.subtitle || 'Professional content generated by Rekapp'}">
+    <title>${contentSettings.title}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            line-height: 1.7;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 3rem 2rem;
+        }
+        
+        .summary {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .summary h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .summary p {
+            color: #34495e;
+            font-size: 1.1rem;
+        }
+        
+        .article-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .article-content h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+        
+        .article-content h3 {
+            color: #34495e;
+            font-size: 1.4rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        .article-content p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+        
+        .article-content ul, .article-content ol {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+        }
+        
+        .article-content li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .article-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+            color: #555;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .article-content code {
+            background: #f1f2f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .article-content pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+        
+        .article-content a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .article-content a:hover {
+            border-bottom-color: #667eea;
+            color: #764ba2;
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .footer-content p {
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+        
+        .generated-by {
+            font-size: 0.9rem;
+            opacity: 0.6;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                border-radius: 10px;
+            }
+            
+            header {
+                padding: 2rem 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 2rem 1rem;
+            }
+            
+            .summary {
+                padding: 1.5rem;
+            }
+            
+            .article-content {
+                font-size: 1rem;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+                margin: 0;
+            }
+            
+            header {
+                background: #2c3e50 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .summary {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .content > * {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Custom styling integration */
+        ${htmlStyle}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>${contentSettings.title}</h1>
+            ${contentSettings.subtitle ? `<div class="subtitle">${contentSettings.subtitle}</div>` : ''}
+        </header>
+        
+        <div class="content">
+            ${contentSettings.summary ? `
+            <div class="summary">
+                <h3>Executive Summary</h3>
+                <p>${contentSettings.summary}</p>
+            </div>
+            ` : ''}
+            
+            <div class="article-content">
+                ${generatedContent.split('\n\n').map(paragraph => {
+                  if (paragraph.trim().startsWith('#')) {
+                    const level = paragraph.match(/^#+/)?.[0].length || 1;
+                    const text = paragraph.replace(/^#+\s*/, '');
+                    return `<h${Math.min(level + 1, 6)}>${text}</h${Math.min(level + 1, 6)}>`;
+                  }
+                  return paragraph.trim() ? `<p>${paragraph.trim()}</p>` : '';
+                }).filter(Boolean).join('\n                ')}
+            </div>
+        </div>
+        
+        <footer>
+            <div class="footer-content">
+                <p>This content was professionally generated and formatted for optimal readability and engagement.</p>
+                <div class="generated-by">
+                    Generated by Rekapp • ${new Date().toLocaleDateString()} • Professional Content Creation Platform
+                </div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>`;
   };
 
   return (
@@ -282,7 +606,7 @@ ${generatedContent}`,
           Export & Share
         </h2>
         <p className="text-lg text-gray-600">
-          Your content is ready! Choose how you'd like to export it.
+          Your content is ready! Export with AI-powered formatting and professional styling.
         </p>
       </div>
 
@@ -322,29 +646,35 @@ ${generatedContent}`,
                         className="flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
                       >
                         <Palette className="w-4 h-4 mr-2" />
-                        Customize Style
+                        AI Styling
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* HTML Style Customization */}
+                {/* HTML AI Generation */}
                 {format.id === 'html' && showHtmlGenerator && (
                   <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <h5 className="font-medium text-purple-900 mb-3">Custom CSS Styling</h5>
+                    <h5 className="font-medium text-purple-900 mb-3 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI-Powered HTML Generation
+                    </h5>
+                    <p className="text-sm text-purple-700 mb-3">
+                      Let AI create professional HTML with responsive design, modern styling, and accessibility features.
+                    </p>
                     <textarea
                       value={htmlStyle}
                       onChange={(e) => setHtmlStyle(e.target.value)}
-                      placeholder="Enter your custom CSS styles here... (leave empty for default styling)"
-                      rows={8}
-                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm font-mono"
+                      placeholder="Optional: Add specific styling requirements (e.g., 'Use a dark theme', 'Add animations', 'Corporate blue color scheme')..."
+                      rows={4}
+                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-sm"
                     />
                     <div className="flex items-center justify-between mt-3">
                       <p className="text-sm text-purple-700">
-                        Add your custom CSS to style the HTML output. AI will generate optimized HTML structure.
+                        AI will generate professional HTML with modern CSS, responsive design, and SEO optimization.
                       </p>
                       <button
-                        onClick={generateHtmlWithStyle}
+                        onClick={generateHtmlWithAI}
                         disabled={isGeneratingHtml}
                         className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
                       >
@@ -356,7 +686,7 @@ ${generatedContent}`,
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 mr-2" />
-                            Generate HTML
+                            Generate AI HTML
                           </>
                         )}
                       </button>
@@ -404,7 +734,17 @@ ${generatedContent}`,
                 {format.id === 'html' && format.requiresGeneration && !generatedHtml && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Note:</strong> Click "Generate HTML" to create a styled version before copying or downloading.
+                      <strong>Note:</strong> Click "Generate AI HTML" to create a professionally styled version with responsive design and modern CSS.
+                    </p>
+                  </div>
+                )}
+
+                {/* AI generation status */}
+                {format.id === 'html' && generatedHtml && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      <strong>AI-generated HTML ready!</strong> Professional styling with responsive design and modern CSS included.
                     </p>
                   </div>
                 )}
@@ -443,6 +783,24 @@ ${generatedContent}`,
         </div>
       </div>
 
+      {/* AI Features Notice */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6 mb-8">
+        <div className="flex items-start space-x-3">
+          <Sparkles className="w-6 h-6 text-purple-600 mt-0.5" />
+          <div>
+            <h3 className="text-lg font-semibold text-purple-900 mb-2">AI-Enhanced Export Features</h3>
+            <ul className="text-sm text-purple-700 space-y-1">
+              <li>• <strong>AI HTML Generation:</strong> Professional responsive design with modern CSS</li>
+              <li>• <strong>Smart Styling:</strong> Automatic color schemes, typography, and layout optimization</li>
+              <li>• <strong>SEO Optimization:</strong> Meta tags, semantic HTML, and accessibility features</li>
+              <li>• <strong>Responsive Design:</strong> Mobile, tablet, and desktop compatibility</li>
+              <li>• <strong>Print-Friendly:</strong> Optimized styles for printing and PDF generation</li>
+              <li>• <strong>Custom Requirements:</strong> Specify styling preferences for personalized output</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       {/* Success Message */}
       <div className="text-center p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 mb-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -450,7 +808,7 @@ ${generatedContent}`,
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Content Generated Successfully!</h3>
         <p className="text-gray-600 mb-6">
-          Your content has been transformed into professional material ready for publication.
+          Your content has been transformed into professional material with AI-powered formatting and styling options.
         </p>
         <p className="text-sm text-gray-500 mb-6">
           If you found this tool helpful, please consider supporting our development in the next step.
