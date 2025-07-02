@@ -28,6 +28,7 @@ export interface UserApiKey {
   api_key: string;
   api_secret?: string;
   enabled: boolean;
+  model?: string; // Added model field
   last_tested?: string;
   is_valid: boolean;
   created_at: string;
@@ -157,6 +158,7 @@ export class ApiKeyService {
             api_key: apiKey.api_key,
             api_secret: apiKey.api_secret,
             enabled: apiKey.enabled,
+            model: apiKey.model, // Include model in update
             is_valid: apiKey.is_valid
           })
           .eq('id', existing.id)
@@ -251,59 +253,6 @@ export class ApiKeyService {
   }
 }
 
-// Service to manage feedback
-export class FeedbackService {
-  static async submitFeedback(feedback: {
-    rating: number;
-    comment?: string;
-    userId?: string;
-    sessionId?: string;
-  }): Promise<Feedback | null> {
-    try {
-      const { data, error } = await supabase
-        .from('feedback')
-        .insert({
-          user_id: feedback.userId || null,
-          rating: feedback.rating,
-          comment: feedback.comment || null,
-          session_id: feedback.sessionId || null
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error submitting feedback:', error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      return null;
-    }
-  }
-
-  static async getUserFeedbacks(userId: string): Promise<Feedback[]> {
-    try {
-      const { data, error } = await supabase
-        .from('feedback')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error retrieving feedback:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error retrieving feedback:', error);
-      return [];
-    }
-  }
-}
-
 // Service to manage user sessions (temporary content storage)
 export class UserSessionService {
   static async getUserSession(userId: string): Promise<UserSession | null> {
@@ -387,6 +336,59 @@ export class UserSessionService {
     } catch (error) {
       console.error('Error cleaning up expired sessions:', error);
       return false;
+    }
+  }
+}
+
+// Service to manage feedback
+export class FeedbackService {
+  static async submitFeedback(feedback: {
+    rating: number;
+    comment?: string;
+    userId?: string;
+    sessionId?: string;
+  }): Promise<Feedback | null> {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: feedback.userId || null,
+          rating: feedback.rating,
+          comment: feedback.comment || null,
+          session_id: feedback.sessionId || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error submitting feedback:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      return null;
+    }
+  }
+
+  static async getUserFeedbacks(userId: string): Promise<Feedback[]> {
+    try {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error retrieving feedback:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error retrieving feedback:', error);
+      return [];
     }
   }
 }

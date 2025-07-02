@@ -28,7 +28,10 @@ export const useApiKeys = (userId: string | null) => {
         if (providerKey) {
           formattedKeys[providerKey] = {
             key: key.api_key,
-            enabled: key.enabled
+            enabled: key.enabled,
+            model: key.model, // Include model in the formatted keys
+            lastTested: key.last_tested,
+            isValid: key.is_valid
           };
         }
       });
@@ -75,7 +78,8 @@ export const useApiKeys = (userId: string | null) => {
               api_key: config.key,
               api_secret: undefined,
               enabled: config.enabled,
-              is_valid: true
+              model: config.model, // Include model in save
+              is_valid: config.isValid ?? true
             })
           );
         }

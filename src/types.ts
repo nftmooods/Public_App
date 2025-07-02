@@ -68,6 +68,7 @@ export interface User {
 export interface ApiKeyConfig {
   key: string;
   enabled: boolean;
+  model?: string; // Added model selection
   lastTested?: string;
   isValid?: boolean;
 }

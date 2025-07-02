@@ -157,19 +157,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     lastSavedStep 
   } = useUserSession(user?.id || null);
 
-  // Function to get the appropriate API key for a specific usage
-  const getApiKeyForUsage = (usageType: keyof ApiUsageAssignment): string | null => {
+  // Function to get the appropriate API key and model for a specific usage
+  const getApiKeyAndModelForUsage = (usageType: keyof ApiUsageAssignment): { apiKey: string | null; model: string | null } => {
     const assignedProvider = apiUsageAssignment[usageType];
-    if (!assignedProvider) return null;
+    if (!assignedProvider) return { apiKey: null, model: null };
 
     const providerConfig = apiKeys[assignedProvider as keyof UserApiKeys];
-    if (!providerConfig || !providerConfig.enabled) return null;
+    if (!providerConfig || !providerConfig.enabled) return { apiKey: null, model: null };
 
     if ('key' in providerConfig) {
-      return providerConfig.key;
+      return { 
+        apiKey: providerConfig.key,
+        model: providerConfig.model || null
+      };
     }
 
-    return null;
+    return { apiKey: null, model: null };
   };
 
   // Load user session on authentication
@@ -229,36 +232,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return () => clearTimeout(timeoutId);
     }
   }, [user, sessionRestored, sessionLoading, appState, autoSaveSession]);
-
-  // Function to completely reset the application
-  const resetAppState = async () => {
-    console.log('🔄 Complete application reset');
-    
-    // Reset user session in database if authenticated
-    if (user) {
-      await resetUserSession();
-    }
-    
-    // Generate new session ID to force refresh
-    const newSessionId = Date.now().toString();
-    setAnalysisSessionId(newSessionId);
-    
-    // Reset application state
-    setAppState({
-      ...initialAppState,
-      user: appState.user,
-      isAuthenticated: appState.isAuthenticated,
-      apiUsageAssignment: apiUsageAssignment
-    });
-    
-    // Reset steps
-    setSteps(initialSteps);
-    
-    // Clear errors
-    setApiKeyError('');
-    
-    console.log('✅ Application reset with session ID:', newSessionId);
-  };
 
   // Update application state with authentication data
   useEffect(() => {
@@ -437,6 +410,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  // Function to completely reset the application
+  const resetAppState = async () => {
+    console.log('🔄 Complete application reset');
+    
+    // Reset user session in database if authenticated
+    if (user) {
+      await resetUserSession();
+    }
+    
+    // Generate new session ID to force refresh
+    const newSessionId = Date.now().toString();
+    setAnalysisSessionId(newSessionId);
+    
+    // Reset application state
+    setAppState({
+      ...initialAppState,
+      user: appState.user,
+      isAuthenticated: appState.isAuthenticated,
+      apiUsageAssignment: apiUsageAssignment
+    });
+    
+    // Reset steps
+    setSteps(initialSteps);
+    
+    // Clear errors
+    setApiKeyError('');
+    
+    console.log('✅ Application reset with session ID:', newSessionId);
+  };
+
   const isQuotaError = (error: Error): boolean => {
     return error.message.includes('429') || 
            error.message.includes('quota') || 
@@ -592,11 +595,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         };
         
         // Extract key points from text using assigned analysis API
-        const analysisApiKey = getApiKeyForUsage('analysis');
+        const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
         if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
           try {
-            console.log('🎯 Extracting key points from text with assigned analysis API...');
-            const geminiService = GeminiServiceFactory.create(analysisApiKey);
+            console.log('🎯 Extracting key points from text with assigned analysis API and model:', analysisModel);
+            const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
             const extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
             
             if (extractedKeyPoints && extractedKeyPoints.length > 0) {
@@ -623,15 +626,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         
         console.log('✅ Text content processed with APIs');
       } else {
-        // Get API key for audio processing
-        const audioApiKey = getApiKeyForUsage('audio');
+        // Get API key and model for audio processing
+        const { apiKey: audioApiKey, model: audioModel } = getApiKeyAndModelForUsage('audio');
         
         // Use assigned API if configured and in production mode
         if (!demoMode && audioApiKey && audioApiKey.startsWith('AIza')) {
           try {
-            console.log('🚀 Using assigned audio API for transcription...');
+            console.log('🚀 Using assigned audio API and model for transcription:', audioModel);
             
-            const transcriptionService = TranscriptionServiceFactory.create(audioApiKey);
+            const transcriptionService = TranscriptionServiceFactory.create(audioApiKey, audioModel);
             let transcriptionText = '';
             
             if (appState.audioFile) {
@@ -671,11 +674,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               };
               
               // Extract key points from transcription using assigned analysis API
-              const analysisApiKey = getApiKeyForUsage('analysis');
+              const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
               if (!demoMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
                 try {
-                  console.log('🎯 Extracting key points from transcription with assigned analysis API...');
-                  const geminiService = GeminiServiceFactory.create(analysisApiKey);
+                  console.log('🎯 Extracting key points from transcription with assigned analysis API and model:', analysisModel);
+                  const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
                   const extractedKeyPoints = await geminiService.extractKeyPoints(transcriptionText);
                   
                   if (extractedKeyPoints && extractedKeyPoints.length > 0) {
@@ -813,13 +816,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     setAppState(prev => ({ ...prev, isProcessing: true }));
     
     try {
-      const writingApiKey = getApiKeyForUsage('writing');
+      const { apiKey: writingApiKey, model: writingModel } = getApiKeyAndModelForUsage('writing');
       
       // Use assigned API if configured and in production mode
       if (!demoMode && writingApiKey && writingApiKey.startsWith('AIza') && appState.transcription) {
-        console.log('🚀 Content generation with assigned writing API...');
+        console.log('🚀 Content generation with assigned writing API and model:', writingModel);
         
-        const geminiService = GeminiServiceFactory.create(writingApiKey);
+        const geminiService = GeminiServiceFactory.create(writingApiKey, writingModel);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
         
         const generatedContent = await geminiService.generateContent(
