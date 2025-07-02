@@ -146,6 +146,7 @@ const Step1: React.FC<Step1Props> = ({
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('audio/') || file.type === 'video/mp4') {
+        console.log('📁 Audio file dropped:', file.name, file.size, 'bytes');
         onFileUpload(file);
       } else {
         setError('Please select a valid audio file (MP3, WAV, M4A, MP4)');
@@ -162,6 +163,7 @@ const Step1: React.FC<Step1Props> = ({
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        console.log('📄 Text file dropped:', file.name, file.size, 'bytes');
         onTextFileUpload(file);
       } else {
         setError('Please select a valid text file (TXT, MD)');
@@ -174,11 +176,14 @@ const Step1: React.FC<Step1Props> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('audio/') || file.type === 'video/mp4') {
+        console.log('📁 Audio file selected:', file.name, file.size, 'bytes');
         onFileUpload(file);
       } else {
         setError('Please select a valid audio file (MP3, WAV, M4A, MP4)');
       }
     }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
   };
 
   const handleTextFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,15 +191,19 @@ const Step1: React.FC<Step1Props> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+        console.log('📄 Text file selected:', file.name, file.size, 'bytes');
         onTextFileUpload(file);
       } else {
         setError('Please select a valid text file (TXT, MD)');
       }
     }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
   };
 
   const handleTextChange = (text: string) => {
     setError('');
+    console.log('📝 Text content changed:', text.length, 'characters');
     onTextContentChange(text);
   };
 
@@ -376,6 +385,12 @@ const Step1: React.FC<Step1Props> = ({
 
   const handleNextWithProgress = async () => {
     if (!canProceed) return;
+
+    console.log('🚀 Starting Step1 processing with content:', {
+      hasAudioFile: !!audioFile,
+      hasTextContent: !!textContent.trim(),
+      hasTextFile: !!textFile
+    });
 
     setIsProcessing(true);
     setAnalysisProgress(0);
