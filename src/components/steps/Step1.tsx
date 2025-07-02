@@ -89,32 +89,53 @@ const Step1: React.FC<Step1Props> = ({
     }
   }, [sessionId]);
 
-  const getAssignedApiKey = (usageType: 'audio' | 'analysis') => {
+  // Function to get the actual API name and model for display
+  const getApiDisplayInfo = (usageType: 'audio' | 'analysis') => {
     const assignedProvider = apiUsageAssignment[usageType];
-    if (!assignedProvider) return null;
+    if (!assignedProvider) return { name: 'Demo Mode', model: null };
 
     const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
-    if (!providerConfig || !providerConfig.enabled) return null;
+    if (!providerConfig || !providerConfig.enabled) return { name: 'Demo Mode', model: null };
 
-    if ('key' in providerConfig) {
-      return providerConfig.key;
-    }
-
-    return null;
-  };
-
-  const getApiDisplayName = (usageType: 'audio' | 'analysis') => {
-    const assignedProvider = apiUsageAssignment[usageType];
-    if (!assignedProvider) return 'Demo Mode';
-
-    const apiDisplayNames: Record<string, string> = {
-      'googleAI': 'Gemini 2.5 Flash',
-      'openAI': 'OpenAI GPT',
-      'anthropic': 'Claude',
+    // Map provider IDs to display names
+    const providerDisplayNames: Record<string, string> = {
+      'googleAI': 'Google AI',
+      'openAI': 'OpenAI',
+      'anthropic': 'Anthropic',
       'mistral': 'Mistral AI'
     };
 
-    return apiDisplayNames[assignedProvider] || assignedProvider;
+    // Map model IDs to display names
+    const modelDisplayNames: Record<string, string> = {
+      // Google AI models
+      'gemini-2.5-flash': 'Gemini 2.5 Flash',
+      'gemini-2.5-flash-lite-preview-06-17': 'Gemini 2.5 Flash-Lite Preview',
+      'gemini-1.5-pro': 'Gemini 1.5 Pro',
+      'gemini-1.5-flash': 'Gemini 1.5 Flash',
+      // OpenAI models
+      'whisper-1': 'Whisper',
+      'gpt-4o': 'GPT-4o',
+      'gpt-4.1': 'GPT-4.1',
+      'o3': 'o3',
+      'gpt-3.5-turbo': 'GPT-3.5 Turbo',
+      // Anthropic models
+      'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
+      'claude-3-opus': 'Claude 3 Opus',
+      'claude-3-sonnet': 'Claude 3 Sonnet',
+      'claude-3-haiku': 'Claude 3 Haiku',
+      // Mistral models
+      'mistral-large': 'Mistral Large',
+      'mistral-medium': 'Mistral Medium',
+      'mistral-small': 'Mistral Small'
+    };
+
+    const providerName = providerDisplayNames[assignedProvider] || assignedProvider;
+    const modelName = providerConfig.model ? modelDisplayNames[providerConfig.model] || providerConfig.model : null;
+
+    return {
+      name: providerName,
+      model: modelName
+    };
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -239,17 +260,13 @@ const Step1: React.FC<Step1Props> = ({
   };
 
   const getProcessingSteps = () => {
-    const audioApiKey = getAssignedApiKey('audio');
-    const analysisApiKey = getAssignedApiKey('analysis');
-    const audioApiName = getApiDisplayName('audio');
-    const analysisApiName = getApiDisplayName('analysis');
+    const audioApiInfo = getApiDisplayInfo('audio');
+    const analysisApiInfo = getApiDisplayInfo('analysis');
     
     console.log('🔍 Processing setup:', {
       demoMode,
-      audioApiKey: !!audioApiKey,
-      analysisApiKey: !!analysisApiKey,
-      audioApiName,
-      analysisApiName
+      audioApi: audioApiInfo,
+      analysisApi: analysisApiInfo
     });
     
     if (textContent.trim() || textFile) {
@@ -274,16 +291,16 @@ const Step1: React.FC<Step1Props> = ({
           id: 'text-analysis', 
           label: 'Semantic content analysis', 
           status: 'pending' as const, 
-          api: analysisApiName,
-          duration: analysisApiKey ? 3000 : 2000,
+          api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
+          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 3000 : 2000,
           details: 'Advanced semantic analysis and understanding'
         },
         { 
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: analysisApiName,
-          duration: analysisApiKey ? 4000 : 2500,
+          api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
+          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 4000 : 2500,
           details: 'Extracting main themes and insights'
         },
         { 
@@ -315,9 +332,9 @@ const Step1: React.FC<Step1Props> = ({
         steps.push(
           { 
             id: 'file-upload', 
-            label: 'Uploading to Gemini Files API', 
+            label: 'Uploading to Files API', 
             status: 'pending' as const, 
-            api: audioApiName,
+            api: audioApiInfo.model ? `${audioApiInfo.name} (${audioApiInfo.model})` : audioApiInfo.name,
             duration: Math.max(5000, fileSizeMB * 300),
             details: 'Secure upload for large file processing'
           },
@@ -325,9 +342,9 @@ const Step1: React.FC<Step1Props> = ({
             id: 'file-processing', 
             label: 'Server-side file processing', 
             status: 'pending' as const, 
-            api: audioApiName,
+            api: audioApiInfo.model ? `${audioApiInfo.name} (${audioApiInfo.model})` : audioApiInfo.name,
             duration: Math.max(10000, fileSizeMB * 400),
-            details: 'Processing large file on Gemini servers'
+            details: 'Processing large file on servers'
           }
         );
       }
@@ -337,7 +354,7 @@ const Step1: React.FC<Step1Props> = ({
           id: 'transcription', 
           label: `Audio transcription ${fileInfo.method === 'files-api' ? '(Files API)' : '(Inline)'}`, 
           status: 'pending' as const, 
-          api: `${audioApiName} (Multimodal)`,
+          api: audioApiInfo.model ? `${audioApiInfo.name} (${audioApiInfo.model})` : `${audioApiInfo.name} (Multimodal)`,
           duration: baseTranscriptionTime,
           details: 'Converting audio to text with speaker detection'
         },
@@ -345,7 +362,7 @@ const Step1: React.FC<Step1Props> = ({
           id: 'speaker-analysis', 
           label: 'Advanced speaker analysis', 
           status: 'pending' as const, 
-          api: audioApiName,
+          api: audioApiInfo.model ? `${audioApiInfo.name} (${audioApiInfo.model})` : audioApiInfo.name,
           duration: 3000,
           details: 'Identifying and separating speakers'
         },
@@ -353,8 +370,8 @@ const Step1: React.FC<Step1Props> = ({
           id: 'key-extraction', 
           label: 'Key points extraction', 
           status: 'pending' as const, 
-          api: analysisApiName,
-          duration: analysisApiKey ? 4000 : 2500,
+          api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
+          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 4000 : 2500,
           details: 'Extracting main themes and insights'
         },
         { 
@@ -372,7 +389,7 @@ const Step1: React.FC<Step1Props> = ({
           id: 'cleanup', 
           label: 'Cleaning up uploaded file', 
           status: 'pending' as const, 
-          api: 'Gemini Files API',
+          api: audioApiInfo.model ? `${audioApiInfo.name} Files API` : 'Files API',
           duration: -1, // Durée illimitée
           details: 'Removing temporary files from server'
         });
@@ -422,16 +439,16 @@ const Step1: React.FC<Step1Props> = ({
           const fileSizeMB = audioFile.size / (1024 * 1024);
           console.log(`📁 Uploading large file (${fileSizeMB.toFixed(2)}MB) to Files API...`);
         } else if (step.id === 'transcription') {
-          const audioApiKey = getAssignedApiKey('audio');
-          if (!demoMode && audioApiKey) {
-            console.log('🎵 Using assigned API for transcription:', getApiDisplayName('audio'));
+          const audioApiInfo = getApiDisplayInfo('audio');
+          if (!demoMode && audioApiInfo.name !== 'Demo Mode') {
+            console.log('🎵 Using assigned API for transcription:', audioApiInfo.name, audioApiInfo.model);
           } else {
             console.log('🎭 Using demo mode for transcription');
           }
         } else if (step.id === 'key-extraction') {
-          const analysisApiKey = getAssignedApiKey('analysis');
-          if (!demoMode && analysisApiKey) {
-            console.log('🎯 Using assigned API for key extraction:', getApiDisplayName('analysis'));
+          const analysisApiInfo = getApiDisplayInfo('analysis');
+          if (!demoMode && analysisApiInfo.name !== 'Demo Mode') {
+            console.log('🎯 Using assigned API for key extraction:', analysisApiInfo.name, analysisApiInfo.model);
           } else {
             console.log('🎭 Using demo mode for key extraction');
           }
@@ -600,9 +617,9 @@ const Step1: React.FC<Step1Props> = ({
                     
                     {step.api && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
-                        step.api.includes('OpenAI') ? 'bg-green-100 text-green-700' :
-                        step.api.includes('Claude') ? 'bg-orange-100 text-orange-700' :
+                        step.api.includes('Google AI') || step.api.includes('Gemini') ? 'bg-purple-100 text-purple-700' :
+                        step.api.includes('OpenAI') || step.api.includes('Whisper') || step.api.includes('GPT') ? 'bg-green-100 text-green-700' :
+                        step.api.includes('Anthropic') || step.api.includes('Claude') ? 'bg-orange-100 text-orange-700' :
                         step.api.includes('Mistral') ? 'bg-red-100 text-red-700' :
                         step.api.includes('Demo') || step.api.includes('demo') ? 'bg-yellow-100 text-yellow-700' :
                         'bg-gray-100 text-gray-700'
@@ -648,11 +665,17 @@ const Step1: React.FC<Step1Props> = ({
             <div className="text-xs text-blue-700 space-y-1">
               <div className="flex items-center justify-between">
                 <span>Audio Processing:</span>
-                <span className="font-medium">{getApiDisplayName('audio')}</span>
+                <span className="font-medium">{(() => {
+                  const audioInfo = getApiDisplayInfo('audio');
+                  return audioInfo.model ? `${audioInfo.name} (${audioInfo.model})` : audioInfo.name;
+                })()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Content Analysis:</span>
-                <span className="font-medium">{getApiDisplayName('analysis')}</span>
+                <span className="font-medium">{(() => {
+                  const analysisInfo = getApiDisplayInfo('analysis');
+                  return analysisInfo.model ? `${analysisInfo.name} (${analysisInfo.model})` : analysisInfo.name;
+                })()}</span>
               </div>
               {textContent.trim() ? (
                 <>
@@ -700,7 +723,13 @@ const Step1: React.FC<Step1Props> = ({
             <div className="flex items-center space-x-2">
               <Settings className="w-4 h-4 text-blue-600" />
               <span className="text-blue-800 font-medium text-sm">
-                API Assignment: Audio → {getApiDisplayName('audio')} | Analysis → {getApiDisplayName('analysis')}
+                API Assignment: Audio → {(() => {
+                  const audioInfo = getApiDisplayInfo('audio');
+                  return audioInfo.model ? `${audioInfo.name} (${audioInfo.model})` : audioInfo.name;
+                })()} | Analysis → {(() => {
+                  const analysisInfo = getApiDisplayInfo('analysis');
+                  return analysisInfo.model ? `${analysisInfo.name} (${analysisInfo.model})` : analysisInfo.name;
+                })()}
               </span>
             </div>
             <span className="text-xs text-blue-600">Configured</span>
@@ -929,7 +958,7 @@ const Step1: React.FC<Step1Props> = ({
               <p>• Direct transition to Key Points & Speakers editing</p>
               <p>• Cleanup process continues until analysis completion</p>
               {!demoMode && (
-                <p>• Using your configured API keys for processing</p>
+                <p>• Using your configured API keys and models for processing</p>
               )}
             </div>
           </div>
