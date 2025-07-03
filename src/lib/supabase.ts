@@ -441,7 +441,12 @@ export class AuthService {
     const { data: { user }, error } = await supabase.auth.getUser();
 
     if (error) {
-      console.error('Error retrieving user:', error);
+      // Check if this is the expected "Auth session missing!" error
+      if (error.message && error.message.includes('Auth session missing!')) {
+        console.warn('No authenticated user session found');
+      } else {
+        console.error('Error retrieving user:', error);
+      }
       return null;
     }
 
