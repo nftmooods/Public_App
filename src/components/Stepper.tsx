@@ -11,7 +11,7 @@ interface StepperProps {
 }
 
 const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demoMode = false }) => {
-  const { resetAppState } = useAppContext();
+  const { resetAppState, isProductionMode, setAppState, appState } = useAppContext();
 
   const canNavigateToStep = (stepId: number) => {
     if (demoMode) {
@@ -19,9 +19,77 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
       return true;
     }
     
-    // In production mode, normal navigation
+    // In production mode, you can navigate to completed steps or the next available step
     const step = steps.find(s => s.id === stepId);
-    return step?.completed || stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
+    const completedSteps = steps.filter(s => s.completed).map(s => s.id);
+    const maxCompletedStep = completedSteps.length > 0 ? Math.max(...completedSteps) : 0;
+    
+    // Allow navigation to completed steps or the next step after the highest completed step
+    return step?.completed || stepId <= maxCompletedStep + 1;
+  };
+
+  const handleRestartCurrentStep = () => {
+    console.log('🔄 Restarting current step while preserving production mode');
+    
+    // Store current mode before restart
+    const currentMode = isProductionMode;
+    
+    // Reset the current step's state while preserving mode and completed steps
+    setAppState(prev => {
+      const resetState = { ...prev };
+      
+      // Clear processing state
+      resetState.isProcessing = false;
+      
+      // Based on current step, reset specific data
+      switch (currentStep) {
+        case 1:
+          // Reset input data but keep mode
+          resetState.audioUrl = '';
+          resetState.youtubeUrl = '';
+          resetState.audioFile = null;
+          resetState.textContent = '';
+          resetState.textFile = null;
+          resetState.transcription = null;
+          resetState.keyPoints = [];
+          break;
+        case 2:
+          // Keep transcription but reset processing
+          resetState.isProcessing = false;
+          break;
+        case 3:
+          // Reset content settings to defaults
+          resetState.contentSettings = {
+            ...resetState.contentSettings,
+            title: '',
+            subtitle: '',
+            summary: ''
+          };
+          break;
+        case 4:
+          // Reset format and tone to defaults
+          resetState.contentSettings = {
+            ...resetState.contentSettings,
+            format: 'article',
+            tone: 'professional'
+          };
+          break;
+        case 5:
+          // Reset generated content
+          resetState.generatedContent = '';
+          resetState.isProcessing = false;
+          break;
+        case 6:
+          // Nothing specific to reset for export step
+          break;
+        default:
+          break;
+      }
+      
+      return resetState;
+    });
+    
+    console.log(`✅ Current step ${currentStep} restarted, production mode preserved: ${currentMode}`);
   };
 
   return (
@@ -45,7 +113,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
           {/* Step Control Buttons */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => window.location.reload()}
+              onClick={handleRestartCurrentStep}
               className="flex items-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all text-sm"
               title="Restart current step"
             >
