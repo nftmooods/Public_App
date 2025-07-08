@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Copy, Globe, FileText, Share2, CheckCircle, ArrowRight, Eye, Sparkles, Loader2, Palette, Code } from 'lucide-react';
 import { GeminiServiceFactory } from '../../utils/geminiService';
+import { OpenAIServiceFactory } from '../../utils/openaiService';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface Step8Props {
@@ -83,18 +84,47 @@ const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext
   const [generatedHtml, setGeneratedHtml] = useState('');
 
   // Get API key for export
-  const getExportApiKey = (): string | null => {
-    const assignedProvider = apiUsageAssignment.export;
-    if (!assignedProvider) return null;
+  const getExportApiConfig = () => {
+    if (!isProductionMode) {
+      return { apiKey: null, model: null, displayName: 'Demo Mode' };
+    }
 
-    const providerConfig = apiKeys[assignedProvider as keyof typeof apiKeys];
+    const assignment = apiUsageAssignment.export;
+    if (!assignment || !assignment.provider) {
+      return { apiKey: null, model: null, displayName: 'Not configured' };
+    }
+
+    const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
     if (!providerConfig || !providerConfig.enabled) return null;
 
     if ('key' in providerConfig) {
-      return providerConfig.key;
+      const providerDisplayNames: Record<string, string> = {
+        'googleAI': 'Google AI',
+        'openAI': 'OpenAI',
+        'anthropic': 'Anthropic',
+        'mistral': 'Mistral AI'
+      };
+
+      const modelDisplayNames: Record<string, string> = {
+        'gemini-2.5-flash': 'Gemini 2.5 Flash',
+        'gemini-1.5-pro': 'Gemini 1.5 Pro',
+        'gpt-4o': 'GPT-4o',
+        'claude-3-5-sonnet': 'Claude 3.5 Sonnet',
+        'mistral-large': 'Mistral Large'
+      };
+
+      const providerName = providerDisplayNames[assignment.provider] || assignment.provider;
+      const modelName = assignment.model ? modelDisplayNames[assignment.model] || assignment.model : null;
+      const displayName = modelName ? `${providerName} (${modelName})` : providerName;
+
+      return { 
+        apiKey: providerConfig.key, 
+        model: assignment.model,
+        displayName 
+      };
     }
 
-    return null;
+    return { apiKey: null, model: null, displayName: 'No API key' };
   };
 
   const exportFormats = [
@@ -188,12 +218,11 @@ ${generatedContent}`,
     setIsGeneratingHtml(true);
     
     try {
-      const exportApiKey = getExportApiKey();
+      const { apiKey: exportApiKey, model: exportModel } = getExportApiConfig();
+      const exportAssignment = apiUsageAssignment.export;
       
-      if (!demoMode && exportApiKey && exportApiKey.startsWith('AIza')) {
+      if (!demoMode && exportApiKey) {
         console.log('🤖 Generating AI-powered HTML with professional styling...');
-        
-        const geminiService = GeminiServiceFactory.create(exportApiKey);
         
         // Create a comprehensive prompt for HTML generation
         const htmlPrompt = `Generate a complete, professional HTML document with the following requirements:
@@ -225,17 +254,37 @@ ${htmlStyle ? `CUSTOM STYLING REQUIREMENTS:\n${htmlStyle}\n` : ''}
 
 Generate only the complete HTML code, no explanations.`;
 
-        const aiGeneratedHtml = await geminiService.generateContent(
-          generatedContent,
-          [],
-          {
-            title: 'HTML Generation',
-            subtitle: '',
-            summary: htmlPrompt,
-            format: 'article',
-            tone: 'professional'
-          }
-        );
+        let aiGeneratedHtml;
+        
+        if (exportAssignment?.provider === 'googleAI' && exportApiKey.startsWith('AIza')) {
+          const geminiService = GeminiServiceFactory.create(exportApiKey, exportModel);
+          aiGeneratedHtml = await geminiService.generateContent(
+            generatedContent,
+            [],
+            {
+              title: 'HTML Generation',
+              subtitle: '',
+              summary: htmlPrompt,
+              format: 'article',
+              tone: 'professional'
+            }
+          );
+        } else if (exportAssignment?.provider === 'openAI' && exportApiKey.startsWith('sk-')) {
+          const openaiService = OpenAIServiceFactory.create(exportApiKey, exportModel);
+          aiGeneratedHtml = await openaiService.generateContent(
+            generatedContent,
+            [],
+            {
+              title: 'HTML Generation',
+              subtitle: '',
+              summary: htmlPrompt,
+              format: 'article',
+              tone: 'professional'
+            }
+          );
+        } else {
+          throw new Error(`Unsupported provider for export: ${exportAssignment?.provider}`);
+        }
 
         // Clean up the response to ensure it's valid HTML
         let cleanHtml = aiGeneratedHtml;
