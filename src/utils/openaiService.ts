@@ -115,23 +115,32 @@ export class OpenAIService {
         console.log('🤖 Using model for post-processing:', this.modelName);
         const postProcessPrompt = this.buildPostProcessPrompt(transcriptionText, options);
         
+        // Determine the correct token parameter based on model
+        const requestBody: any = {
+          model: this.modelName,
+          messages: [
+            {
+              role: 'user',
+              content: postProcessPrompt
+            }
+          ],
+          temperature: 0.1
+        };
+
+        // Use max_completion_tokens for newer models (o1, o3, etc.)
+        if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
+          requestBody.max_completion_tokens = 4000;
+        } else {
+          requestBody.max_tokens = 4000;
+        }
+
         const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            model: this.modelName,
-            messages: [
-              {
-                role: 'user',
-                content: postProcessPrompt
-              }
-            ],
-            temperature: 0.1,
-            max_tokens: 4000
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (!gptResponse.ok) {
@@ -248,23 +257,32 @@ Focus on:
 Respond only with a list of key points, one per line, preceded by a dash (-).
 Each point should be concise but comprehensive (1-2 sentences max).`;
 
+      // Determine the correct token parameter based on model
+      const requestBody: any = {
+        model: this.modelName,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.2
+      };
+
+      // Use max_completion_tokens for newer models (o1, o3, etc.)
+      if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
+        requestBody.max_completion_tokens = 2048;
+      } else {
+        requestBody.max_tokens = 2048;
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.modelName,
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 2048
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -339,23 +357,32 @@ Generate well-structured ${settings.format} content with a ${settings.tone} tone
 
 Please create comprehensive, professional content that would be suitable for publication.`;
 
+      // Determine the correct token parameter based on model
+      const requestBody: any = {
+        model: this.modelName,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7
+      };
+
+      // Use max_completion_tokens for newer models (o1, o3, etc.)
+      if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
+        requestBody.max_completion_tokens = 4096;
+      } else {
+        requestBody.max_tokens = 4096;
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.modelName,
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 4096
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
