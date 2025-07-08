@@ -123,9 +123,13 @@ export class OpenAIService {
               role: 'user',
               content: postProcessPrompt
             }
-          ],
-          temperature: 0.1
+          ]
         };
+
+        // Add temperature only for models that support it (not o1, o3 series)
+        if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
+          requestBody.temperature = 0.1;
+        }
 
         // Use max_completion_tokens for newer models (o1, o3, etc.)
         if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
@@ -265,9 +269,13 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
             role: 'user',
             content: prompt
           }
-        ],
-        temperature: 0.2
+        ]
       };
+
+      // Add temperature only for models that support it (not o1, o3 series)
+      if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
+        requestBody.temperature = 0.2;
+      }
 
       // Use max_completion_tokens for newer models (o1, o3, etc.)
       if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
@@ -365,9 +373,13 @@ Please create comprehensive, professional content that would be suitable for pub
             role: 'user',
             content: prompt
           }
-        ],
-        temperature: 0.7
+        ]
       };
+
+      // Add temperature only for models that support it (not o1, o3 series)
+      if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
+        requestBody.temperature = 0.7;
+      }
 
       // Use max_completion_tokens for newer models (o1, o3, etc.)
       if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
