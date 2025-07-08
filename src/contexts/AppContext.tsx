@@ -15,6 +15,7 @@ import {
   parseTranscriptionWithSpeakers 
 } from '../utils/audioTranscription';
 import { GeminiServiceFactory } from '../utils/geminiService';
+import { OpenAIServiceFactory } from '../utils/openaiService';
 
 const initialSteps: Step[] = [
   { id: 1, title: 'Import', description: 'Audio/Text content', completed: false, active: true },
@@ -574,11 +575,34 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // Extract key points from text using assigned analysis API
         if (isProductionMode) {
           const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
-          if (analysisApiKey && analysisApiKey.startsWith('AIza')) {
+          if (analysisApiKey) {
             try {
-              console.log('🎯 Extracting key points from text with production API:', analysisModel);
-              const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-              const extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
+              const assignment = apiUsageAssignment.analysis;
+              console.log('🎯 Extracting key points from text with production API:', {
+                provider: assignment?.provider,
+                model: analysisModel,
+                keyPrefix: analysisApiKey.substring(0, 10) + '...'
+              });
+              
+              let extractedKeyPoints;
+              
+              if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
+                // Google AI / Gemini
+                const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+                extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
+              } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
+                // OpenAI
+                const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
+                extractedKeyPoints = await openaiService.extractKeyPoints(appState.textContent);
+              } else if (assignment?.provider === 'anthropic' && analysisApiKey.startsWith('sk-ant-')) {
+                // Anthropic - TODO: implement
+                throw new Error('Anthropic integration for key points extraction is not yet implemented. Please use Google AI (Gemini) or OpenAI for analysis.');
+              } else if (assignment?.provider === 'mistral') {
+                // Mistral - TODO: implement
+                throw new Error('Mistral integration for key points extraction is not yet implemented. Please use Google AI (Gemini) or OpenAI for analysis.');
+              } else {
+                throw new Error(`Unsupported provider for analysis: ${assignment?.provider}. Please use Google AI (Gemini) or OpenAI.`);
+              }
               
               if (extractedKeyPoints && extractedKeyPoints.length > 0) {
                 keyPointsResult = extractedKeyPoints.map((point, index) => ({
@@ -612,26 +636,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // Get API key and model for audio processing
         if (isProductionMode) {
           const { apiKey: audioApiKey, model: audioModel } = getApiKeyAndModelForUsage('audio');
+          const audioAssignment = apiUsageAssignment.audio;
           
-          if (!audioApiKey || !audioApiKey.startsWith('AIza')) {
+          if (!audioApiKey) {
             setApiKeyError('Production mode requires a configured audio API. Please configure your API keys.');
             return;
           }
           
           try {
-            console.log('🚀 Using production audio API for transcription:', audioModel);
+            console.log('🚀 Using production audio API for transcription:', {
+              provider: audioAssignment?.provider,
+              model: audioModel,
+              keyPrefix: audioApiKey.substring(0, 10) + '...'
+            });
             
-            const transcriptionService = TranscriptionServiceFactory.create(audioApiKey, audioModel);
+            const transcriptionService = TranscriptionServiceFactory.create(
+              audioApiKey, 
+              audioModel, 
+              audioAssignment?.provider
+            );
             let transcriptionText = '';
             
             if (appState.audioFile) {
-              console.log('🎵 Transcribing audio file with production API:', appState.audioFile.name);
+              console.log(`🎵 Transcribing audio file with ${audioAssignment?.provider}:`, appState.audioFile.name);
               transcriptionText = await transcriptionService.transcribe(appState.audioFile);
             } else if (appState.audioUrl) {
-              console.log('🔗 Transcribing from audio URL with production API:', appState.audioUrl);
+              console.log(`🔗 Transcribing from audio URL with ${audioAssignment?.provider}:`, appState.audioUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.audioUrl);
             } else if (appState.youtubeUrl) {
-              console.log('📺 Transcribing from YouTube with production API:', appState.youtubeUrl);
+              console.log(`📺 Transcribing from YouTube with ${audioAssignment?.provider}:`, appState.youtubeUrl);
               transcriptionText = await transcriptionService.transcribeFromUrl(appState.youtubeUrl);
             }
             
@@ -655,25 +688,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               
               // Extract key points from transcription using assigned analysis API
               const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
+              const analysisAssignment = apiUsageAssignment.analysis;
+              
               if (analysisApiKey) {
                 try {
-                  console.log('🎯 Extracting key points from text with production API:', {
-                    provider: assignment?.provider,
-                    model: analysisModel,
-                    keyPrefix: analysisApiKey.substring(0, 10) + '...'
+                  console.log('🎯 Extracting key points from transcription with production API:', {
+                    provider: analysisAssignment?.provider,
+                    model: analysisModel
                   });
                   
                   let extractedKeyPoints;
                   
-                  if (analysisApiKey.startsWith('AIza')) {
-                    // Google AI / Gemini
+                  if (analysisAssignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
                     const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-                    extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
-                  } else if (analysisApiKey.startsWith('sk-')) {
-                    // OpenAI - for now, throw an error as we need to implement OpenAI service
-                    throw new Error('OpenAI integration for key points extraction is not yet implemented. Please use Google AI (Gemini) for analysis.');
+                    extractedKeyPoints = await geminiService.extractKeyPoints(transcriptionText);
+                  } else if (analysisAssignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
+                    const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
+                    extractedKeyPoints = await openaiService.extractKeyPoints(transcriptionText);
                   } else {
-                    throw new Error('Unsupported API key format for analysis');
+                    throw new Error(`Unsupported provider for analysis: ${analysisAssignment?.provider}`);
                   }
                   
                   if (extractedKeyPoints && extractedKeyPoints.length > 0) {
@@ -802,22 +835,39 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       if (isProductionMode) {
         const { apiKey: writingApiKey, model: writingModel } = getApiKeyAndModelForUsage('writing');
+        const writingAssignment = apiUsageAssignment.writing;
         
-        if (!writingApiKey || !writingApiKey.startsWith('AIza') || !appState.transcription) {
+        if (!writingApiKey || !appState.transcription) {
           setApiKeyError('Production mode requires a configured writing API and transcription data.');
           return;
         }
         
-        console.log('🚀 Content generation with production writing API:', writingModel);
+        console.log('🚀 Content generation with production writing API:', {
+          provider: writingAssignment?.provider,
+          model: writingModel
+        });
         
-        const geminiService = GeminiServiceFactory.create(writingApiKey, writingModel);
         const keyPointsText = appState.keyPoints.map(kp => kp.text);
         
-        const generatedContent = await geminiService.generateContent(
-          appState.transcription.text,
-          keyPointsText,
-          appState.contentSettings
-        );
+        let generatedContent;
+        
+        if (writingAssignment?.provider === 'googleAI' && writingApiKey.startsWith('AIza')) {
+          const geminiService = GeminiServiceFactory.create(writingApiKey, writingModel);
+          generatedContent = await geminiService.generateContent(
+            appState.transcription.text,
+            keyPointsText,
+            appState.contentSettings
+          );
+        } else if (writingAssignment?.provider === 'openAI' && writingApiKey.startsWith('sk-')) {
+          const openaiService = OpenAIServiceFactory.create(writingApiKey, writingModel);
+          generatedContent = await openaiService.generateContent(
+            appState.transcription.text,
+            keyPointsText,
+            appState.contentSettings
+          );
+        } else {
+          throw new Error(`Unsupported provider for writing: ${writingAssignment?.provider}`);
+        }
         
         setAppState(prev => ({ 
           ...prev, 
@@ -825,7 +875,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           isProcessing: false 
         }));
         
-        console.log('✅ Content generated with production writing API');
+        console.log('✅ Content generated with production writing API:', writingAssignment?.provider);
       } else {
         // Demo mode
         console.log('🎭 Content generation in demo mode');

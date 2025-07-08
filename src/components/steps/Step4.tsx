@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, Edit3, Plus, Trash2, ArrowRight, ExternalLink, RefreshCw, Check, Users, Sparkles, Link as LinkIcon, Loader2, AlertTriangle, GripVertical, UserPlus } from 'lucide-react';
 import { TranscriptionData, KeyPoint } from '../../types';
 import { GeminiServiceFactory } from '../../utils/geminiService';
+import { OpenAIServiceFactory } from '../../utils/openaiService';
 import { generateMockKeyPoints } from '../../utils/mockData';
 import { useAppContext } from '../../contexts/AppContext';
 
@@ -153,8 +154,18 @@ const Step4: React.FC<Step4Props> = ({
               currentStep: 'Extracting main insights...',
               progress: 60
             }));
+            let extractedKeyPoints;
+            const assignment = apiUsageAssignment.analysis;
             
-            const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+            if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
+              const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+              extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+            } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
+              const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
+              extractedKeyPoints = await openaiService.extractKeyPoints(transcription.text);
+            } else {
+              throw new Error(`Unsupported provider for analysis: ${assignment?.provider}`);
+            }
             
             setExtractionProgress(prev => ({
               ...prev,
@@ -382,11 +393,21 @@ const Step4: React.FC<Step4Props> = ({
     try {
       if (isProductionMode) {
         const { apiKey: analysisApiKey, model: analysisModel } = getAnalysisApiConfig();
+        const assignment = apiUsageAssignment.analysis;
         
         console.log('🚀 Completing with production API...');
         
-        const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-        const extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+        let extractedKeyPoints;
+        
+        if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
+          const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+          extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+        } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
+          const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
+          extractedKeyPoints = await openaiService.extractKeyPoints(transcription.text);
+        } else {
+          throw new Error(`Unsupported provider for analysis: ${assignment?.provider}`);
+        }
         
         if (extractedKeyPoints && extractedKeyPoints.length > 0) {
           // Filter key points that don't already exist

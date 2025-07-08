@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, ArrowRight, Edit3, RefreshCw, Search, ExternalLink, Plus, Sparkles, X, Maximize, Minimize } from 'lucide-react';
 import { ContentSettings, KeyPoint, TranscriptionData } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
+import { OpenAIServiceFactory } from '../../utils/openaiService';
 
 interface Step7Props {
   transcription: TranscriptionData | null;
@@ -102,8 +103,8 @@ const Step7: React.FC<Step7Props> = ({
     if (!customPrompt.trim()) return;
     
     if (isProductionMode) {
-      const { apiKey } = getWritingApiConfig();
-      if (!apiKey) {
+      const { apiKey: writingApiKey } = getWritingApiConfig();
+      if (!writingApiKey) {
         setApiKeyError('Production mode requires a configured writing API. Please configure your API keys or switch to demo mode.');
         return;
       }
@@ -128,8 +129,8 @@ const Step7: React.FC<Step7Props> = ({
 
   const handleWebSearch = async (topic: string) => {
     if (isProductionMode) {
-      const { apiKey } = getWritingApiConfig();
-      if (!apiKey) {
+      const { apiKey: writingApiKey } = getWritingApiConfig();
+      if (!writingApiKey) {
         setApiKeyError('Production mode requires a configured writing API. Please configure your API keys or switch to demo mode.');
         return;
       }
