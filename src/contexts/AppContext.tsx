@@ -153,18 +153,22 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const getApiKeyAndModelForUsage = (usageType: keyof ApiUsageAssignment): { apiKey: string | null; model: string | null } => {
     const assignment = apiUsageAssignment[usageType];
     if (!assignment || !assignment.provider) {
-      console.log(`❌ No assignment for ${usageType}`);
+      console.log(`❌ No assignment for ${usageType}:`, assignment);
       return { apiKey: null, model: null };
     }
 
     const providerConfig = apiKeys[assignment.provider as keyof UserApiKeys];
     if (!providerConfig || !providerConfig.enabled) {
-      console.log(`❌ Provider ${assignment.provider} not enabled or not found`);
+      console.log(`❌ Provider ${assignment.provider} not enabled or not found:`, providerConfig);
       return { apiKey: null, model: null };
     }
 
     if ('key' in providerConfig) {
-      console.log(`✅ Found API key for ${usageType}: ${assignment.provider} with model ${assignment.model}`);
+      console.log(`✅ Found API key for ${usageType}: ${assignment.provider} with model ${assignment.model}`, {
+        hasKey: !!providerConfig.key,
+        keyPrefix: providerConfig.key?.substring(0, 10) + '...',
+        enabled: providerConfig.enabled
+      });
       return { 
         apiKey: providerConfig.key,
         model: assignment.model
@@ -178,7 +182,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Function to check if production mode is properly configured
   const checkProductionModeConfiguration = (): { isConfigured: boolean; missingApis: string[] } => {
     if (!isProductionMode) {
-      return { isConfigured: true, missingApis: [] }; // Demo mode is always "configured"
+      return { isConfigured: true, missingApis: [] };
     }
 
     const requiredUsageTypes: (keyof ApiUsageAssignment)[] = ['audio', 'analysis', 'writing', 'export'];
@@ -187,6 +191,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     for (const usageType of requiredUsageTypes) {
       const { apiKey } = getApiKeyAndModelForUsage(usageType);
       if (!apiKey) {
+        console.log(`❌ Missing API for ${usageType}`);
         missingApis.push(usageType);
       }
     }
@@ -650,11 +655,26 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               
               // Extract key points from transcription using assigned analysis API
               const { apiKey: analysisApiKey, model: analysisModel } = getApiKeyAndModelForUsage('analysis');
-              if (analysisApiKey && analysisApiKey.startsWith('AIza')) {
+              if (analysisApiKey) {
                 try {
-                  console.log('🎯 Extracting key points from transcription with production API:', analysisModel);
-                  const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
-                  const extractedKeyPoints = await geminiService.extractKeyPoints(transcriptionText);
+                  console.log('🎯 Extracting key points from text with production API:', {
+                    provider: assignment?.provider,
+                    model: analysisModel,
+                    keyPrefix: analysisApiKey.substring(0, 10) + '...'
+                  });
+                  
+                  let extractedKeyPoints;
+                  
+                  if (analysisApiKey.startsWith('AIza')) {
+                    // Google AI / Gemini
+                    const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+                    extractedKeyPoints = await geminiService.extractKeyPoints(appState.textContent);
+                  } else if (analysisApiKey.startsWith('sk-')) {
+                    // OpenAI - for now, throw an error as we need to implement OpenAI service
+                    throw new Error('OpenAI integration for key points extraction is not yet implemented. Please use Google AI (Gemini) for analysis.');
+                  } else {
+                    throw new Error('Unsupported API key format for analysis');
+                  }
                   
                   if (extractedKeyPoints && extractedKeyPoints.length > 0) {
                     keyPointsResult = extractedKeyPoints.map((point, index) => ({

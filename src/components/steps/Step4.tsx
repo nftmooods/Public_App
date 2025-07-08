@@ -100,10 +100,26 @@ const Step4: React.FC<Step4Props> = ({
   // Auto-extraction of key points if none exist
   useEffect(() => {
     const autoExtractKeyPoints = async () => {
+      console.log('🔍 Auto-extraction check:', {
+        keyPointsLength: keyPoints.length,
+        hasTranscription: !!transcription,
+        hasText: !!transcription?.text,
+        isProductionMode,
+        apiUsageAssignment
+      });
+      
       if (keyPoints.length === 0 && transcription && transcription.text) {
         console.log('🎯 Starting auto-extraction of key points...');
         
         const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
+        
+        console.log('🔧 Analysis API config:', {
+          hasApiKey: !!analysisApiKey,
+          keyPrefix: analysisApiKey?.substring(0, 10) + '...',
+          model: analysisModel,
+          displayName,
+          isProductionMode
+        });
         
         if (isProductionMode && !analysisApiKey) {
           console.log('❌ Production mode requires analysis API configuration');
