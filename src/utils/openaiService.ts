@@ -129,9 +129,12 @@ export class OpenAIService {
         // Add temperature only for models that support it (not o1, o3 series)
         if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
           requestBody.temperature = 0.1;
+        } else {
+          // o1 and o3 models use temperature = 1 by default and don't allow other values
+          console.log(`🔧 Using default temperature (1) for ${this.modelName} model in post-processing`);
         }
 
-        // Use max_completion_tokens for newer models (o1, o3, etc.)
+        // Use max_completion_tokens for o1 and o3 models
         if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
           requestBody.max_completion_tokens = 4000;
         } else {
@@ -275,9 +278,12 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
       // Add temperature only for models that support it (not o1, o3 series)
       if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
         requestBody.temperature = 0.2;
+      } else {
+        // o1 and o3 models use temperature = 1 by default and don't allow other values
+        console.log(`🔧 Using default temperature (1) for ${this.modelName} model`);
       }
 
-      // Use max_completion_tokens for newer models (o1, o3, etc.)
+      // Use max_completion_tokens for o1 and o3 models
       if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
         requestBody.max_completion_tokens = 2048;
       } else {
@@ -379,9 +385,12 @@ Please create comprehensive, professional content that would be suitable for pub
       // Add temperature only for models that support it (not o1, o3 series)
       if (!this.modelName.startsWith('o1') && !this.modelName.startsWith('o3')) {
         requestBody.temperature = 0.7;
+      } else {
+        // o1 and o3 models use temperature = 1 by default and don't allow other values
+        console.log(`🔧 Using default temperature (1) for ${this.modelName} model`);
       }
 
-      // Use max_completion_tokens for newer models (o1, o3, etc.)
+      // Use max_completion_tokens for o1 and o3 models
       if (this.modelName.startsWith('o1') || this.modelName.startsWith('o3')) {
         requestBody.max_completion_tokens = 4096;
       } else {

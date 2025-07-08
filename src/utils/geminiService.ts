@@ -757,7 +757,7 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
       const model = this.genAI.getGenerativeModel({ 
         model: this.modelName,
         generationConfig: {
-          temperature: 0.7, // Higher temperature for creative content generation
+          temperature: 0.7,
           topP: 0.9,
           maxOutputTokens: 4096,
         }
