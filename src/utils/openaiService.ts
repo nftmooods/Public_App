@@ -1,3 +1,9 @@
+/**
+ * OpenAI Service for Rekapp
+ * Handles transcription with Whisper and content generation with GPT models
+ * Supports all OpenAI models including GPT-4o, GPT-4-turbo, o1, o3, etc.
+ */
+
 export interface OpenAITranscriptionResult {
   text: string;
   language: string;
@@ -20,7 +26,7 @@ export class OpenAIService {
   constructor(apiKey?: string, modelName?: string) {
     if (apiKey) {
       this.apiKey = apiKey;
-      this.modelName = modelName || 'gpt-4o';
+      this.modelName = modelName || 'gpt-4o'; // Default to GPT-4o
       console.log(`🔧 OpenAI service initialized with API key and model: ${this.modelName}`);
     } else {
       this.modelName = 'gpt-4o';
@@ -44,11 +50,17 @@ export class OpenAIService {
       throw new Error('OpenAI service not configured. Please provide an OpenAI API key.');
     }
 
+    // Validate file size (OpenAI Whisper limit is 25MB)
+    if (audioFile.size > 25 * 1024 * 1024) {
+      throw new Error('File too large for OpenAI Whisper. Maximum size is 25MB.');
+    }
+
     try {
       console.log(`🎵 Starting OpenAI Whisper transcription for:`, audioFile.name);
       console.log('📊 File size:', (audioFile.size / 1024 / 1024).toFixed(2), 'MB');
       console.log('📊 File type:', audioFile.type);
 
+      // Validate file type
       // Step 1: Transcribe with Whisper
       const formData = new FormData();
       formData.append('file', audioFile);
@@ -56,7 +68,7 @@ export class OpenAIService {
       formData.append('response_format', 'verbose_json');
       
       if (options.language) {
-        formData.append('language', options.language === 'fr' ? 'fr' : 'en');
+        formData.append('language', options.language === 'fr' ? 'fr' : options.language === 'en' ? 'en' : 'auto');
       }
 
       if (options.prompt) {
@@ -75,7 +87,12 @@ export class OpenAIService {
 
       if (!transcriptionResponse.ok) {
         const errorData = await transcriptionResponse.json().catch(() => ({}));
-        throw new Error(`OpenAI Whisper API error: ${transcriptionResponse.status} - ${errorData.error?.message || transcriptionResponse.statusText}`);
+        const errorMessage = errorData.error?.message || transcriptionResponse.statusText;
+        
+        if (transcriptionResponse.status === 429) {
+          throw new Error('OpenAI API quota exceeded. Please check your quota or upgrade your plan.');
+        }
+        throw new Error(`OpenAI Whisper API error: ${transcriptionResponse.status} - ${errorMessage}`);
       }
 
       const transcriptionData = await transcriptionResponse.json();
@@ -84,7 +101,7 @@ export class OpenAIService {
       console.log('✅ OpenAI Whisper transcription completed');
       console.log('📄 Transcription length:', transcriptionText.length, 'characters');
 
-      // Step 2: Post-process with GPT for speaker detection and key points if requested
+      // Step 2: Post-process with the assigned GPT model for speaker detection and key points if requested
       let processedResult = {
         text: transcriptionText,
         language: this.detectLanguage(transcriptionText),
@@ -95,7 +112,7 @@ export class OpenAIService {
 
       if (options.detectSpeakers || options.extractKeyPoints) {
         console.log('🔄 Post-processing with GPT for speaker detection and key points...');
-        
+        console.log('🤖 Using model for post-processing:', this.modelName);
         const postProcessPrompt = this.buildPostProcessPrompt(transcriptionText, options);
         
         const gptResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -119,10 +136,16 @@ export class OpenAIService {
 
         if (!gptResponse.ok) {
           const errorData = await gptResponse.json().catch(() => ({}));
-          console.warn('⚠️ GPT post-processing failed:', errorData.error?.message);
+          const errorMessage = errorData.error?.message || gptResponse.statusText;
+          
+          if (gptResponse.status === 429) {
+            throw new Error('OpenAI API quota exceeded during post-processing. Please check your quota.');
+          }
+          
+          console.warn('⚠️ GPT post-processing failed:', errorMessage);
         } else {
           const gptData = await gptResponse.json();
-          const gptResult = gptData.choices[0]?.message?.content;
+          const gptResult = gptData.choices?.[0]?.message?.content;
           
           if (gptResult) {
             const parsed = this.parseGPTResponse(gptResult, options);
@@ -142,6 +165,7 @@ export class OpenAIService {
       console.error('❌ Error during OpenAI transcription:', error);
       
       if (error instanceof Error) {
+        // Handle specific OpenAI API errors
         if (error.message.includes('quota') || error.message.includes('429')) {
           throw new Error('OpenAI API quota exceeded. Check your API key or increase your quota.');
         } else if (error.message.includes('401') || error.message.includes('403')) {
@@ -150,6 +174,8 @@ export class OpenAIService {
           throw new Error('Invalid request. Please check file format and size.');
         } else if (error.message.includes('413')) {
           throw new Error('File too large for OpenAI Whisper. Maximum size is 25MB.');
+        } else if (error.message.includes('415')) {
+          throw new Error('Unsupported file format. Please use supported audio formats (mp3, wav, m4a, etc.).');
         }
       }
       
@@ -206,6 +232,7 @@ export class OpenAIService {
 
     try {
       console.log(`🎯 Extracting key points with ${this.modelName}...`);
+      console.log('📊 Transcription length:', transcription.length, 'characters');
       
       const prompt = `Analyze this transcription and extract key points, main themes, important quotes, and major insights:
 
@@ -242,11 +269,17 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+        const errorMessage = errorData.error?.message || response.statusText;
+        
+        if (response.status === 429) {
+          throw new Error('OpenAI API quota exceeded during key points extraction. Please check your quota.');
+        }
+        
+        throw new Error(`OpenAI API error: ${response.status} - ${errorMessage}`);
       }
 
       const data = await response.json();
-      const keyPointsText = data.choices[0]?.message?.content || '';
+      const keyPointsText = data.choices?.[0]?.message?.content || '';
 
       const keyPoints = keyPointsText
         .split('\n')
@@ -254,7 +287,7 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
         .map(line => line.replace(/^-\s*/, '').trim())
         .filter(point => point.length > 0);
 
-      console.log('✅ Key points extracted:', keyPoints.length);
+      console.log('✅ Key points extracted with', this.modelName + ':', keyPoints.length);
       return keyPoints;
 
     } catch (error) {
@@ -281,6 +314,7 @@ Each point should be concise but comprehensive (1-2 sentences max).`;
     try {
       console.log(`📝 Generating content with ${this.modelName}...`);
       console.log('🎯 Format:', settings.format, '| Tone:', settings.tone);
+      console.log('📊 Key points count:', keyPoints.length);
       
       const prompt = `Generate ${settings.format} content based on this transcription and key points:
 
@@ -326,11 +360,17 @@ Please create comprehensive, professional content that would be suitable for pub
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+        const errorMessage = errorData.error?.message || response.statusText;
+        
+        if (response.status === 429) {
+          throw new Error('OpenAI API quota exceeded during content generation. Please check your quota.');
+        }
+        
+        throw new Error(`OpenAI API error: ${response.status} - ${errorMessage}`);
       }
 
       const data = await response.json();
-      const generatedContent = data.choices[0]?.message?.content || '';
+      const generatedContent = data.choices?.[0]?.message?.content || '';
       
       console.log('✅ Content generated:', generatedContent.length, 'characters');
       return generatedContent;
@@ -342,6 +382,7 @@ Please create comprehensive, professional content that would be suitable for pub
   }
 
   private buildPostProcessPrompt(transcription: string, options: any): string {
+    console.log('🔧 Building post-process prompt with options:', options);
     let prompt = `Analyze this transcription and provide the following:
 
 TRANSCRIPTION:
@@ -400,6 +441,7 @@ KEY_POINTS:
     keyPoints?: string[];
   } {
     const sections = {
+      // Parse the GPT response into structured sections
       transcription: '',
       language: '',
       speakers: '',
@@ -435,6 +477,7 @@ KEY_POINTS:
         .filter(point => point.length > 10);
     }
 
+    console.log('📊 Parsed GPT response:', { hasText: !!sections.transcription, segmentsCount: segments.length, keyPointsCount: keyPoints.length });
     return {
       text: sections.transcription || undefined,
       language: sections.language || undefined,
@@ -444,6 +487,7 @@ KEY_POINTS:
   }
 
   private parseSegmentsWithSpeakers(transcription: string): OpenAISegment[] {
+    console.log('👥 Parsing segments with speakers...');
     const segments: OpenAISegment[] = [];
     const lines = transcription.split('\n');
     let currentTime = 0;
@@ -495,10 +539,12 @@ KEY_POINTS:
       }
     }
 
+    console.log('👥 Parsed', segments.length, 'segments with speakers');
     return segments;
   }
 
   private detectLanguage(text: string): string {
+    // Enhanced language detection for French and English
     const languagePatterns = {
       'French': /\b(le|la|les|de|et|à|un|une|ce|que|qui|dans|pour|avec|sur|par|du|des|au|aux|est|sont|avoir|être|mais|tout|vous|ils|nous|comme|peut|plus|temps|très|bien|encore|aussi|autre|après|deux|même|faire|dire|ici|où|comment|pourquoi|quand|alors|depuis|pendant|avant|maintenant|toujours|jamais|souvent|parfois)\b/gi,
       'English': /\b(the|and|to|of|a|in|that|is|it|you|for|with|on|as|be|at|by|this|have|from|or|one|had|but|words|not|what|all|were|they|we|when|your|can|said|each|which|she|do|how|their|if|will|up|other|about|out|many|then|them|these|so|some|her|would|make|like|into|him|has|two|more|very|what|know|just|first|get|over|think|also|back|after|use|work|life|only|new|way|could|good|water|been|need|should|home|around|right|high|every|another|small|found|still|between|through|where|much|before|move|too|any|same|tell|does|set|three|want|air|well|play|end|put|why|again|turn|here|off|went|old|number|great|men|say|little|came|show|large|often|together|asked|house|don't|world|going|school|important|until|form|food|keep|children|feet|land|side|without|boy|once|animal|enough|took|sometimes|four|head|above|kind|began|almost|live|page|got|earth|far|hand|year|mother|light|country|father|let|night|picture|being|study|second|book|carry|science|eat|room|friend|idea|fish|mountain|stop|base|hear|horse|cut|sure|watch|color|wood|main|plain|girl|usual|young|ready|red|list|though|feel|talk|bird|soon|body|dog|family|direct|leave|song|measure|door|product|black|short|numeral|class|wind|question|happen|complete|ship|area|half|rock|order|fire|south|problem|piece|told|knew|pass|since|top|whole|king|space|heard|best|hour|better|during|hundred|five|remember|step|early|hold|west|ground|interest|reach|fast|verb|sing|listen|six|table|travel|less|morning|ten|simple|several|vowel|toward|war|lay|against|pattern|slow|center|love|person|money|serve|appear|road|map|rain|rule|govern|pull|cold|notice|voice|unit|power|town|fine|certain|fly|fall|lead|cry|dark|machine|note|wait|plan|figure|star|box|noun|field|rest|correct|able|pound|done|beauty|drive|stood|contain|front|teach|week|final|gave|green|quick|develop|ocean|warm|free|minute|strong|special|mind|behind|clear|tail|produce|fact|street|inch|multiply|nothing|course|stay|wheel|full|force|blue|object|decide|surface|deep|moon|island|foot|system|busy|test|record|boat|common|gold|possible|plane|stead|dry|wonder|laugh|thousands|ago|ran|check|game|shape|equate|hot|miss|brought|heat|snow|tire|bring|yes|distant|fill|east|paint|language|among|grand|ball|yet|wave|drop|heart|present|heavy|dance|engine|position|arm|wide|sail|material|size|vary|settle|speak|weight|general|ice|matter|circle|pair|include|divide|syllable|felt|perhaps|pick|sudden|count|square|reason|length|represent|art|subject|region|energy|hunt|probable|bed|brother|egg|ride|cell|believe|fraction|forest|sit|race|window|store|summer|train|sleep|prove|lone|leg|exercise|wall|catch|mount|wish|sky|board|joy|winter|sat|written|wild|instrument|kept|glass|grass|cow|job|edge|sign|visit|past|soft|fun|bright|gas|weather|month|million|bear|finish|happy|hope|flower|clothe|strange|gone|jump|baby|eight|village|meet|root|buy|raise|solve|metal|whether|push|seven|paragraph|third|shall|held|hair|describe|cook|floor|either|result|burn|hill|safe|cat|century|consider|type|law|bit|coast|copy|phrase|silent|tall|sand|soil|roll|temperature|finger|industry|value|fight|lie|beat|excite|natural|view|sense|ear|else|quite|broke|case|middle|kill|son|lake|moment|scale|loud|spring|observe|child|straight|consonant|nation|dictionary|milk|speed|method|organ|pay|age|section|dress|cloud|surprise|quiet|stone|tiny|climb|bad|oil|blood|touch|grew|cent|mix|team|wire|cost|lost|brown|wear|garden|equal|sent|choose|fell|fit|flow|fair|bank|collect|save|control|decimal|gentle|woman|captain|practice|separate|difficult|doctor|please|protect|noon|whose|locate|ring|character|insect|caught|period|indicate|radio|spoke|atom|human|history|effect|electric|expect|crop|modern|element|hit|student|corner|party|supply|bone|rail|imagine|provide|agree|thus|capital|chair|danger|fruit|rich|thick|soldier|process|operate|guess|necessary|sharp|wing|create|neighbor|wash|bat|rather|crowd|corn|compare|poem|string|bell|depend|meat|rub|tube|famous|dollar|stream|fear|sight|thin|triangle|planet|hurry|chief|colony|clock|mine|tie|enter|major|fresh|search|send|yellow|gun|allow|print|dead|spot|desert|suit|current|lift|rose|continue|block|chart|hat|sell|success|company|subtract|event|particular|deal|swim|term|opposite|wife|shoe|shoulder|spread|arrange|camp|invent|cotton|born|determine|quart|nine|truck|noise|level|chance|gather|shop|stretch|throw|shine|property|column|molecule|select|wrong|gray|repeat|require|broad|prepare|salt|nose|plural|anger|claim|continent|oxygen|sugar|death|pretty|skill|women|season|solution|magnet|silver|thank|branch|match|suffix|especially|afraid|huge|sister|steel|discuss|forward|similar|guide|experience|score|apple|bought|led|pitch|coat|mass|card|band|rope|slip|win|dream|evening|condition|feed|tool|total|basic|smell|valley|double|seat|arrive|master|track|parent|shore|division|sheet|substance|favor|connect|post|spend|chord|fat|glad|original|share|station|dad|bread|charge|proper|bar|offer|segment|slave|duck|instant|market|degree|populate|chick|dear|enemy|reply|drink|occur|support|speech|nature|range|steam|motion|path|liquid|log|meant|quotient|teeth|shell|neck)\b/gi
@@ -517,6 +563,7 @@ KEY_POINTS:
       }
     }
 
+    console.log('🌍 Detected language:', detectedLanguage);
     return detectedLanguage;
   }
 }

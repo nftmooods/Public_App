@@ -109,7 +109,7 @@ const Step4: React.FC<Step4Props> = ({
         apiUsageAssignment
       });
       
-      if (keyPoints.length === 0 && transcription && transcription.text) {
+      if (isProductionMode && !analysisApiKey) {
         console.log('🎯 Starting auto-extraction of key points...');
         
         const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
@@ -229,7 +229,7 @@ const Step4: React.FC<Step4Props> = ({
             });
           }
         } else {
-          // Demo mode
+          console.log('🚀 Using assigned API for extraction:', displayName);
           console.log('🎭 Demo mode - loading simulated data');
           setExtractionProgress({
             status: 'extracting',
@@ -260,7 +260,7 @@ const Step4: React.FC<Step4Props> = ({
         }
       }
     };
-
+    
     autoExtractKeyPoints();
   }, [transcription, keyPoints.length, onUpdateKeyPoints, isProductionMode]);
 
@@ -400,7 +400,7 @@ const Step4: React.FC<Step4Props> = ({
         let extractedKeyPoints;
         
         if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
-          const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+          // Use the appropriate service based on provider
           extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
         } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
           const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
@@ -438,7 +438,7 @@ const Step4: React.FC<Step4Props> = ({
       } else {
         // Demo mode
         console.log('🎭 Completing in demo mode');
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         const aiSuggestions = [
           {

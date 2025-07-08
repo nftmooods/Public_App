@@ -142,7 +142,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string>('');
-  const [isProductionMode, setIsProductionMode] = useState(false); // New: explicit mode control (default to demo)
+  const [isProductionMode, setIsProductionMode] = useState(false);
   const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
   const [apiUsageAssignment, setApiUsageAssignment] = useState<ApiUsageAssignment>(initialAppState.apiUsageAssignment);
 
@@ -578,7 +578,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           if (analysisApiKey) {
             try {
               const assignment = apiUsageAssignment.analysis;
-              console.log('🎯 Extracting key points from text with production API:', {
+              console.log('🎯 Extracting key points from text with assigned API:', {
                 provider: assignment?.provider,
                 model: analysisModel,
                 keyPrefix: analysisApiKey.substring(0, 10) + '...'
@@ -598,7 +598,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 // Anthropic - TODO: implement
                 throw new Error('Anthropic integration for key points extraction is not yet implemented. Please use Google AI (Gemini) or OpenAI for analysis.');
               } else if (assignment?.provider === 'mistral') {
-                // Mistral - TODO: implement
+                // Mistral - TODO: implement  
                 throw new Error('Mistral integration for key points extraction is not yet implemented. Please use Google AI (Gemini) or OpenAI for analysis.');
               } else {
                 throw new Error(`Unsupported provider for analysis: ${assignment?.provider}. Please use Google AI (Gemini) or OpenAI.`);
@@ -626,7 +626,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
               return;
             }
           } else {
-            setApiKeyError('Production mode requires a configured analysis API. Please configure your API keys.');
+            setApiKeyError('Production mode requires a configured analysis API. Please configure your API keys or switch to demo mode.');
             return;
           }
         }
@@ -639,7 +639,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           const audioAssignment = apiUsageAssignment.audio;
           
           if (!audioApiKey) {
-            setApiKeyError('Production mode requires a configured audio API. Please configure your API keys.');
+            setApiKeyError('Production mode requires a configured audio API. Please configure your API keys or switch to demo mode.');
             return;
           }
           
@@ -724,7 +724,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 } catch (error) {
                   console.error('❌ Error extracting key points from transcription:', error);
                   if (isQuotaError(error as Error)) {
-                    setApiKeyError('Analysis API quota exceeded. Please check your quota or switch to demo mode.');
+                    setApiKeyError('Analysis API quota exceeded during transcription analysis. Please check your quota or switch to demo mode.');
                     return;
                   }
                   setApiKeyError(`Analysis API error: ${(error as Error).message}`);
@@ -757,7 +757,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
       // If no key points were extracted in production mode, that's an error
       if (isProductionMode && keyPointsResult.length === 0) {
-        setApiKeyError('No key points could be extracted. Please check your API configuration or switch to demo mode.');
+        setApiKeyError('No key points could be extracted from the content. Please verify your API configuration or switch to demo mode.');
         return;
       }
       
@@ -838,7 +838,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         const writingAssignment = apiUsageAssignment.writing;
         
         if (!writingApiKey || !appState.transcription) {
-          setApiKeyError('Production mode requires a configured writing API and transcription data.');
+          setApiKeyError('Production mode requires a configured writing API and valid transcription data.');
           return;
         }
         
