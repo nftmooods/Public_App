@@ -1,4 +1,5 @@
 import { GeminiService, GeminiServiceFactory } from './geminiService';
+import { OpenAIService, OpenAIServiceFactory } from './openaiService';
 
 export interface TranscriptionResult {
   text: string;
@@ -10,6 +11,57 @@ export interface AudioTranscriptionService {
   transcribe(audioFile: File): Promise<string>;
   transcribeFromUrl(url: string): Promise<string>;
   isSupported(): boolean;
+}
+
+// Service de transcription utilisant OpenAI Whisper avec modèle spécifique
+class OpenAITranscriptionService implements AudioTranscriptionService {
+  private openaiService: OpenAIService;
+
+  constructor(apiKey?: string, modelName?: string) {
+    this.openaiService = OpenAIServiceFactory.create(apiKey, modelName);
+  }
+
+  isSupported(): boolean {
+    return this.openaiService.isConfigured();
+  }
+
+  async transcribe(audioFile: File): Promise<string> {
+    if (!this.openaiService.isConfigured()) {
+      throw new Error('OpenAI service not configured. Please provide an OpenAI API key.');
+    }
+
+    try {
+      const result = await this.openaiService.transcribeFile(audioFile, {
+        language: 'auto',
+        extractKeyPoints: false,
+        detectSpeakers: true
+      });
+
+      return result.text;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      throw new Error(`Erreur de transcription OpenAI: ${errorMessage}`);
+    }
+  }
+
+  async transcribeFromUrl(url: string): Promise<string> {
+    if (!this.openaiService.isConfigured()) {
+      throw new Error('OpenAI service not configured. Please provide an OpenAI API key.');
+    }
+
+    try {
+      const result = await this.openaiService.transcribeFromUrl(url, {
+        language: 'auto',
+        extractKeyPoints: false,
+        detectSpeakers: true
+      });
+
+      return result.text;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      throw new Error(`Erreur de transcription URL OpenAI: ${errorMessage}`);
+    }
+  }
 }
 
 // Service de transcription utilisant Gemini avec modèle spécifique
@@ -191,11 +243,28 @@ class MockTranscriptionService implements AudioTranscriptionService {
 
 // Factory pour créer le service de transcription approprié
 export class TranscriptionServiceFactory {
-  static create(apiKey?: string, modelName?: string): AudioTranscriptionService {
-    // Si une clé API Google AI est fournie et valide, utiliser Gemini avec le modèle spécifié
-    if (apiKey && apiKey.startsWith('AIza') && apiKey.length > 20) {
-      console.log(`Utilisation du service Gemini avec clé API et modèle: ${modelName || 'gemini-2.5-flash'}`);
+  static create(apiKey?: string, modelName?: string, provider?: string): AudioTranscriptionService {
+    // Déterminer le provider basé sur la clé API ou le paramètre explicite
+    let detectedProvider = provider;
+    
+    if (!detectedProvider && apiKey) {
+      if (apiKey.startsWith('AIza')) {
+        detectedProvider = 'googleAI';
+      } else if (apiKey.startsWith('sk-')) {
+        detectedProvider = 'openAI';
+      }
+    }
+    
+    // Si une clé API Google AI est fournie et valide, utiliser Gemini
+    if (detectedProvider === 'googleAI' && apiKey && apiKey.startsWith('AIza') && apiKey.length > 20) {
+      console.log(`🤖 Utilisation du service Gemini avec clé API et modèle: ${modelName || 'gemini-2.5-flash'}`);
       return new GeminiTranscriptionService(apiKey, modelName);
+    }
+    
+    // Si une clé API OpenAI est fournie et valide, utiliser OpenAI Whisper
+    if (detectedProvider === 'openAI' && apiKey && apiKey.startsWith('sk-') && apiKey.length > 20) {
+      console.log(`🧠 Utilisation du service OpenAI Whisper avec clé API et modèle: ${modelName || 'whisper-1'}`);
+      return new OpenAITranscriptionService(apiKey, modelName);
     }
     
     // Sinon, essayer Web Speech API si supporté
@@ -205,7 +274,7 @@ export class TranscriptionServiceFactory {
     }
     
     // En dernier recours, utiliser le service de démonstration
-    console.log('Utilisation du service de démonstration');
+    console.log('🎭 Utilisation du service de démonstration');
     return new MockTranscriptionService();
   }
 }
