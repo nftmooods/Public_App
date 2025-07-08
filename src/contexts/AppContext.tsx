@@ -127,7 +127,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useAppContext must be used within an AppProvider. Make sure the component is wrapped with AppProvider.');
   }
   return context;
 };
@@ -146,9 +146,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [analysisSessionId, setAnalysisSessionId] = useState<string>('');
   const [apiUsageAssignment, setApiUsageAssignment] = useState<ApiUsageAssignment>(initialAppState.apiUsageAssignment);
 
-  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
-  const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = useApiKeys(user?.id || null);
-  const { loadUserSession, saveUserSession, resetUserSession, autoSaveSession, isLoading: sessionLoading, lastSavedStep } = useUserSession(user?.id || null);
+  // Initialize hooks with proper error handling
+  const authHook = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = authHook || {};
+  
+  const apiKeysHook = useApiKeys(user?.id || null);
+  const { apiKeys, saveApiKeys, isLoading: apiKeysLoading } = apiKeysHook || {};
+  
+  const sessionHook = useUserSession(user?.id || null);
+  const { loadUserSession, saveUserSession, resetUserSession, autoSaveSession, isLoading: sessionLoading, lastSavedStep } = sessionHook || {};
 
   // Function to get the appropriate API key and model for a specific usage
   const getApiKeyAndModelForUsage = (usageType: keyof ApiUsageAssignment): { apiKey: string | null; model: string | null } => {
