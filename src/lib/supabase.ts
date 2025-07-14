@@ -53,6 +53,23 @@ export interface UserSession {
   expires_at: string;
 }
 
+export interface Transcription {
+  id: string;
+  user_id: string;
+  title: string;
+  original_filename?: string;
+  file_type: 'audio' | 'text';
+  file_size?: number;
+  transcription_text?: string;
+  key_points: any[];
+  speakers: any[];
+  duration?: number;
+  language: string;
+  status: 'processing' | 'completed' | 'error';
+  created_at: string;
+  updated_at: string;
+}
+
 // Service to manage user profiles
 export class ProfileService {
   static async getProfile(userId: string): Promise<Profile | null> {
@@ -387,6 +404,108 @@ export class FeedbackService {
     } catch (error) {
       console.error('Error retrieving feedback:', error);
       return [];
+    }
+  }
+}
+
+// Service to manage transcriptions
+export class TranscriptionService {
+  static async getUserTranscriptions(userId: string): Promise<Transcription[]> {
+    try {
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error retrieving transcriptions:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error retrieving transcriptions:', error);
+      return [];
+    }
+  }
+
+  static async saveTranscription(transcription: Omit<Transcription, 'id' | 'created_at' | 'updated_at'>): Promise<Transcription | null> {
+    try {
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .insert(transcription)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving transcription:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error saving transcription:', error);
+      return null;
+    }
+  }
+
+  static async updateTranscription(id: string, updates: Partial<Transcription>): Promise<Transcription | null> {
+    try {
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating transcription:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating transcription:', error);
+      return null;
+    }
+  }
+
+  static async deleteTranscription(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('transcriptions')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting transcription:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting transcription:', error);
+      return false;
+    }
+  }
+
+  static async getTranscriptionCount(userId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('transcriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error counting transcriptions:', error);
+        return 0;
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('Error counting transcriptions:', error);
+      return 0;
     }
   }
 }

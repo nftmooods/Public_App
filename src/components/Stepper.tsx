@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Circle, Lock, RotateCcw, Home, Play, Settings } from 'lucide-react';
+import { Check, Circle, Lock, RotateCcw, Home, Play, Settings, LayoutDashboard, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Step } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 
@@ -7,15 +7,24 @@ interface StepperProps {
   steps: Step[];
   currentStep: number;
   onStepClick: (stepId: number) => void;
-  demoMode?: boolean;
+  isProductionMode: boolean;
+  onToggleMode: () => void;
+  onOpenDashboard: () => void;
 }
 
-const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demoMode = false }) => {
-  const { resetAppState, isProductionMode } = useAppContext();
+const Stepper: React.FC<StepperProps> = ({ 
+  steps, 
+  currentStep, 
+  onStepClick, 
+  isProductionMode,
+  onToggleMode,
+  onOpenDashboard
+}) => {
+  const { resetAppState } = useAppContext();
 
   const canNavigateToStep = (stepId: number) => {
-    if (demoMode) {
-      return true;
+    if (!isProductionMode) {
+      return true; // Demo mode allows free navigation
     }
     
     const step = steps.find(s => s.id === stepId);
@@ -25,47 +34,55 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
     return step?.completed || stepId <= maxCompletedStep + 1;
   };
 
-  const handleRestartCurrentStep = () => {
-    console.log('🔄 Restarting current step while preserving production mode');
-    // Logic handled in AppContext
-  };
-
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
+    <div className="w-64 bg-gray-900 text-white flex flex-col h-screen">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3 mb-4">
-          <button
-            onClick={resetAppState}
-            className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all"
-            title="New Analysis"
-          >
-            <span className="text-white font-bold">R</span>
-          </button>
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">R</span>
+          </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Rekapp</h1>
-            <p className="text-sm text-gray-500">Transform content</p>
+            <h1 className="text-lg font-bold text-white">Rekapp</h1>
+            <p className="text-xs text-gray-400">Transform content</p>
           </div>
         </div>
 
-        {/* Mode indicator */}
-        <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium ${
-          demoMode 
-            ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' 
-            : 'bg-green-100 text-green-800 border border-green-300'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${
-            demoMode ? 'bg-yellow-500' : 'bg-green-500'
-          }`}></div>
-          <span>
-            {demoMode ? 'Demo Mode' : 'Production Mode'}
-          </span>
+        {/* Dashboard Button */}
+        <button
+          onClick={onOpenDashboard}
+          className="w-full flex items-center space-x-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span>Dashboard</span>
+        </button>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-300">Demo Mode</span>
+          <button
+            onClick={onToggleMode}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              isProductionMode ? 'bg-blue-600' : 'bg-yellow-500'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                isProductionMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
+        <p className="text-xs text-gray-400 mt-1">
+          {isProductionMode ? 'Production mode active' : 'Free navigation enabled'}
+        </p>
       </div>
 
       {/* Steps */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="space-y-4">
+      <div className="flex-1 p-4 overflow-y-auto">
+        <div className="space-y-2">
           {steps.map((step, index) => {
             const canNavigate = canNavigateToStep(step.id);
             const isActive = step.id === currentStep;
@@ -74,75 +91,69 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
               <div key={step.id} className="relative">
                 {/* Connector line */}
                 {index < steps.length - 1 && (
-                  <div className={`absolute left-4 top-10 w-0.5 h-12 ${
-                    step.completed ? 'bg-blue-600' : 
-                    demoMode ? 'bg-yellow-300' : 'bg-gray-200'
+                  <div className={`absolute left-4 top-10 w-0.5 h-8 ${
+                    step.completed ? 'bg-blue-500' : 
+                    !isProductionMode ? 'bg-yellow-400' : 'bg-gray-600'
                   }`} />
                 )}
                 
                 <div 
-                  className={`flex items-start space-x-4 p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                  className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                     isActive 
-                      ? 'bg-blue-50 border-2 border-blue-200' 
+                      ? 'bg-blue-600 text-white' 
                       : canNavigate 
-                        ? 'hover:bg-gray-50 border-2 border-transparent hover:border-gray-200'
-                        : 'opacity-50 cursor-not-allowed border-2 border-transparent'
+                        ? 'hover:bg-gray-800 text-gray-300 hover:text-white'
+                        : 'opacity-50 cursor-not-allowed text-gray-500'
                   }`}
                   onClick={() => canNavigate && onStepClick(step.id)}
                 >
                   {/* Step indicator */}
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200 ${
                     step.completed 
-                      ? 'bg-blue-600 text-white' 
+                      ? 'bg-green-500 text-white' 
                       : isActive 
-                        ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-200' 
+                        ? 'bg-white text-blue-600' 
                         : canNavigate
-                          ? 'bg-gray-200 text-gray-600'
-                          : 'bg-gray-100 text-gray-300'
+                          ? 'bg-gray-700 text-gray-300'
+                          : 'bg-gray-800 text-gray-600'
                   }`}>
                     {step.completed ? (
                       <Check className="w-4 h-4" />
-                    ) : !canNavigate && !demoMode ? (
+                    ) : !canNavigate && isProductionMode ? (
                       <Lock className="w-3 h-3" />
                     ) : (
-                      <span className="text-sm font-medium">{step.id}</span>
+                      <span>{step.id}</span>
                     )}
                   </div>
                   
                   {/* Step content */}
                   <div className="flex-1 min-w-0">
                     <div className={`font-medium text-sm ${
-                      isActive ? 'text-blue-900' : 
-                      step.completed ? 'text-gray-900' : 
-                      canNavigate ? 'text-gray-700' : 'text-gray-400'
+                      isActive ? 'text-white' : 
+                      step.completed ? 'text-gray-200' : 
+                      canNavigate ? 'text-gray-300' : 'text-gray-500'
                     }`}>
                       {step.title}
                     </div>
                     <div className={`text-xs mt-1 ${
-                      isActive ? 'text-blue-700' : 
-                      step.completed ? 'text-gray-500' : 
-                      canNavigate ? 'text-gray-500' : 'text-gray-400'
+                      isActive ? 'text-blue-100' : 
+                      step.completed ? 'text-gray-400' : 
+                      canNavigate ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       {step.description}
                     </div>
                     
                     {/* Status indicators */}
                     {isActive && (
-                      <div className="flex items-center space-x-1 mt-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs text-blue-600 font-medium">Current</span>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+                        <span className="text-xs text-blue-100 font-medium">Current</span>
                       </div>
                     )}
                     
-                    {demoMode && !step.completed && !isActive && canNavigate && (
-                      <div className="text-xs text-yellow-600 font-medium mt-1">
+                    {!isProductionMode && !step.completed && !isActive && canNavigate && (
+                      <div className="text-xs text-yellow-400 font-medium mt-1">
                         Available
-                      </div>
-                    )}
-                    
-                    {!canNavigate && !demoMode && !step.completed && !isActive && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        Locked
                       </div>
                     )}
                   </div>
@@ -154,11 +165,10 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
       </div>
 
       {/* Footer actions */}
-      <div className="p-6 border-t border-gray-200 space-y-3">
+      <div className="p-4 border-t border-gray-700 space-y-2">
         <button
-          onClick={handleRestartCurrentStep}
+          onClick={() => window.location.reload()}
           className="w-full flex items-center justify-center px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all text-sm"
-          title="Restart current step"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Restart Step
@@ -167,7 +177,6 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick, demo
         <button
           onClick={resetAppState}
           className="w-full flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-sm"
-          title="Start over from the beginning"
         >
           <Home className="w-4 h-4 mr-2" />
           Start Over
