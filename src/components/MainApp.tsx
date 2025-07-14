@@ -10,7 +10,7 @@ import Step8 from './steps/Step8';
 import DonationStep from './steps/DonationStep';
 import { TranscriptionService, Transcription } from '../lib/supabase';
 import { useAppContext } from '../contexts/AppContext';
-import { AlertTriangle, TestTube } from 'lucide-react';
+import { AlertTriangle, TestTube, Play, Sparkles } from 'lucide-react';
 
 export const MainApp: React.FC = () => {
   const {
@@ -88,6 +88,7 @@ export const MainApp: React.FC = () => {
     // Implementation would depend on how you want to handle this
   };
 
+  const getApiUsageSummary = () => {
     const usageTypes = [
       { key: 'audio', name: 'Audio', icon: '🎵' },
       { key: 'analysis', name: 'Analysis', icon: '🔍' },
