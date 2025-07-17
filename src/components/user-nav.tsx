@@ -48,7 +48,10 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-             <Link href="/admin">Admin</Link>
+             <Link href="/admin">Add Space</Link>
+          </DropdownMenuItem>
+           <DropdownMenuItem asChild>
+             <Link href="/console">Console</Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
