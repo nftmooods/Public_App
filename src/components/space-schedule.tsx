@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
+import { useAuth } from "@/context/auth-context";
 
 interface SpaceScheduleProps {
   initialSpaces: Space[];
@@ -18,7 +19,11 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
   const [spaces, setSpaces] = useState(initialSpaces);
   const [filter, setFilter] = useState("today");
   const [showFavorites, setShowFavorites] = useState(false);
-  const [favorites, setFavorites] = useLocalStorage<string[]>("favorites", []);
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useLocalStorage<string[]>(
+    user ? `favorites_${user.name}` : "favorites_guest",
+    []
+  );
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -78,8 +83,11 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
                 checked={showFavorites}
                 onCheckedChange={setShowFavorites}
                 aria-label="Show favorites only"
+                disabled={!user}
             />
-            <Label htmlFor="favorites-only">Show Favorites</Label>
+            <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
+                Show Favorites { !user && "(Login required)"}
+            </Label>
             </div>
         )}
       </div>

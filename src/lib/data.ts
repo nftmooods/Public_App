@@ -21,30 +21,35 @@ const spaces: Space[] = [
     name: 'ApeChain Community Call',
     projectUrl: 'https://apechain.com',
     dateTime: today.toISOString(),
+    author: 'admin',
   },
   {
     id: '2',
     name: 'NFT Showcase with Yuga Labs',
     projectUrl: 'https://yuga.com',
     dateTime: tomorrow.toISOString(),
+    author: 'admin',
   },
   {
     id: '3',
     name: 'DeFi on ApeChain Deep Dive',
     projectUrl: 'https://defionape.com',
     dateTime: dayAfter.toISOString(),
+    author: 'admin',
   },
   {
     id: '4',
     name: 'Gaming Guild AMA',
     projectUrl: 'https://gamingguild.com',
     dateTime: nextWeek.toISOString(),
+    author: 'user1',
   },
   {
     id: '5',
     name: 'Art & Culture on ApeChain',
     projectUrl: 'https://cultureape.com',
     dateTime: new Date(today.getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours after the first one
+    author: 'user2',
   },
 ];
 

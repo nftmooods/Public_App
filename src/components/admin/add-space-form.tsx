@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { addSpace } from "@/lib/actions";
+import { useAuth } from "@/context/auth-context";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Space name must be at least 3 characters." }),
@@ -25,6 +26,7 @@ const formSchema = z.object({
 
 export function AddSpaceForm() {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,6 +38,15 @@ export function AddSpaceForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({
+            title: "Authentication Error",
+            description: "You must be logged in to add a space.",
+            variant: "destructive",
+        });
+        return;
+    }
+
     const [hours, minutes] = values.time.split(":").map(Number);
     const combinedDateTime = new Date(values.date);
     combinedDateTime.setUTCHours(hours, minutes, 0, 0);
@@ -45,6 +56,7 @@ export function AddSpaceForm() {
             name: values.name,
             projectUrl: values.projectUrl,
             dateTime: combinedDateTime.toISOString(),
+            author: user.name,
         });
         toast({
             title: "Space added!",
@@ -146,7 +158,7 @@ export function AddSpaceForm() {
             )}
             />
         </div>
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !user}>
             {form.formState.isSubmitting ? "Adding..." : "Add Space"}
         </Button>
       </form>

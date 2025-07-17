@@ -3,4 +3,5 @@ export interface Space {
   name: string;
   projectUrl: string;
   dateTime: string; // ISO 8601 format string in UTC
+  author?: string;
 }
