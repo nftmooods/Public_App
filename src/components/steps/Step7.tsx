@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, ArrowRight, Edit3, RefreshCw, Search, ExternalLink, Plus, Sparkles, X, Maximize, Minimize } from 'lucide-react';
+import { Loader2, ArrowRight, Edit3, RefreshCw, Search, ExternalLink, Plus, Sparkles, X, Maximize, Minimize, AlertTriangle } from 'lucide-react';
 import { ContentSettings, KeyPoint, TranscriptionData } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { OpenAIServiceFactory } from '../../utils/openaiService';
@@ -27,7 +27,7 @@ const Step7: React.FC<Step7Props> = ({
   onRegenerate,
   onNext
 }) => {
-  const { isProductionMode, apiKeyError, setApiKeyError, apiUsageAssignment, apiKeys } = useAppContext();
+  const { apiKeyError, setApiKeyError, apiUsageAssignment, apiKeys } = useAppContext();
   const [isEditing, setIsEditing] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [editContent, setEditContent] = useState(generatedContent);
@@ -37,10 +37,6 @@ const Step7: React.FC<Step7Props> = ({
 
   // Get API configuration for writing
   const getWritingApiConfig = () => {
-    if (!isProductionMode) {
-      return { apiKey: null, model: null, displayName: 'Demo Mode' };
-    }
-
     const assignment = apiUsageAssignment.writing;
     if (!assignment || !assignment.provider) {
       return { apiKey: null, model: null, displayName: 'Not configured' };
@@ -102,12 +98,10 @@ const Step7: React.FC<Step7Props> = ({
   const handleCustomRegenerate = async () => {
     if (!customPrompt.trim()) return;
     
-    if (isProductionMode) {
-      const { apiKey: writingApiKey } = getWritingApiConfig();
-      if (!writingApiKey) {
-        setApiKeyError('Production mode requires a configured writing API. Please configure your API keys or switch to demo mode.');
-        return;
-      }
+    const { apiKey: writingApiKey } = getWritingApiConfig();
+    if (!writingApiKey) {
+      setApiKeyError('Writing API configuration required. Please configure your API keys.');
+      return;
     }
     
     setIsSearching(true);
@@ -128,12 +122,10 @@ const Step7: React.FC<Step7Props> = ({
   };
 
   const handleWebSearch = async (topic: string) => {
-    if (isProductionMode) {
-      const { apiKey: writingApiKey } = getWritingApiConfig();
-      if (!writingApiKey) {
-        setApiKeyError('Production mode requires a configured writing API. Please configure your API keys or switch to demo mode.');
-        return;
-      }
+    const { apiKey: writingApiKey } = getWritingApiConfig();
+    if (!writingApiKey) {
+      setApiKeyError('Writing API configuration required. Please configure your API keys.');
+      return;
     }
     
     setIsSearching(true);
@@ -288,12 +280,12 @@ const Step7: React.FC<Step7Props> = ({
       </div>
 
       {/* API configuration warning for production mode */}
-      {isProductionMode && !getWritingApiConfig().apiKey && (
+      {!getWritingApiConfig().apiKey && (
         <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-5 h-5 text-orange-600" />
             <span className="text-orange-800">
-              <strong>Production mode requires writing API configuration.</strong> Please configure your API keys or switch to demo mode.
+              <strong>Writing API configuration required.</strong> Please configure your API keys.
             </span>
           </div>
         </div>
@@ -322,7 +314,7 @@ const Step7: React.FC<Step7Props> = ({
         <div className="flex items-center space-x-2 px-3 py-2 bg-gray-100 text-gray-800 rounded-full">
           <span className="text-sm font-medium">Mode:</span>
           <span className="text-sm font-bold">
-            {isProductionMode ? (getWritingApiConfig().displayName || 'Production') : 'Demo'}
+            {getWritingApiConfig().displayName || 'Not configured'}
           </span>
         </div>
       </div>
@@ -334,7 +326,7 @@ const Step7: React.FC<Step7Props> = ({
           <div className="flex space-x-3">
             <button
               onClick={onRegenerate}
-              disabled={isProductionMode && !getWritingApiConfig().apiKey}
+              disabled={!getWritingApiConfig().apiKey}
               className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-all text-sm"
             >
               <Sparkles className="w-4 h-4 mr-2" />
@@ -393,7 +385,7 @@ const Step7: React.FC<Step7Props> = ({
                 <button
                   key={index}
                   onClick={() => handleWebSearch(title)}
-                  disabled={isSearching || (isProductionMode && !getWritingApiConfig().apiKey)}
+                  disabled={isSearching || !getWritingApiConfig().apiKey}
                   className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors disabled:opacity-50"
                 >
                   <div className="flex items-center justify-between">
@@ -431,7 +423,7 @@ const Step7: React.FC<Step7Props> = ({
           />
           <button
             onClick={handleCustomRegenerate}
-            disabled={!customPrompt.trim() || isSearching || (isProductionMode && !getWritingApiConfig().apiKey)}
+            disabled={!customPrompt.trim() || isSearching || !getWritingApiConfig().apiKey}
             className="w-full mt-3 flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm"
           >
             {isSearching ? (

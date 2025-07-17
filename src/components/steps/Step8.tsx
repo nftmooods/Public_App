@@ -69,7 +69,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, format, co
 };
 
 const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext }) => {
-  const { demoMode, apiUsageAssignment, apiKeys } = useAppContext();
+  const { apiUsageAssignment, apiKeys } = useAppContext();
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<string>('');
   const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; format: any | null }>({
@@ -85,10 +85,6 @@ const Step8: React.FC<Step8Props> = ({ generatedContent, contentSettings, onNext
 
   // Get API key for export
   const getExportApiConfig = () => {
-    if (!isProductionMode) {
-      return { apiKey: null, model: null, displayName: 'Demo Mode' };
-    }
-
     const assignment = apiUsageAssignment.export;
     if (!assignment || !assignment.provider) {
       return { apiKey: null, model: null, displayName: 'Not configured' };
@@ -221,7 +217,7 @@ ${generatedContent}`,
       const { apiKey: exportApiKey, model: exportModel } = getExportApiConfig();
       const exportAssignment = apiUsageAssignment.export;
       
-      if (!demoMode && exportApiKey) {
+      if (exportApiKey) {
         console.log('🤖 Generating AI-powered HTML with professional styling...');
         
         // Create a comprehensive prompt for HTML generation
@@ -313,9 +309,9 @@ ${cleanHtml}
         console.log('✅ AI-generated HTML created successfully');
         
       } else {
-        // Demo mode - generate enhanced HTML with professional styling
-        console.log('🎭 Generating demo HTML with professional styling...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // No API configured - generate basic HTML
+        console.log('⚠️ No export API configured, generating basic HTML...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const demoHtml = generateProfessionalDemoHtml();
         setGeneratedHtml(demoHtml);
@@ -327,7 +323,7 @@ ${cleanHtml}
         exportFormats[htmlFormatIndex].content = generatedHtml || generateProfessionalDemoHtml();
       }
       
-      setExportStatus('Professional HTML generated successfully with AI-powered styling');
+      setExportStatus(exportApiKey ? 'Professional HTML generated successfully with AI-powered styling' : 'Basic HTML generated');
       setTimeout(() => setExportStatus(''), 3000);
       
     } catch (error) {
