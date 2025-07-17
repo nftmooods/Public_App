@@ -55,6 +55,17 @@ const Step1: React.FC<Step1Props> = ({
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [cleanupInProgress, setCleanupInProgress] = useState(false);
 
+  // Initialize processing steps when component mounts
+  useEffect(() => {
+    if (processingSteps.length === 0 && (audioFile || textContent.trim())) {
+      const steps = getProcessingSteps();
+      if (steps.length > 0) {
+        setProcessingSteps(steps);
+        console.log('🔧 Processing steps initialized:', steps.length);
+      }
+    }
+  }, [audioFile, textContent, processingSteps.length]);
+
   // Monitor appState.isProcessing to maintain processing state
   useEffect(() => {
     if (appState.isProcessing && !isProcessing) {
@@ -65,8 +76,11 @@ const Step1: React.FC<Step1Props> = ({
       if (processingSteps.length === 0) {
         const steps = getProcessingSteps();
         setProcessingSteps(steps);
-        setCurrentStepIndex(0);
-        setAnalysisProgress(10);
+        if (steps.length > 0) {
+          setCurrentStepIndex(0);
+          setAnalysisProgress(10);
+          console.log('🚀 Processing steps set during monitoring:', steps.length);
+        }
       }
     } else if (!appState.isProcessing && isProcessing) {
       console.log('✅ AppState processing completed, maintaining UI until transition');
@@ -273,12 +287,14 @@ const Step1: React.FC<Step1Props> = ({
     const analysisApiInfo = getApiDisplayInfo('analysis');
     
     console.log('🔍 Processing setup:', {
-      demoMode,
+      hasAudioFile: !!audioFile,
+      hasTextContent: !!textContent.trim(),
       audioApi: audioApiInfo,
       analysisApi: analysisApiInfo
     });
     
     if (textContent.trim() || textFile) {
+      console.log('📝 Creating text processing steps');
       return [
         { 
           id: 'text-validation', 
@@ -301,7 +317,7 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Semantic content analysis', 
           status: 'pending' as const, 
           api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
-          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 3000 : 2000,
+          duration: analysisApiInfo.name !== 'Not configured' ? 3000 : 2000,
           details: 'Advanced semantic analysis and understanding'
         },
         { 
@@ -309,7 +325,7 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Key points extraction', 
           status: 'pending' as const, 
           api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
-          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 4000 : 2500,
+          duration: analysisApiInfo.name !== 'Not configured' ? 4000 : 2500,
           details: 'Extracting main themes and insights'
         },
         { 
@@ -322,6 +338,7 @@ const Step1: React.FC<Step1Props> = ({
         }
       ];
     } else if (audioFile) {
+      console.log('🎵 Creating audio processing steps');
       const fileSizeMB = audioFile.size / (1024 * 1024);
       const fileInfo = getFileSizeInfo(audioFile);
       const baseTranscriptionTime = Math.max(8000, fileSizeMB * 1000); // More realistic timing
@@ -380,7 +397,7 @@ const Step1: React.FC<Step1Props> = ({
           label: 'Key points extraction', 
           status: 'pending' as const, 
           api: analysisApiInfo.model ? `${analysisApiInfo.name} (${analysisApiInfo.model})` : analysisApiInfo.name,
-          duration: !demoMode && analysisApiInfo.name !== 'Demo Mode' ? 4000 : 2500,
+          duration: analysisApiInfo.name !== 'Not configured' ? 4000 : 2500,
           details: 'Extracting main themes and insights'
         },
         { 
@@ -406,6 +423,8 @@ const Step1: React.FC<Step1Props> = ({
 
       return steps;
     }
+    
+    console.log('⚠️ No content detected for processing steps');
     return [];
   };
 
@@ -418,11 +437,26 @@ const Step1: React.FC<Step1Props> = ({
       hasTextFile: !!textFile
     });
 
+    // Ensure we have content to process
+    if (!audioFile && !textContent.trim()) {
+      console.error('❌ No content to process');
+      setError('No content to process. Please upload a file or enter text.');
+      return;
+    }
+
     setIsProcessing(true);
     setAnalysisProgress(0);
     setCleanupInProgress(false);
     
     const steps = getProcessingSteps();
+    
+    if (steps.length === 0) {
+      console.error('❌ No processing steps generated');
+      setError('Unable to generate processing steps. Please check your content and API configuration.');
+      setIsProcessing(false);
+      return;
+    }
+    
     setProcessingSteps(steps);
     setCurrentStepIndex(0);
 
@@ -449,17 +483,17 @@ const Step1: React.FC<Step1Props> = ({
           console.log(`📁 Uploading large file (${fileSizeMB.toFixed(2)}MB) to Files API...`);
         } else if (step.id === 'transcription') {
           const audioApiInfo = getApiDisplayInfo('audio');
-          if (!demoMode && audioApiInfo.name !== 'Demo Mode') {
+          if (audioApiInfo.name !== 'Not configured') {
             console.log('🎵 Using assigned API for transcription:', audioApiInfo.name, audioApiInfo.model);
           } else {
-            console.log('🎭 Using demo mode for transcription');
+            console.log('⚠️ No API configured for transcription');
           }
         } else if (step.id === 'key-extraction') {
           const analysisApiInfo = getApiDisplayInfo('analysis');
-          if (!demoMode && analysisApiInfo.name !== 'Demo Mode') {
+          if (analysisApiInfo.name !== 'Not configured') {
             console.log('🎯 Using assigned API for key extraction:', analysisApiInfo.name, analysisApiInfo.model);
           } else {
-            console.log('🎭 Using demo mode for key extraction');
+            console.log('⚠️ No API configured for key extraction');
           }
         } else if (step.id === 'cleanup') {
           // Marquer le début du nettoyage
@@ -574,7 +608,7 @@ const Step1: React.FC<Step1Props> = ({
             </div>
             
             <div className="text-sm text-gray-600 text-center">
-              Step {currentStepIndex + 1} of {processingSteps.length}
+              {processingSteps.length > 0 ? `Step ${currentStepIndex + 1} of ${processingSteps.length}` : 'Initializing...'}
               {cleanupInProgress && (
                 <span className="ml-2 text-orange-600 font-medium">
                   • Cleanup in progress until completion
@@ -584,7 +618,8 @@ const Step1: React.FC<Step1Props> = ({
           </div>
 
           {/* Detailed steps */}
-          <div className="space-y-3 flex-1 overflow-y-auto">
+          {processingSteps.length > 0 ? (
+            <div className="space-y-3 flex-1 overflow-y-auto">
             {processingSteps.map((step, index) => (
               <div 
                 key={step.id}
@@ -629,7 +664,7 @@ const Step1: React.FC<Step1Props> = ({
                         step.api.includes('OpenAI') || step.api.includes('Whisper') || step.api.includes('GPT') ? 'bg-green-100 text-green-700' :
                         step.api.includes('Anthropic') || step.api.includes('Claude') ? 'bg-orange-100 text-orange-700' :
                         step.api.includes('Mistral') ? 'bg-red-100 text-red-700' :
-                        step.api.includes('Demo') || step.api.includes('demo') ? 'bg-yellow-100 text-yellow-700' :
+                        step.api.includes('Not configured') ? 'bg-red-100 text-red-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
                         {step.api}
@@ -665,7 +700,15 @@ const Step1: React.FC<Step1Props> = ({
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+                <p className="text-gray-600">Initializing processing steps...</p>
+              </div>
+            </div>
+          )}
 
           {/* Processing information */}
           <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
