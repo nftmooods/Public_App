@@ -487,7 +487,6 @@ export const MainApp: React.FC = () => {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
       />
 
       {isProductionMode && (
