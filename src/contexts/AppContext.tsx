@@ -328,14 +328,26 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const handleStepClick = (stepId: number) => {
-    // Normal navigation - only allow if step is completed or next in sequence
-    const canNavigate = steps.find(s => s.id === stepId)?.completed || 
-                       stepId <= Math.max(...steps.filter(s => s.completed).map(s => s.id)) + 1;
+    // Allow navigation to completed steps, current step, or next available step
+    const completedSteps = steps.filter(s => s.completed).map(s => s.id);
+    const maxCompletedStep = completedSteps.length > 0 ? Math.max(...completedSteps) : 0;
+    const canNavigate = completedSteps.includes(stepId) || 
+                       stepId === appState.currentStep || 
+                       stepId <= maxCompletedStep + 1;
     
     if (canNavigate) {
       console.log(`🔄 Navigating to step ${stepId}`);
       setAppState(prev => ({ ...prev, currentStep: stepId }));
-      updateStepStatus(stepId, false, true);
+      
+      // Update step status - keep completed status for already completed steps
+      setSteps(prevSteps => 
+        prevSteps.map(step => ({
+          ...step,
+          active: step.id === stepId
+        }))
+      );
+    } else {
+      console.log(`❌ Cannot navigate to step ${stepId} - not accessible yet`);
     }
   };
 

@@ -13,11 +13,14 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick }) =>
   const { resetAppState } = useAppContext();
 
   const canNavigateToStep = (stepId: number) => {
-    const step = steps.find(s => s.id === stepId);
     const completedSteps = steps.filter(s => s.completed).map(s => s.id);
     const maxCompletedStep = completedSteps.length > 0 ? Math.max(...completedSteps) : 0;
     
-    return step?.completed || stepId <= maxCompletedStep + 1;
+    // Allow navigation to:
+    // 1. Any completed step
+    // 2. The current step
+    // 3. The next step after the highest completed step
+    return completedSteps.includes(stepId) || stepId === currentStep || stepId <= maxCompletedStep + 1;
   };
 
   return (
