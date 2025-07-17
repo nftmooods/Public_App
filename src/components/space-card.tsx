@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { format as formatInTimezone } from 'date-fns-tz';
+import { formatInTimeZone as formatInTimezone } from 'date-fns-tz';
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
 import { Star, Link as LinkIcon, Calendar, Clock } from "lucide-react";
@@ -26,22 +27,31 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   useEffect(() => {
     try {
       const date = new Date(space.dateTime);
-      let dateStr, timeStr;
+      let dateStr, timeStr, timezoneLabel;
   
       if (displayTimezone === 'local') {
-        dateStr = format(date, "eeee, MMMM d", { locale: enUS });
-        timeStr = format(date, "p", { locale: enUS });
+        const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        dateStr = formatInTimezone(date, localTimezone, "eeee, MMMM d", { locale: enUS });
+        timeStr = formatInTimezone(date, localTimezone, "p", { locale: enUS });
+        timezoneLabel = localTimezone.split('/').pop()?.replace('_', ' ') || 'Local';
       } else {
         dateStr = formatInTimezone(date, displayTimezone, "eeee, MMMM d", { locale: enUS });
         timeStr = formatInTimezone(date, displayTimezone, "p", { locale: enUS });
+        // Find the label from the timezones list for display
+        const timezones = [
+            { value: "local", label: "My Timezone" },
+            { value: "UTC", label: "UTC" },
+            { value: "America/New_York", label: "EST" },
+            { value: "Europe/Paris", label: "CET" },
+            { value: "Asia/Tokyo", label: "JST" },
+        ];
+        timezoneLabel = timezones.find(tz => tz.value === displayTimezone)?.label || displayTimezone;
       }
   
-      const timezoneLabel = displayTimezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ') || 'Local' : displayTimezone;
       setFormattedDateTime({ date: dateStr, time: `${timeStr} (${timezoneLabel})` });
 
     } catch (error) {
         console.error("Error formatting date:", error);
-        // Set a fallback display
         setFormattedDateTime({ date: "Invalid date", time: ""});
     }
 
