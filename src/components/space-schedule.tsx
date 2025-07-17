@@ -29,17 +29,42 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
   const [filter, setFilter] = useState("today");
   const [showFavorites, setShowFavorites] = useState(false);
   const { user } = useAuth();
+  
   const [favorites, setFavorites] = useLocalStorage<string[]>(
     user ? `favorites_${user.name}` : "favorites_guest",
     []
   );
-  const [selectedTimezone, setSelectedTimezone] = useLocalStorage<string>('selectedTimezone', 'local');
+
+  const [storedTimezone, setStoredTimezone] = useLocalStorage<string>(
+    user ? `timezone_${user.name}` : 'timezone_guest', 
+    'local'
+  );
+
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('local');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
     setSpaces(initialSpaces);
-  }, [initialSpaces]);
+    
+    // Auto-detect timezone on client
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const defaultTimezone = timezones.some(tz => tz.value === detectedTimezone) ? detectedTimezone : 'local';
+
+    if (user) {
+        setSelectedTimezone(storedTimezone);
+    } else {
+        setSelectedTimezone(defaultTimezone);
+    }
+  }, [initialSpaces, user, storedTimezone]);
+
+  const handleTimezoneChange = (newTimezone: string) => {
+    setSelectedTimezone(newTimezone);
+    if (user) {
+        setStoredTimezone(newTimezone);
+    }
+  };
+
 
   const toggleFavorite = (spaceId: string) => {
     setFavorites(
@@ -106,7 +131,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
                 </Label>
                 </div>
             )}
-            <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+            <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
                 <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select timezone" />
                 </SelectTrigger>
