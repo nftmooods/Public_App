@@ -41,9 +41,7 @@ const Step1: React.FC<Step1Props> = ({
   const { 
     apiUsageAssignment, 
     apiKeys, 
-    demoMode, 
     setApiKeyError,
-    setDemoMode,
     appState
   } = useAppContext();
   
@@ -92,10 +90,10 @@ const Step1: React.FC<Step1Props> = ({
   // Function to get the actual API name and model for display
   const getApiDisplayInfo = (usageType: 'audio' | 'analysis') => {
     const assignment = apiUsageAssignment[usageType];
-    if (!assignment || !assignment.provider) return { name: 'Demo Mode', model: null };
+    if (!assignment || !assignment.provider) return { name: 'Not configured', model: null };
 
     const providerConfig = apiKeys[assignment.provider as keyof typeof apiKeys];
-    if (!providerConfig || !providerConfig.enabled) return { name: 'Demo Mode', model: null };
+    if (!providerConfig || !providerConfig.enabled) return { name: 'Not enabled', model: null };
 
     // Map provider IDs to display names
     const providerDisplayNames: Record<string, string> = {
@@ -532,15 +530,14 @@ const Step1: React.FC<Step1Props> = ({
       const errorMessage = (error as Error).message;
       
       if (errorMessage.includes('429') || errorMessage.includes('quota')) {
-        setApiKeyError('API quota exceeded. Switching to demo mode.');
-        setDemoMode(true);
+        setApiKeyError('API quota exceeded. Please check your quota.');
       } else if (errorMessage.includes('Failed to fetch')) {
         setApiKeyError('Network error. Please check your connection.');
       } else {
         setApiKeyError(`Processing error: ${errorMessage}`);
       }
       
-      setError('Processing failed. Please try again or switch to demo mode.');
+      setError('Processing failed. Please try again.');
       setIsProcessing(false);
       setCleanupInProgress(false);
     }
@@ -728,37 +725,29 @@ const Step1: React.FC<Step1Props> = ({
       </div>
 
       {/* API Assignment Status */}
-      {!demoMode && (
-        <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Settings className="w-4 h-4 text-blue-600" />
-              <span className="text-blue-800 font-medium text-sm">
-                API Assignment: Audio → {(() => {
-                  const audioInfo = getApiDisplayInfo('audio');
-                  return audioInfo.model ? `${audioInfo.name} (${audioInfo.model})` : audioInfo.name;
-                })()} | Analysis → {(() => {
-                  const analysisInfo = getApiDisplayInfo('analysis');
-                  return analysisInfo.model ? `${analysisInfo.name} (${analysisInfo.model})` : analysisInfo.name;
-                })()}
-              </span>
-            </div>
-            <span className="text-xs text-blue-600">Configured</span>
-          </div>
-        </div>
-      )}
-
-      {/* Demo Mode Notice */}
-      {demoMode && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-yellow-600" />
-            <span className="text-yellow-800 font-medium text-sm">
-              Demo Mode - All processing will be simulated with sample data
+            <Settings className="w-4 h-4 text-blue-600" />
+            <span className="text-blue-800 font-medium text-sm">
+              API Assignment: Audio → {(() => {
+                const audioInfo = getApiDisplayInfo('audio');
+                return audioInfo.model ? `${audioInfo.name} (${audioInfo.model})` : audioInfo.name;
+              })()} | Analysis → {(() => {
+                const analysisInfo = getApiDisplayInfo('analysis');
+                return analysisInfo.model ? `${analysisInfo.name} (${analysisInfo.model})` : analysisInfo.name;
+              })()}
             </span>
           </div>
+          <span className="text-xs text-blue-600">
+            {(() => {
+              const audioInfo = getApiDisplayInfo('audio');
+              const analysisInfo = getApiDisplayInfo('analysis');
+              return (audioInfo.name !== 'Not configured' && analysisInfo.name !== 'Not configured') ? 'Configured' : 'Not configured';
+            })()}
+          </span>
         </div>
-      )}
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -980,9 +969,7 @@ const Step1: React.FC<Step1Props> = ({
               <p>• Automatic speaker detection and key points extraction</p>
               <p>• Direct transition to Key Points & Speakers editing</p>
               <p>• Cleanup process continues until analysis completion</p>
-              {!demoMode && (
-                <p>• Using your configured API keys and models for processing</p>
-              )}
+              <p>• Using your configured API keys and models for processing</p>
             </div>
           </div>
         </div>

@@ -7,26 +7,12 @@ interface StepperProps {
   steps: Step[];
   currentStep: number;
   onStepClick: (stepId: number) => void;
-  isProductionMode: boolean;
-  onToggleMode: () => void;
-  onOpenDashboard: () => void;
 }
 
-const Stepper: React.FC<StepperProps> = ({ 
-  steps, 
-  currentStep, 
-  onStepClick, 
-  isProductionMode,
-  onToggleMode,
-  onOpenDashboard
-}) => {
+const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick }) => {
   const { resetAppState } = useAppContext();
 
   const canNavigateToStep = (stepId: number) => {
-    if (!isProductionMode) {
-      return true; // Demo mode allows free navigation
-    }
-    
     const step = steps.find(s => s.id === stepId);
     const completedSteps = steps.filter(s => s.completed).map(s => s.id);
     const maxCompletedStep = completedSteps.length > 0 ? Math.max(...completedSteps) : 0;
@@ -48,36 +34,6 @@ const Stepper: React.FC<StepperProps> = ({
           </div>
         </div>
 
-        {/* Dashboard Button */}
-        <button
-          onClick={onOpenDashboard}
-          className="w-full flex items-center space-x-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm"
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Dashboard</span>
-        </button>
-      </div>
-
-      {/* Mode Toggle */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-300">Demo Mode</span>
-          <button
-            onClick={onToggleMode}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isProductionMode ? 'bg-blue-600' : 'bg-yellow-500'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                isProductionMode ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-        <p className="text-xs text-gray-400 mt-1">
-          {isProductionMode ? 'Production mode active' : 'Free navigation enabled'}
-        </p>
       </div>
 
       {/* Steps */}
@@ -119,7 +75,7 @@ const Stepper: React.FC<StepperProps> = ({
                   }`}>
                     {step.completed ? (
                       <Check className="w-4 h-4" />
-                    ) : !canNavigate && isProductionMode ? (
+                    ) : !canNavigate ? (
                       <Lock className="w-3 h-3" />
                     ) : (
                       <span>{step.id}</span>
@@ -148,12 +104,6 @@ const Stepper: React.FC<StepperProps> = ({
                       <div className="flex items-center space-x-1 mt-1">
                         <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
                         <span className="text-xs text-blue-100 font-medium">Current</span>
-                      </div>
-                    )}
-                    
-                    {!isProductionMode && !step.completed && !isActive && canNavigate && (
-                      <div className="text-xs text-yellow-400 font-medium mt-1">
-                        Available
                       </div>
                     )}
                   </div>

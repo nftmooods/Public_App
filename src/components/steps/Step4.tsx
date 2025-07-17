@@ -12,7 +12,6 @@ interface Step4Props {
   onUpdateTranscription: (transcription: TranscriptionData) => void;
   onUpdateKeyPoints: (keyPoints: KeyPoint[]) => void;
   onNext: () => void;
-  demoMode: boolean;
   geminiConfigured: boolean;
   apiKey: string;
 }
@@ -30,11 +29,10 @@ const Step4: React.FC<Step4Props> = ({
   onUpdateTranscription, 
   onUpdateKeyPoints, 
   onNext,
-  demoMode,
   geminiConfigured,
   apiKey
 }) => {
-  const { setApiKeyError, apiUsageAssignment, apiKeys, isProductionMode, appState } = useAppContext();
+  const { setApiKeyError, apiUsageAssignment, apiKeys, appState } = useAppContext();
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
   const [editingKeyPoint, setEditingKeyPoint] = useState<string | null>(null);
   const [newKeyPoint, setNewKeyPoint] = useState({ title: '', description: '', speaker: '' });
@@ -54,10 +52,6 @@ const Step4: React.FC<Step4Props> = ({
 
   // Get API configuration for analysis
   const getAnalysisApiConfig = () => {
-    if (demoMode) {
-      return { apiKey: null, model: null, displayName: 'Demo Mode' };
-    }
-
     const assignment = apiUsageAssignment.analysis;
     if (!assignment || !assignment.provider) {
       return { apiKey: null, model: null, displayName: 'Not configured' };
@@ -105,11 +99,10 @@ const Step4: React.FC<Step4Props> = ({
         keyPointsLength: keyPoints.length,
         hasTranscription: !!transcription,
         hasText: !!transcription?.text,
-        isProductionMode,
         apiUsageAssignment
       });
       
-      if (isProductionMode && !analysisApiKey) {
+      if (keyPoints.length === 0 && transcription && transcription.text) {
         console.log('🎯 Starting auto-extraction of key points...');
         
         const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
@@ -119,18 +112,17 @@ const Step4: React.FC<Step4Props> = ({
           keyPrefix: analysisApiKey?.substring(0, 10) + '...',
           model: analysisModel,
           displayName,
-          isProductionMode
         });
         
-        if (isProductionMode && !analysisApiKey) {
-          console.log('❌ Production mode requires analysis API configuration');
-          setApiKeyError('Production mode requires analysis API configuration. Please configure your API keys or switch to demo mode.');
+        if (!analysisApiKey) {
+          console.log('❌ Analysis API configuration required');
+          setApiKeyError('Analysis API configuration required. Please configure your API keys.');
           return;
         }
         
-        if (isProductionMode && analysisApiKey && analysisApiKey.startsWith('AIza')) {
+        if (analysisApiKey) {
           try {
-            console.log('🚀 Using production API for extraction:', displayName);
+            console.log('🚀 Using API for extraction:', displayName);
             
             setExtractionProgress({
               status: 'extracting',
@@ -138,8 +130,6 @@ const Step4: React.FC<Step4Props> = ({
               progress: 10,
               api: displayName
             });
-            
-            const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
             
             setExtractionProgress(prev => ({
               ...prev,
@@ -196,10 +186,10 @@ const Step4: React.FC<Step4Props> = ({
                   ...prev,
                   status: 'completed'
                 }));
-                console.log('✅ Key points extracted with production API:', extractedKeyPoints.length);
+                console.log('✅ Key points extracted with API:', extractedKeyPoints.length);
               }, 500);
             } else {
-              console.log('⚠️ No key points returned from production API');
+              console.log('⚠️ No key points returned from API');
               setApiKeyError('No key points could be extracted. Please check your API configuration.');
               setExtractionProgress({
                 status: 'error',
@@ -209,12 +199,12 @@ const Step4: React.FC<Step4Props> = ({
               });
             }
           } catch (error) {
-            console.error('❌ Error during production API extraction:', error);
+            console.error('❌ Error during API extraction:', error);
             
             const errorMessage = (error as Error).message;
             
             if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
-              setApiKeyError('Analysis API quota exceeded. Please check your quota or switch to demo mode.');
+              setApiKeyError('Analysis API quota exceeded. Please check your quota.');
             } else if (errorMessage.includes('Failed to fetch')) {
               setApiKeyError('Network error connecting to analysis API. Please check your connection.');
             } else {
@@ -228,41 +218,12 @@ const Step4: React.FC<Step4Props> = ({
               api: displayName
             });
           }
-        } else {
-          console.log('🚀 Using assigned API for extraction:', displayName);
-          console.log('🎭 Demo mode - loading simulated data');
-          setExtractionProgress({
-            status: 'extracting',
-            currentStep: 'Simulating extraction...',
-            progress: 30,
-            api: 'Demo mode'
-          });
-          
-          setTimeout(() => {
-            setExtractionProgress(prev => ({
-              ...prev,
-              currentStep: 'Generating simulated key points...',
-              progress: 70
-            }));
-          }, 1000);
-          
-          setTimeout(() => {
-            const mockKeyPoints = generateMockKeyPoints();
-            onUpdateKeyPoints(mockKeyPoints);
-            setExtractionProgress({
-              status: 'completed',
-              currentStep: `${mockKeyPoints.length} demo key points loaded`,
-              progress: 100,
-              api: 'Demo mode'
-            });
-            console.log('✅ Demo key points loaded:', mockKeyPoints.length);
-          }, 2500);
         }
       }
     };
     
     autoExtractKeyPoints();
-  }, [transcription, keyPoints.length, onUpdateKeyPoints, isProductionMode]);
+  }, [transcription, keyPoints.length, onUpdateKeyPoints]);
 
   if (!transcription) return null;
 
@@ -379,98 +340,58 @@ const Step4: React.FC<Step4Props> = ({
   };
 
   const handleCompleteWithAI = async () => {
-    if (isProductionMode) {
-      const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
-      
-      if (!analysisApiKey) {
-        setApiKeyError('Production mode requires analysis API configuration. Please configure your API keys.');
-        return;
-      }
+    const { apiKey: analysisApiKey, model: analysisModel, displayName } = getAnalysisApiConfig();
+    
+    if (!analysisApiKey) {
+      setApiKeyError('Analysis API configuration required. Please configure your API keys.');
+      return;
     }
     
     setIsCompleting(true);
     
     try {
-      if (isProductionMode) {
-        const { apiKey: analysisApiKey, model: analysisModel } = getAnalysisApiConfig();
-        const assignment = apiUsageAssignment.analysis;
+      const { apiKey: analysisApiKey, model: analysisModel } = getAnalysisApiConfig();
+      const assignment = apiUsageAssignment.analysis;
+      
+      console.log('🚀 Completing with API...');
+      
+      let extractedKeyPoints;
+      
+      if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
+        const geminiService = GeminiServiceFactory.create(analysisApiKey, analysisModel);
+        extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
+      } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
+        const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
+        extractedKeyPoints = await openaiService.extractKeyPoints(transcription.text);
+      } else {
+        throw new Error(`Unsupported provider for analysis: ${assignment?.provider}`);
+      }
+      
+      if (extractedKeyPoints && extractedKeyPoints.length > 0) {
+        // Filter key points that don't already exist
+        const existingTexts = keyPoints.map(kp => kp.text.toLowerCase());
+        const newKeyPoints = extractedKeyPoints
+          .filter(point => !existingTexts.some(existing => 
+            existing.includes(point.toLowerCase().substring(0, 50))
+          ))
+          .map((point, index) => ({
+            id: `ai_${Date.now()}_${index}`,
+            text: point,
+            timestamp: 0,
+            speaker: 'AI Analysis',
+            category: 'insight' as const,
+            editable: true,
+            webLinks: []
+          }));
         
-        console.log('🚀 Completing with production API...');
-        
-        let extractedKeyPoints;
-        
-        if (assignment?.provider === 'googleAI' && analysisApiKey.startsWith('AIza')) {
-          // Use the appropriate service based on provider
-          extractedKeyPoints = await geminiService.extractKeyPoints(transcription.text);
-        } else if (assignment?.provider === 'openAI' && analysisApiKey.startsWith('sk-')) {
-          const openaiService = OpenAIServiceFactory.create(analysisApiKey, analysisModel);
-          extractedKeyPoints = await openaiService.extractKeyPoints(transcription.text);
+        if (newKeyPoints.length > 0) {
+          onUpdateKeyPoints([...keyPoints, ...newKeyPoints]);
+          console.log('✅ New key points added:', newKeyPoints.length);
         } else {
-          throw new Error(`Unsupported provider for analysis: ${assignment?.provider}`);
-        }
-        
-        if (extractedKeyPoints && extractedKeyPoints.length > 0) {
-          // Filter key points that don't already exist
-          const existingTexts = keyPoints.map(kp => kp.text.toLowerCase());
-          const newKeyPoints = extractedKeyPoints
-            .filter(point => !existingTexts.some(existing => 
-              existing.includes(point.toLowerCase().substring(0, 50))
-            ))
-            .map((point, index) => ({
-              id: `ai_${Date.now()}_${index}`,
-              text: point,
-              timestamp: 0,
-              speaker: 'AI Analysis',
-              category: 'insight' as const,
-              editable: true,
-              webLinks: []
-            }));
-          
-          if (newKeyPoints.length > 0) {
-            onUpdateKeyPoints([...keyPoints, ...newKeyPoints]);
-            console.log('✅ New key points added:', newKeyPoints.length);
-          } else {
-            console.log('ℹ️ No new key points found');
-          }
-        } else {
-          console.log('⚠️ No key points returned from production API during completion');
+          console.log('ℹ️ No new key points found');
         }
       } else {
-        // Demo mode
-        console.log('🎭 Completing in demo mode');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        const aiSuggestions = [
-          {
-            id: `ai_${Date.now()}_1`,
-            text: "DeFi Protocol Evolution: The importance of security auditing and decentralized governance to maintain user trust",
-            timestamp: 0,
-            speaker: 'AI Analysis',
-            category: 'insight' as const,
-            editable: true,
-            webLinks: ['https://defisafety.com/audits', 'https://governance-research.org']
-          },
-          {
-            id: `ai_${Date.now()}_2`,
-            text: "Environmental Impact: Layer 2 solutions significantly reduce the carbon footprint of DeFi transactions compared to Ethereum mainnet",
-            timestamp: 0,
-            speaker: 'AI Analysis',
-            category: 'theme' as const,
-            editable: true,
-            webLinks: ['https://ethereum.org/en/energy-consumption/', 'https://carbon-footprint-defi.org']
-          },
-          {
-            id: `ai_${Date.now()}_3`,
-            text: "Future Trends: AI integration in DeFi protocols for automatic yield optimization and risk management",
-            timestamp: 0,
-            speaker: 'AI Analysis',
-            category: 'insight' as const,
-            editable: true,
-            webLinks: ['https://ai-defi-integration.com']
-          }
-        ];
-        
-        onUpdateKeyPoints([...keyPoints, ...aiSuggestions]);
+        console.log('⚠️ No key points returned from API during completion');
       }
     } catch (error) {
       console.error('❌ Error during AI completion:', error);
@@ -478,7 +399,7 @@ const Step4: React.FC<Step4Props> = ({
       const errorMessage = (error as Error).message;
       
       if (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('exceeded')) {
-        setApiKeyError('Analysis API quota exceeded during completion. Please check your quota or switch to demo mode.');
+        setApiKeyError('Analysis API quota exceeded during completion. Please check your quota.');
       } else if (errorMessage.includes('Failed to fetch')) {
         setApiKeyError('Network error during completion. Please check your connection.');
       } else {
@@ -715,33 +636,25 @@ Generated by Rekapp - Professional Content Creation Platform`;
       {/* Extraction status */}
       {extractionProgress.status === 'completed' && (
         <div className={`border rounded-xl p-4 mb-6 ${
-          extractionProgress.api.includes('Demo') 
-            ? 'bg-yellow-50 border-yellow-200'
-            : extractionProgress.api.includes('fallback')
+          extractionProgress.api.includes('fallback')
               ? 'bg-orange-50 border-orange-200'
               : 'bg-green-50 border-green-200'
         }`}>
           <div className="flex items-center space-x-2">
             <Check className={`w-5 h-5 ${
-              extractionProgress.api.includes('Demo') 
-                ? 'text-yellow-600'
-                : extractionProgress.api.includes('fallback')
+              extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
                   : 'text-green-600'
             }`} />
             <span className={`font-medium ${
-              extractionProgress.api.includes('Demo') 
-                ? 'text-yellow-800'
-                : extractionProgress.api.includes('fallback')
+              extractionProgress.api.includes('fallback')
                   ? 'text-orange-800'
                   : 'text-green-800'
             }`}>
               {extractionProgress.currentStep}
             </span>
             <span className={`text-sm ${
-              extractionProgress.api.includes('Demo') 
-                ? 'text-yellow-600'
-                : extractionProgress.api.includes('fallback')
+              extractionProgress.api.includes('fallback')
                   ? 'text-orange-600'
                   : 'text-green-600'
             }`}>
@@ -1077,8 +990,7 @@ Generated by Rekapp - Professional Content Creation Platform`;
           
           {/* Show transcription-only download button only for audio processing */}
           {isFromAudioProcessing && (
-            <button
-              onClick={downloadTranscriptionOnly}
+              disabled={isCompleting || !getAnalysisApiConfig().apiKey}
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
             >
               <Download className="w-4 h-4 mr-2" />
