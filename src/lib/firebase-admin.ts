@@ -1,3 +1,4 @@
+
 // src/lib/firebase-admin.ts
 import * as admin from 'firebase-admin';
 // Importer le type ServiceAccount pour garantir la sécurité du typage

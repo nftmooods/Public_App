@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -38,11 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const logout = () => {
-    signOut(auth);
-  };
-
-  const value = { user, loading, logout };
+  const value = { user, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

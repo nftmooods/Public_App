@@ -1,3 +1,4 @@
+
 "use client";
 
 import { signOut } from "firebase/auth";
@@ -19,7 +20,7 @@ import { auth } from "@/lib/firebase";
 
 
 export function UserNav() {
-  const { user, loading } = useAuth() as any; // Use 'any' to include logout
+  const { user, loading } = useAuth();
 
   const handleLogout = async () => {
     try {
