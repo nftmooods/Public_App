@@ -1,18 +1,18 @@
 // src/lib/types.ts
 
-// Mettre à jour le type pour utiliser des objets Date JavaScript,
-// car nous convertissons les Timestamps Firestore en objets Date.
+// Update type to use JavaScript Date objects,
+// as we convert Firestore Timestamps to Dates.
 export interface Space {
     id: string;
     name: string;
     projectUrl: string;
-    dateTime: Date;       // Changé de string à Date
+    dateTime: Date;       // Changed from string to Date
     authorName: string;
     createdBy: string;
-    createdAt: Date;      // Changé de string à Date
+    createdAt: Date;      // Changed from string to Date
 }
 
-// Mettre à jour le type User pour correspondre à Firebase Auth
+// Update User type to match Firebase Auth
 export interface User {
   uid: string;
   email: string | null;

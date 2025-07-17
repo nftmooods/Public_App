@@ -82,7 +82,7 @@ export const getSpaces = async (): Promise<Space[]> => {
         return {
             id: snap.id,
             ...data,
-            // Assurez-vous que les champs de date sont des objets Date JavaScript
+            // Ensure date fields are JS Date objects
             dateTime: data.dateTime?.toDate(),
             createdAt: data.createdAt?.toDate(),
         } as Space;
@@ -91,10 +91,10 @@ export const getSpaces = async (): Promise<Space[]> => {
 };
 
 // Add a new space (for admins)
-// Le type partiel permet de ne pas exiger 'id' lors de la création
+// Partial type allows not requiring 'id' on creation
 export const addSpace = async (spaceData: Omit<Space, 'id'>) => {
   const spacesCol = collection(db, "spaces");
-  // Utiliser serverTimestamp() pour les dates de création
+  // Use serverTimestamp() for creation dates
   const newSpaceRef = await addDoc(spacesCol, {
       ...spaceData,
       createdAt: serverTimestamp()

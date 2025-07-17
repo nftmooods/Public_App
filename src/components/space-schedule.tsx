@@ -13,16 +13,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
-// Mappage des fuseaux horaires pour la sélection
+// Timezone mapping for the select dropdown
 const timezones = [
-    { value: "local", label: "Mon fuseau horaire" },
+    { value: "local", label: "My Timezone" },
     { value: "UTC", label: "UTC" },
     { value: "America/New_York", label: "EST" },
     { value: "Europe/Paris", label: "CET" },
     { value: "Asia/Tokyo", label: "JST" },
 ];
 
-// Fonction utilitaire pour convertir les Timestamps Firestore en objets Date JS
+// Utility function to convert Firestore Timestamps to JS Date objects
 const convertFirestoreTimestamps = (spaces: any[]): Space[] => {
   return spaces.map(space => {
     const newSpace = { ...space };
@@ -36,7 +36,7 @@ const convertFirestoreTimestamps = (spaces: any[]): Space[] => {
   });
 };
 
-// Hook personnalisé pour la récupération des données des Spaces
+// Custom hook for fetching Space data
 const useSpaces = () => {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,10 +48,12 @@ const useSpaces = () => {
         setLoading(true);
         const fetchedSpaces = await getSpaces();
         const spacesWithDates = convertFirestoreTimestamps(fetchedSpaces);
+        // Sort spaces by date to ensure consistent order
+        spacesWithDates.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
         setSpaces(spacesWithDates);
       } catch (error) {
-        console.error("Erreur lors de la récupération des spaces:", error);
-        toast({ title: "Erreur", description: "Impossible de récupérer les spaces.", variant: "destructive" });
+        console.error("Error fetching spaces:", error);
+        toast({ title: "Error", description: "Could not fetch spaces.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
@@ -62,10 +64,10 @@ const useSpaces = () => {
   return { spaces, loading };
 };
 
-// Hook personnalisé pour la gestion des favoris
+// Custom hook for managing favorites
 const useFavorites = (user: any) => {
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]);
+  const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]); // To store the full favorite doc for deletion
   const { toast } = useToast();
 
   useEffect(() => {
@@ -77,6 +79,7 @@ const useFavorites = (user: any) => {
       };
       fetchFavorites();
     } else {
+      // Clear favorites when user logs out
       setFavorites([]);
       setFavoriteDocs([]);
     }
@@ -84,29 +87,31 @@ const useFavorites = (user: any) => {
 
   const toggleFavorite = useCallback(async (spaceId: string) => {
     if (!user) {
-      toast({ title: "Connexion requise", description: "Vous devez être connecté pour gérer les favoris." });
+      toast({ title: "Login Required", description: "You must be logged in to manage favorites." });
       return;
     }
 
     const isFavorite = favorites.includes(spaceId);
     try {
       if (isFavorite) {
+        // Find the favorite document to get its ID for deletion
         const favoriteDoc = favoriteDocs.find(doc => doc.spaceId === spaceId);
         if (favoriteDoc) {
           await removeFavorite(favoriteDoc.id);
           setFavorites(prev => prev.filter(id => id !== spaceId));
           setFavoriteDocs(prev => prev.filter(doc => doc.spaceId !== spaceId));
-          toast({ title: "Retiré des favoris." });
+          toast({ title: "Removed from favorites." });
         }
       } else {
         const newFavoriteId = await addFavorite(user.uid, spaceId);
+        // Optimistically update the UI
         setFavorites(prev => [...prev, spaceId]);
         setFavoriteDocs(prev => [...prev, { id: newFavoriteId, userId: user.uid, spaceId }]);
-        toast({ title: "Ajouté aux favoris !" });
+        toast({ title: "Added to favorites!" });
       }
     } catch (error) {
-      console.error(`Erreur lors de la mise à jour des favoris pour le space ${spaceId}:`, error);
-      toast({ title: "Erreur", description: "Impossible de mettre à jour les favoris.", variant: "destructive" });
+      console.error(`Error updating favorites for space ${spaceId}:`, error);
+      toast({ title: "Error", description: "Could not update favorites.", variant: "destructive" });
     }
   }, [user, favorites, favoriteDocs, toast]);
 
@@ -122,15 +127,17 @@ export function SpaceSchedule() {
   const { user } = useAuth();
   const { spaces, loading } = useSpaces();
   const { favorites, toggleFavorite } = useFavorites(user);
-
+  
   useEffect(() => {
     setIsMounted(true);
+    // Detect user's timezone on the client-side
     const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     setSelectedTimezone(detectedTimezone);
   }, []);
 
   const filteredSpaces = useMemo(() => {
     const filterByDate = (space: Space, check: (date: Date) => boolean) => {
+      // Ensure dateTime is a valid Date object before checking
       return space.dateTime instanceof Date && check(space.dateTime);
     };
 
@@ -142,6 +149,7 @@ export function SpaceSchedule() {
       case "tomorrow":
         return spacesToFilter.filter(space => filterByDate(space, isTomorrow));
       case "week":
+        // isThisWeek checks from Sunday by default, let's make it Monday
         return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })));
       default:
         return spacesToFilter;
@@ -152,19 +160,19 @@ export function SpaceSchedule() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight">
-          Spaces à venir
+          Upcoming Spaces
         </h1>
         <p className="text-muted-foreground mt-2">
-          Votre programme quotidien des Spaces Twitter.
+          Your daily schedule of Twitter Spaces.
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList>
-            <TabsTrigger value="today">Aujourd'hui</TabsTrigger>
-            <TabsTrigger value="tomorrow">Demain</TabsTrigger>
-            <TabsTrigger value="week">Cette semaine</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+            <TabsTrigger value="week">This Week</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -173,16 +181,16 @@ export function SpaceSchedule() {
               id="favorites-only"
               checked={showFavorites}
               onCheckedChange={setShowFavorites}
-              aria-label="Afficher uniquement les favoris"
+              aria-label="Show favorites only"
               disabled={!user}
             />
             <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
-              Afficher les favoris { !user && "(Connexion requise)"}
+              Favorites only { !user && "(Login required)"}
             </Label>
           </div>
           <Select value={selectedTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sélectionner un fuseau horaire" />
+              <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
               {timezones.map(tz => (
@@ -197,7 +205,7 @@ export function SpaceSchedule() {
         <AnimatePresence>
           {loading ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">Chargement des spaces...</p>
+                <p className="text-muted-foreground">Loading spaces...</p>
             </div>
           ) : filteredSpaces.length > 0 ? (
             filteredSpaces.map((space) => (
@@ -219,11 +227,10 @@ export function SpaceSchedule() {
             ))
           ) : (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full text-center py-12"
-            >
-              <p className="text-muted-foreground">Aucun space prévu pour cette période.</p>
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">No spaces scheduled for this period.</p>
             </motion.div>
           )}
         </AnimatePresence>
