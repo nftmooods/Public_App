@@ -48,8 +48,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep, onStepClick }) =>
                 {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className={`absolute left-4 top-10 w-0.5 h-8 ${
-                    step.completed ? 'bg-blue-500' : 
-                    !isProductionMode ? 'bg-yellow-400' : 'bg-gray-600'
+                    step.completed ? 'bg-blue-500' : 'bg-gray-600'
                   }`} />
                 )}
                 
