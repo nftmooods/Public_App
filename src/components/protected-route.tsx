@@ -9,16 +9,25 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
+    if (loading) {
+      return; // Wait for the loading state to resolve
     }
+
+    if (!user) {
+      router.push("/login");
+    } else if (user.role !== 'admin') {
+      // If user is not an admin, redirect them away from protected pages.
+      router.push("/"); 
+    }
+
   }, [user, loading, router]);
 
-  if (loading || !user) {
-    // You can render a loading spinner here
+  if (loading || !user || user.role !== 'admin') {
+    // You can render a loading spinner or a message
     return (
-        <div className="flex justify-center items-center h-screen">
-            <p>Loading...</p>
+        <div className="flex flex-col justify-center items-center h-screen space-y-4">
+            <p className="text-lg">Loading...</p>
+            <p className="text-sm text-muted-foreground">Checking credentials...</p>
         </div>
     );
   }

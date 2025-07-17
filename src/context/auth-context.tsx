@@ -2,11 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-
-interface User {
-  name: string;
-  email: string;
-}
+import type { User } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;
@@ -29,11 +25,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const login = (userData: User) => {
-    setUser(userData);
+    // Omit password before setting it in context and local storage
+    const { password, ...userToStore } = userData;
+    setUser(userToStore);
   };
 
   const logout = () => {
     setUser(null);
+    // On logout, redirect to home to prevent being on a protected page
+    window.location.href = '/';
   };
 
   const value = { user, loading, login, logout };

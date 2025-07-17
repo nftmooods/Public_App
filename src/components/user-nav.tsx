@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
+import { CreditCard, LogOut, PlusCircle, User as UserIcon } from "lucide-react";
+
 
 export function UserNav() {
   const { user, logout } = useAuth();
@@ -27,6 +29,7 @@ export function UserNav() {
   
   const getInitials = (name: string) => {
     const names = name.split(' ');
+    if (names.length === 0) return '';
     const initials = names.map(n => n[0]).join('');
     return initials.toUpperCase();
   }
@@ -36,7 +39,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+            <AvatarFallback>{getInitials(user.name || "")}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -50,16 +53,19 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem asChild>
-             <Link href="/admin">Add Space</Link>
-          </DropdownMenuItem>
-           <DropdownMenuItem asChild>
-             <Link href="/console">Console</Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+        {user.role === 'admin' && (
+          <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/admin"><PlusCircle className="mr-2 h-4 w-4" /> Add Space</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/console"><CreditCard className="mr-2 h-4 w-4" /> Console</Link>
+              </DropdownMenuItem>
+          </DropdownMenuGroup>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
+          <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>

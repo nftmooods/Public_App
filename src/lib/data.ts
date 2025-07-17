@@ -1,4 +1,4 @@
-import type { Space } from './types';
+import type { Space, User } from './types';
 
 const today = new Date();
 today.setUTCHours(18, 0, 0, 0); // Set to 6 PM UTC today
@@ -53,6 +53,13 @@ const spaces: Space[] = [
   },
 ];
 
+// In-memory user store for demonstration
+const users: User[] = [
+    { id: '1', name: 'Admin User', email: 'admin@example.com', password: 'password', role: 'admin' },
+    { id: '2', name: 'Test User', email: 'user@example.com', password: 'password', role: 'user' },
+];
+
+
 export async function getSpaces(): Promise<Space[]> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -68,4 +75,25 @@ export async function addSpace(space: Omit<Space, 'id'>): Promise<Space> {
     };
     spaces.push(newSpace);
     return newSpace;
+}
+
+// User-related functions
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return users.find(user => user.email === email);
+}
+
+export async function addUser(userData: Omit<User, 'id' | 'role'>): Promise<User> {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const existingUser = await getUserByEmail(userData.email);
+    if (existingUser) {
+        throw new Error("User with this email already exists.");
+    }
+    const newUser: User = {
+        id: new Date().getTime().toString(),
+        ...userData,
+        role: 'user', // Default role for new users
+    };
+    users.push(newUser);
+    return newUser;
 }

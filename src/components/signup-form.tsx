@@ -11,14 +11,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
-import { getUserByEmail } from "@/lib/data";
+import { addUser } from "@/lib/data";
 
 const formSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
 });
 
-export function LoginForm() {
+export function SignupForm() {
   const { toast } = useToast();
   const { login } = useAuth();
   const router = useRouter();
@@ -26,34 +27,47 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd call an API here.
-    const user = await getUserByEmail(values.email);
-
-    if (user && user.password === values.password) {
-        login(user);
-        toast({
-            title: "Login Successful!",
-            description: `Welcome back, ${user.name}!`,
-        });
-        router.push("/");
-    } else {
-        toast({
-            title: "Login Failed",
-            description: "Invalid email or password.",
-            variant: "destructive",
-        });
+    try {
+      // In a real app, this would be a server action or API call
+      const newUser = await addUser(values);
+      login(newUser);
+      toast({
+        title: "Account Created!",
+        description: "You have been successfully signed up.",
+      });
+      router.push("/");
+    } catch (error: any) {
+      toast({
+        title: "Sign up failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Ape Investor" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"
@@ -61,7 +75,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="ape_user@example.com" {...field} />
+                <Input placeholder="ape@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -81,12 +95,12 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Logging in..." : "Login"}
+            {form.formState.isSubmitting ? "Creating account..." : "Sign Up"}
         </Button>
         <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="underline hover:text-primary">
-                Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="underline hover:text-primary">
+                Login
             </Link>
         </div>
       </form>
