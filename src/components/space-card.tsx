@@ -24,18 +24,26 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   const [formattedDateTime, setFormattedDateTime] = useState({ date: "", time: "" });
 
   useEffect(() => {
-    const date = new Date(space.dateTime);
-    let dateStr, timeStr;
+    try {
+      const date = new Date(space.dateTime);
+      let dateStr, timeStr;
+  
+      if (displayTimezone === 'local') {
+        dateStr = format(date, "eeee, MMMM d", { locale: enUS });
+        timeStr = format(date, "p", { locale: enUS });
+      } else {
+        dateStr = formatInTimezone(date, displayTimezone, "eeee, MMMM d", { locale: enUS });
+        timeStr = formatInTimezone(date, displayTimezone, "p", { locale: enUS });
+      }
+  
+      const timezoneLabel = displayTimezone === 'local' ? Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ') || 'Local' : displayTimezone;
+      setFormattedDateTime({ date: dateStr, time: `${timeStr} (${timezoneLabel})` });
 
-    if (displayTimezone === 'local') {
-      dateStr = format(date, "eeee, MMMM do", { locale: enUS });
-      timeStr = format(date, "p", { locale: enUS });
-    } else {
-      dateStr = formatInTimezone(date, displayTimezone, "eeee, MMMM do", { locale: enUS });
-      timeStr = formatInTimezone(date, displayTimezone, "p", { locale: enUS });
+    } catch (error) {
+        console.error("Error formatting date:", error);
+        // Set a fallback display
+        setFormattedDateTime({ date: "Invalid date", time: ""});
     }
-
-    setFormattedDateTime({ date: dateStr, time: `${timeStr} (${displayTimezone === 'local' ? 'Local' : displayTimezone})` });
 
   }, [space.dateTime, displayTimezone]);
 

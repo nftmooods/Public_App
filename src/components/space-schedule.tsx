@@ -25,7 +25,7 @@ const timezones = [
 ];
 
 export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spaces, setSpaces] = useState<Space[]>(initialSpaces);
   const [filter, setFilter] = useState("today");
   const [showFavorites, setShowFavorites] = useState(false);
   const { user } = useAuth();
@@ -45,18 +45,16 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    setSpaces(initialSpaces);
-    
-    // Auto-detect timezone on client
-    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const defaultTimezone = timezones.some(tz => tz.value === detectedTimezone) ? detectedTimezone : 'local';
 
-    if (user) {
-        setSelectedTimezone(storedTimezone);
-    } else {
-        setSelectedTimezone(defaultTimezone);
-    }
-  }, [initialSpaces, user, storedTimezone]);
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const isSupported = timezones.some(tz => tz.value === detectedTimezone);
+    
+    // Use stored timezone if available (logged in user), otherwise detect
+    const defaultTimezone = user ? storedTimezone : (isSupported ? detectedTimezone : 'local');
+
+    setSelectedTimezone(defaultTimezone);
+
+  }, [user, storedTimezone]);
 
   const handleTimezoneChange = (newTimezone: string) => {
     setSelectedTimezone(newTimezone);
