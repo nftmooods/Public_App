@@ -16,7 +16,7 @@ interface SpaceScheduleProps {
 }
 
 export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
-  const [spaces, setSpaces] = useState(initialSpaces);
+  const [spaces, setSpaces] = useState<Space[]>([]);
   const [filter, setFilter] = useState("today");
   const [showFavorites, setShowFavorites] = useState(false);
   const { user } = useAuth();
@@ -28,7 +28,8 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    setSpaces(initialSpaces);
+  }, [initialSpaces]);
 
   const toggleFavorite = (spaceId: string) => {
     setFavorites(
@@ -39,9 +40,11 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
   };
 
   const filteredSpaces = useMemo(() => {
+    if (!isMounted) return [];
+
     let result = spaces;
 
-    if (showFavorites && isMounted) {
+    if (showFavorites) {
       result = result.filter((space) => favorites.includes(space.id));
     }
 
@@ -94,7 +97,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence>
-          {filteredSpaces.length > 0 ? (
+          {isMounted && filteredSpaces.length > 0 ? (
             filteredSpaces.map((space) => (
               <motion.div
                 key={space.id}
@@ -112,15 +115,22 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
               </motion.div>
             ))
           ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full text-center py-12"
-            >
-              <p className="text-muted-foreground">No spaces scheduled for this period.</p>
-            </motion.div>
+            isMounted && (
+                <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full text-center py-12"
+                >
+                <p className="text-muted-foreground">No spaces scheduled for this period.</p>
+                </motion.div>
+            )
           )}
         </AnimatePresence>
+        {!isMounted && (
+             <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">Loading spaces...</p>
+            </div>
+        )}
       </div>
     </div>
   );
