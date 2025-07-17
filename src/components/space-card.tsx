@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { Star, Link as LinkIcon, Calendar, Clock } from "lucide-react";
 
 import type { Space } from "@/lib/types";
@@ -24,8 +24,8 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite }: SpaceCardProp
   useEffect(() => {
     const date = new Date(space.dateTime);
     setLocalDateTime({
-      date: format(date, "eeee dd MMMM", { locale: fr }),
-      time: format(date, "p", { locale: fr }),
+      date: format(date, "eeee, MMMM do", { locale: enUS }),
+      time: format(date, "p", { locale: enUS }),
     });
   }, [space.dateTime]);
 
@@ -42,7 +42,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite }: SpaceCardProp
                   size="icon"
                   className="shrink-0"
                   onClick={onToggleFavorite}
-                  aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 >
                   <Star
                     className={cn(
@@ -53,7 +53,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite }: SpaceCardProp
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}</p>
+                <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -68,7 +68,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite }: SpaceCardProp
         <Button asChild className="w-full">
           <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer">
             <LinkIcon className="mr-2 h-4 w-4" />
-            Visiter la page du projet
+            Visit Project Page
           </Link>
         </Button>
       </CardFooter>

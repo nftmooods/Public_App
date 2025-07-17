@@ -9,9 +9,9 @@ export default function AdminPage() {
       <main className="flex-1 w-full container mx-auto px-4 py-8 flex items-center justify-center">
         <Card className="w-full max-w-2xl">
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Ajouter un nouvel Espace</CardTitle>
+            <CardTitle className="font-headline text-2xl">Add a new Space</CardTitle>
             <CardDescription>
-              Remplissez le formulaire ci-dessous pour ajouter un nouvel Espace au programme. Toutes les heures doivent être saisies en UTC.
+              Fill out the form below to add a new Space to the schedule. All times should be entered in UTC.
             </CardDescription>
           </CardHeader>
           <CardContent>

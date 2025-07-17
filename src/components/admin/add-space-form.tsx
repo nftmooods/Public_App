@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,10 +17,10 @@ import { cn } from "@/lib/utils";
 import { addSpace } from "@/lib/actions";
 
 const formSchema = z.object({
-  name: z.string().min(3, { message: "Le nom de l'Espace doit comporter au moins 3 caractères." }),
-  projectUrl: z.string().url({ message: "Veuillez saisir une URL valide." }),
-  date: z.date({ required_error: "Une date est requise." }),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Veuillez saisir une heure valide au format HH:MM." }),
+  name: z.string().min(3, { message: "Space name must be at least 3 characters." }),
+  projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  date: z.date({ required_error: "A date is required." }),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Please enter a valid time in HH:MM format." }),
 });
 
 export function AddSpaceForm() {
@@ -47,14 +47,14 @@ export function AddSpaceForm() {
             dateTime: combinedDateTime.toISOString(),
         });
         toast({
-            title: "Espace ajouté !",
-            description: "Le nouvel Espace a été ajouté avec succès au programme.",
+            title: "Space added!",
+            description: "The new Space has been successfully added to the schedule.",
         });
         form.reset();
     } catch (error) {
         toast({
-            title: "Erreur",
-            description: "Échec de l'ajout du nouvel Espace. Veuillez réessayer.",
+            title: "Error",
+            description: "Failed to add the new Space. Please try again.",
             variant: "destructive",
         });
     }
@@ -68,7 +68,7 @@ export function AddSpaceForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nom de l'Espace</FormLabel>
+              <FormLabel>Space Name</FormLabel>
               <FormControl>
                 <Input placeholder="ApeChain Community Call" {...field} />
               </FormControl>
@@ -81,7 +81,7 @@ export function AddSpaceForm() {
           name="projectUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL du projet</FormLabel>
+              <FormLabel>Project URL</FormLabel>
               <FormControl>
                 <Input placeholder="https://example.com" {...field} />
               </FormControl>
@@ -107,9 +107,9 @@ export function AddSpaceForm() {
                             )}
                             >
                             {field.value ? (
-                                format(field.value, "PPP", { locale: fr })
+                                format(field.value, "PPP", { locale: enUS })
                             ) : (
-                                <span>Choisir une date</span>
+                                <span>Pick a date</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -117,7 +117,7 @@ export function AddSpaceForm() {
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                            locale={fr}
+                            locale={enUS}
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
@@ -137,7 +137,7 @@ export function AddSpaceForm() {
             name="time"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Heure (UTC 24h)</FormLabel>
+                <FormLabel>Time (UTC 24hr)</FormLabel>
                 <FormControl>
                     <Input type="time" {...field} />
                 </FormControl>
@@ -147,7 +147,7 @@ export function AddSpaceForm() {
             />
         </div>
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Ajout en cours..." : "Ajouter l'Espace"}
+            {form.formState.isSubmitting ? "Adding..." : "Add Space"}
         </Button>
       </form>
     </Form>

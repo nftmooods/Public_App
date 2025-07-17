@@ -56,19 +56,19 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight">
-          Espaces à venir
+          Upcoming Spaces
         </h1>
         <p className="text-muted-foreground mt-2">
-          Votre programme quotidien d'Espaces Twitter. Toutes les heures sont affichées dans votre fuseau horaire local.
+          Your daily schedule of Twitter Spaces. All times are shown in your local timezone.
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList>
-            <TabsTrigger value="today">Aujourd'hui</TabsTrigger>
-            <TabsTrigger value="tomorrow">Demain</TabsTrigger>
-            <TabsTrigger value="week">Cette semaine</TabsTrigger>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+            <TabsTrigger value="week">This Week</TabsTrigger>
           </TabsList>
         </Tabs>
         {isMounted && (
@@ -77,9 +77,9 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
                 id="favorites-only"
                 checked={showFavorites}
                 onCheckedChange={setShowFavorites}
-                aria-label="Afficher uniquement les favoris"
+                aria-label="Show favorites only"
             />
-            <Label htmlFor="favorites-only">Afficher les favoris</Label>
+            <Label htmlFor="favorites-only">Show Favorites</Label>
             </div>
         )}
       </div>
@@ -109,7 +109,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
               animate={{ opacity: 1 }}
               className="col-span-full text-center py-12"
             >
-              <p className="text-muted-foreground">Aucun espace programmé pour cette période.</p>
+              <p className="text-muted-foreground">No spaces scheduled for this period.</p>
             </motion.div>
           )}
         </AnimatePresence>

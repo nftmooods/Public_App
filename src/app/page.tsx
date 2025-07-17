@@ -12,7 +12,7 @@ export default async function Home() {
         <SpaceSchedule initialSpaces={spaces} />
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground">
-        Créé pour la communauté ApeChain
+        Created for the ApeChain community
       </footer>
     </div>
   );
