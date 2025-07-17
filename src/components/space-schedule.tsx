@@ -10,10 +10,19 @@ import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion } from "framer-motion";
 import { isToday, isTomorrow, isThisWeek, parseISO } from "date-fns";
 import { useAuth } from "@/context/auth-context";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SpaceScheduleProps {
   initialSpaces: Space[];
 }
+
+const timezones = [
+    { value: "local", label: "My Timezone" },
+    { value: "UTC", label: "UTC" },
+    { value: "America/New_York", label: "EST" },
+    { value: "Europe/Paris", label: "CET" },
+    { value: "Asia/Tokyo", label: "JST" },
+];
 
 export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -24,6 +33,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
     user ? `favorites_${user.name}` : "favorites_guest",
     []
   );
+  const [selectedTimezone, setSelectedTimezone] = useLocalStorage<string>('selectedTimezone', 'local');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -48,6 +58,8 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
       result = result.filter((space) => favorites.includes(space.id));
     }
 
+    const now = new Date();
+
     switch (filter) {
       case "today":
         return result.filter((space) => isToday(parseISO(space.dateTime)));
@@ -67,7 +79,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
           Upcoming Spaces
         </h1>
         <p className="text-muted-foreground mt-2">
-          Your daily schedule of Twitter Spaces. All times are shown in your local timezone.
+          Your daily schedule of Twitter Spaces.
         </p>
       </div>
 
@@ -79,20 +91,32 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
             <TabsTrigger value="week">This Week</TabsTrigger>
           </TabsList>
         </Tabs>
-        {isMounted && (
-            <div className="flex items-center space-x-2">
-            <Switch
-                id="favorites-only"
-                checked={showFavorites}
-                onCheckedChange={setShowFavorites}
-                aria-label="Show favorites only"
-                disabled={!user}
-            />
-            <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
-                Show Favorites { !user && "(Login required)"}
-            </Label>
-            </div>
-        )}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {isMounted && (
+                <div className="flex items-center space-x-2">
+                <Switch
+                    id="favorites-only"
+                    checked={showFavorites}
+                    onCheckedChange={setShowFavorites}
+                    aria-label="Show favorites only"
+                    disabled={!user}
+                />
+                <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
+                    Show Favorites { !user && "(Login required)"}
+                </Label>
+                </div>
+            )}
+            <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+                <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                    {timezones.map(tz => (
+                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -111,6 +135,7 @@ export function SpaceSchedule({ initialSpaces }: SpaceScheduleProps) {
                   space={space}
                   isFavorite={favorites.includes(space.id)}
                   onToggleFavorite={() => toggleFavorite(space.id)}
+                  displayTimezone={selectedTimezone}
                 />
               </motion.div>
             ))
