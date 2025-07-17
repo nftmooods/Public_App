@@ -5,13 +5,14 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/auth-context";
-import { addUser } from "@/lib/data";
+import { auth, createUserProfileDocument } from "@/lib/firebase";
+
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -21,7 +22,6 @@ const formSchema = z.object({
 
 export function SignupForm() {
   const { toast } = useToast();
-  const { login } = useAuth();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -34,19 +34,29 @@ export function SignupForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    const { name, email, password } = values;
     try {
-      // In a real app, this would be a server action or API call
-      const newUser = await addUser(values);
-      login(newUser);
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update the user's profile with their name
+      await updateProfile(user, { displayName: name });
+
+      // Create a user document in Firestore
+      await createUserProfileDocument(user, { name });
+
       toast({
         title: "Account Created!",
         description: "You have been successfully signed up.",
       });
       router.push("/");
     } catch (error: any) {
+        let description = "An unexpected error occurred.";
+        if (error.code === 'auth/email-already-in-use') {
+            description = "This email is already in use. Please try another one.";
+        }
       toast({
         title: "Sign up failed",
-        description: error.message || "An unexpected error occurred.",
+        description: description,
         variant: "destructive",
       });
     }

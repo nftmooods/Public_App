@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,10 +15,24 @@ import {
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
 import { CreditCard, LogOut, PlusCircle, User as UserIcon } from "lucide-react";
+import { auth } from "@/lib/firebase";
 
 
 export function UserNav() {
-  const { user, logout } = useAuth();
+  const { user, loading } = useAuth() as any; // Use 'any' to include logout
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // The onAuthStateChanged listener in AuthProvider will handle the redirect.
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
+  if (loading) {
+    return <Button variant="ghost" size="sm">Loading...</Button>;
+  }
 
   if (!user) {
     return (
@@ -28,6 +43,7 @@ export function UserNav() {
   }
   
   const getInitials = (name: string) => {
+    if (!name) return "";
     const names = name.split(' ');
     if (names.length === 0) return '';
     const initials = names.map(n => n[0]).join('');
@@ -64,7 +80,7 @@ export function UserNav() {
           </DropdownMenuGroup>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout}>
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>

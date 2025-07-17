@@ -5,13 +5,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/auth-context";
-import { getUserByEmail } from "@/lib/data";
+import { auth } from "@/lib/firebase";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -20,7 +20,6 @@ const formSchema = z.object({
 
 export function LoginForm() {
   const { toast } = useToast();
-  const { login } = useAuth();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -32,17 +31,14 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd call an API here.
-    const user = await getUserByEmail(values.email);
-
-    if (user && user.password === values.password) {
-        login(user);
+    try {
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({
             title: "Login Successful!",
-            description: `Welcome back, ${user.name}!`,
+            description: `Welcome back!`,
         });
         router.push("/");
-    } else {
+    } catch (error: any) {
         toast({
             title: "Login Failed",
             description: "Invalid email or password.",

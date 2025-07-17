@@ -1,103 +1,97 @@
-
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { formatInTimeZone as formatInTimezone } from 'date-fns-tz';
-import { format } from "date-fns";
-import { enUS } from "date-fns/locale";
-import { Star, Link as LinkIcon, Calendar, Clock } from "lucide-react";
-
-import type { Space } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ExternalLinkIcon, HeartIcon, Share2Icon } from "lucide-react";
+import type { Space } from "@/lib/types";
+import { format as formatTZ, toDate } from 'date-fns-tz';
+import { format, isPast } from 'date-fns';
+import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 interface SpaceCardProps {
   space: Space;
   isFavorite: boolean;
-  onToggleFavorite: () => void;
+  onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
 }
 
-export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
-  const [formattedDateTime, setFormattedDateTime] = useState({ date: "", time: "" });
-
-  useEffect(() => {
+const getTimezoneAbbreviation = (timezone: string): string => {
     try {
-      const date = new Date(space.dateTime);
-      let dateStr, timeStr, timezoneLabel;
-  
-      if (displayTimezone === 'local') {
-        const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        dateStr = formatInTimezone(date, localTimezone, "eeee, MMMM d", { locale: enUS });
-        timeStr = formatInTimezone(date, localTimezone, "p", { locale: enUS });
-        timezoneLabel = localTimezone.split('/').pop()?.replace('_', ' ') || 'Local';
-      } else {
-        dateStr = formatInTimezone(date, displayTimezone, "eeee, MMMM d", { locale: enUS });
-        timeStr = formatInTimezone(date, displayTimezone, "p", { locale: enUS });
-        // Find the label from the timezones list for display
-        const timezones = [
-            { value: "local", label: "My Timezone" },
-            { value: "UTC", label: "UTC" },
-            { value: "America/New_York", label: "EST" },
-            { value: "Europe/Paris", label: "CET" },
-            { value: "Asia/Tokyo", label: "JST" },
-        ];
-        timezoneLabel = timezones.find(tz => tz.value === displayTimezone)?.label || displayTimezone;
-      }
-  
-      setFormattedDateTime({ date: dateStr, time: `${timeStr} (${timezoneLabel})` });
-
-    } catch (error) {
-        console.error("Error formatting date:", error);
-        setFormattedDateTime({ date: "Invalid date", time: ""});
+        const long = formatTZ(new Date(), 'z', { timeZone: timezone });
+        if (["UTC", "GMT"].includes(long)) return long;
+        const short = long.split(" ").map(word => word[0]).join("");
+        return short || "TZ";
+    } catch {
+        return "Time";
     }
+};
 
-  }, [space.dateTime, displayTimezone]);
+export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Assurez-vous que space.dateTime est un objet Date
+  const eventDate = typeof space.dateTime === 'string' ? new Date(space.dateTime) : space.dateTime;
+  const isEventPast = isPast(eventDate);
+
+  const formattedDateTime = {
+      date: format(eventDate, "MMMM d, yyyy"),
+      time: displayTimezone === 'local' 
+        ? format(eventDate, "h:mm a")
+        : formatTZ(eventDate, "h:mm a", { timeZone: displayTimezone }),
+      timezone: displayTimezone === 'local' ? "Local" : getTimezoneAbbreviation(displayTimezone)
+  };
+
+  const handleShare = () => {
+    const shareUrl = `${window.location.origin}/space/${space.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+        title: "Link Copied!",
+        description: "The link to this space has been copied to your clipboard.",
+    });
+  };
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <Card className={`flex flex-col h-full transition-all duration-300 ${isEventPast ? "bg-muted/50 opacity-70" : "bg-card"}`}>
       <CardHeader>
-        <div className="flex justify-between items-start">
-          <CardTitle className="font-headline text-xl pr-4">{space.name}</CardTitle>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={onToggleFavorite}
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <Star
-                    className={cn(
-                      "h-5 w-5 transition-colors",
-                      isFavorite ? "fill-primary text-primary" : "text-muted-foreground"
-                    )}
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isFavorite ? "Remove from favorites" : "Add to favorites"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <div className="flex justify-between items-start gap-4">
+            <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
+            <Badge variant={isEventPast ? "secondary" : "default"} className="whitespace-nowrap flex-shrink-0">
+                {isEventPast ? "Ended" : "Upcoming"}
+            </Badge>
         </div>
-        <CardDescription className="flex items-center flex-wrap gap-x-4 gap-y-2 pt-2">
-            <span className="flex items-center gap-1.5 text-sm capitalize"><Calendar className="w-4 h-4"/> {formattedDateTime.date}</span>
-            <span className="flex items-center gap-1.5 text-sm"><Clock className="w-4 h-4"/> {formattedDateTime.time}</span>
-        </CardDescription>
+        <CardDescription>by {space.authorName || 'Anonymous'}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow"></CardContent>
-      <CardFooter>
-        <Button asChild className="w-full">
-          <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer">
-            <LinkIcon className="mr-2 h-4 w-4" />
-            Visit Project Page
-          </Link>
+      <CardContent className="flex-grow">
+        <Alert>
+          <AlertTitle className="text-2xl font-bold">{formattedDateTime.time}</AlertTitle>
+          <AlertDescription>
+            {formattedDateTime.date} ({formattedDateTime.timezone})
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="flex items-center gap-2">
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleFavorite(space.id)}
+                disabled={!user}
+                aria-label="Toggle favorite"
+            >
+                <HeartIcon className={`w-5 h-5 ${isFavorite ? "text-red-500 fill-current" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space">
+                <Share2Icon className="w-5 h-5" />
+            </Button>
+        </div>
+        <Button asChild>
+          <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
+            Project Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
+          </a>
         </Button>
       </CardFooter>
     </Card>

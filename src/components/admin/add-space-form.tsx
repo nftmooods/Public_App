@@ -14,7 +14,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { addSpace } from "@/lib/actions";
+// Import from firebase instead of actions
+import { addSpace } from "@/lib/firebase"; 
 import { useAuth } from "@/context/auth-context";
 
 const formSchema = z.object({
@@ -38,7 +39,8 @@ export function AddSpaceForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    // Check for user and user.uid
+    if (!user || !user.uid) {
         toast({
             title: "Authentication Error",
             description: "You must be logged in to add a space.",
@@ -52,11 +54,14 @@ export function AddSpaceForm() {
     combinedDateTime.setUTCHours(hours, minutes, 0, 0);
 
     try {
+        // Call the new addSpace function from firebase.ts with the correct data structure
         await addSpace({
             name: values.name,
             projectUrl: values.projectUrl,
-            dateTime: combinedDateTime.toISOString(),
-            author: user.name,
+            dateTime: combinedDateTime, // The JS Date object will be converted to a Firestore Timestamp
+            createdBy: user.uid, // Use user's UID for security rules
+            authorName: user.name || "Unknown", // Keep author's name for display
+            createdAt: new Date(), // Add a server-side timestamp for creation
         });
         toast({
             title: "Space added!",
@@ -64,9 +69,10 @@ export function AddSpaceForm() {
         });
         form.reset();
     } catch (error) {
+        console.error("Error adding space: ", error);
         toast({
             title: "Error",
-            description: "Failed to add the new Space. Please try again.",
+            description: "Failed to add the new Space. This could be a permissions issue. Please try again.",
             variant: "destructive",
         });
     }

@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Spaces can be read by any authenticated user.
+    // Spaces can only be created, updated, or deleted by an admin.
+    // This rule now checks for the custom claim 'admin' on the user's auth token.
+    match /spaces/{spaceId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Users can only manage their own favorites.
+    // The create rule is more open to allow adding a favorite for oneself.
+    match /favorites/{favoriteId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}

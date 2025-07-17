@@ -1,6 +1,23 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc, 
+  deleteDoc, 
+  updateDoc, 
+  query, 
+  where,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  DocumentData,
+  QueryDocumentSnapshot
+} from "firebase/firestore";
+import { Space } from "./types";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,5 +31,113 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { app, db };
+
+// --- User Functions ---
+export const createUserProfileDocument = async (userAuth: any, additionalData: any) => {
+    if (!userAuth) return;
+    const userDocRef = doc(db, `users/${userAuth.uid}`);
+    const snapshot = await getDoc(userDocRef);
+
+    if (!snapshot.exists()) {
+        const { displayName, email } = userAuth;
+        const createdAt = new Date();
+        try {
+            await setDoc(userDocRef, {
+                name: displayName || additionalData.name,
+                email,
+                createdAt,
+                role: 'user', // Default role for new users
+                ...additionalData,
+            });
+        } catch (error) {
+            console.error("Error creating user document", error);
+        }
+    }
+    return userDocRef;
+};
+
+export const getUserProfile = async (userId: string) => {
+  if (!userId) return null;
+  const userDocRef = doc(db, "users", userId);
+  const userDocSnap = await getDoc(userDocRef);
+  if (userDocSnap.exists()) {
+    return userDocSnap.data();
+  } else {
+    console.log("No such user document!");
+    return null;
+  }
+};
+
+
+// --- Space Functions ---
+
+// Get all spaces
+export const getSpaces = async (): Promise<Space[]> => {
+    const spacesCol = collection(db, "spaces");
+    const spaceSnapshot = await getDocs(spacesCol);
+    const spaceList = spaceSnapshot.docs.map((snap: QueryDocumentSnapshot<DocumentData>) => {
+        const data = snap.data();
+        return {
+            id: snap.id,
+            ...data,
+            // Assurez-vous que les champs de date sont des objets Date JavaScript
+            dateTime: data.dateTime?.toDate(),
+            createdAt: data.createdAt?.toDate(),
+        } as Space;
+    });
+    return spaceList;
+};
+
+// Add a new space (for admins)
+// Le type partiel permet de ne pas exiger 'id' lors de la création
+export const addSpace = async (spaceData: Omit<Space, 'id'>) => {
+  const spacesCol = collection(db, "spaces");
+  // Utiliser serverTimestamp() pour les dates de création
+  const newSpaceRef = await addDoc(spacesCol, {
+      ...spaceData,
+      createdAt: serverTimestamp()
+  });
+  return newSpaceRef.id;
+};
+
+// Update a space (for admins)
+export const updateSpace = async (spaceId: string, updatedData: Partial<Space>) => {
+  const spaceDoc = doc(db, "spaces", spaceId);
+  await updateDoc(spaceDoc, updatedData);
+};
+
+// Delete a space (for admins)
+export const deleteSpace = async (spaceId: string) => {
+  const spaceDoc = doc(db, "spaces", spaceId);
+  await deleteDoc(spaceDoc);
+};
+
+
+// --- Favorite Functions ---
+
+// Add a favorite for a user
+export const addFavorite = async (userId: string, spaceId: string) => {
+  const favoritesCol = collection(db, "favorites");
+  const newFavoriteRef = await addDoc(favoritesCol, { userId, spaceId, favoritedAt: serverTimestamp() });
+  return newFavoriteRef.id;
+};
+
+// Remove a favorite
+export const removeFavorite = async (favoriteId: string) => {
+  const favoriteDoc = doc(db, "favorites", favoriteId);
+  await deleteDoc(favoriteDoc);
+};
+
+// Get all favorites for a user
+export const getFavorites = async (userId: string) => {
+  const favoritesCol = collection(db, "favorites");
+  const q = query(favoritesCol, where("userId", "==", userId));
+  const favoriteSnapshot = await getDocs(q);
+  const favoriteList = favoriteSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return favoriteList;
+};
+
+
+export { app, db, auth };
