@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
 
 const formSchema = z.object({
-  username: z.string().min(1, { message: "Username is required." }),
+  email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -24,18 +24,18 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // In a real app, you'd call an API here.
-    // For now, we'll simulate a successful login.
-    login({ name: values.username, email: `${values.username}@example.com` });
+    // For now, we'll simulate a successful login with email.
+    login({ email: values.email });
     toast({
         title: "Login Successful!",
-        description: `Welcome back, ${values.username}!`,
+        description: `Welcome back!`,
     });
     router.push("/");
   }
@@ -46,11 +46,12 @@ export function LoginForm() {
         <FormField
           control={form.control}
           name="username"
+ name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="ape_user" {...field} />
+                <Input placeholder="ape_user@example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

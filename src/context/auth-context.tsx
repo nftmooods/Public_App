@@ -22,17 +22,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs on mount to check the initial auth state from localStorage.
-    const storedUser = window.localStorage.getItem('user');
-    if (storedUser) {
-        try {
-            setUser(JSON.parse(storedUser));
-        } catch (e) {
-            setUser(null);
-        }
-    }
+    // This effect runs on mount to check the initial auth state.
+    // The useLocalStorage hook will update the state with the value from localStorage.
     setLoading(false);
-  }, [setUser]);
+  }, []);
 
 
   const login = (userData: User) => {
@@ -41,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    window.localStorage.removeItem('user');
   };
 
   const value = { user, loading, login, logout };

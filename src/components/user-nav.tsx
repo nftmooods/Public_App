@@ -18,7 +18,11 @@ export function UserNav() {
   const { user, logout } = useAuth();
 
   if (!user) {
-    return null;
+    return (
+        <Button asChild>
+            <Link href="/login">Login</Link>
+        </Button>
+    );
   }
   
   const getInitials = (name: string) => {
