@@ -1,99 +1,95 @@
+import { db } from './firebase';
+import { collection, getDocs, addDoc, query, where, writeBatch } from 'firebase/firestore';
 import type { Space, User } from './types';
 
-const today = new Date();
-today.setUTCHours(18, 0, 0, 0); // Set to 6 PM UTC today
-
-const tomorrow = new Date();
-tomorrow.setDate(tomorrow.getDate() + 1);
-tomorrow.setUTCHours(20, 0, 0, 0); // Set to 8 PM UTC tomorrow
-
-const dayAfter = new Date();
-dayAfter.setDate(dayAfter.getDate() + 2);
-dayAfter.setUTCHours(17, 30, 0, 0); // Set to 5:30 PM UTC day after tomorrow
-
-const nextWeek = new Date();
-nextWeek.setDate(nextWeek.getDate() + 7);
-nextWeek.setUTCHours(19, 0, 0, 0); // Set to 7 PM UTC next week
-
-const spaces: Space[] = [
-  {
-    id: '1',
-    name: 'ApeChain Community Call',
-    projectUrl: 'https://apechain.com',
-    dateTime: today.toISOString(),
-    author: 'admin',
-  },
-  {
-    id: '2',
-    name: 'NFT Showcase with Yuga Labs',
-    projectUrl: 'https://yuga.com',
-    dateTime: tomorrow.toISOString(),
-    author: 'admin',
-  },
-  {
-    id: '3',
-    name: 'DeFi on ApeChain Deep Dive',
-    projectUrl: 'https://defionape.com',
-    dateTime: dayAfter.toISOString(),
-    author: 'admin',
-  },
-  {
-    id: '4',
-    name: 'Gaming Guild AMA',
-    projectUrl: 'https://gamingguild.com',
-    dateTime: nextWeek.toISOString(),
-    author: 'user1',
-  },
-  {
-    id: '5',
-    name: 'Art & Culture on ApeChain',
-    projectUrl: 'https://cultureape.com',
-    dateTime: new Date(today.getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours after the first one
-    author: 'user2',
-  },
+// NOTE: The data is now managed in Firestore.
+// The initial data is kept here for seeding purposes.
+const initialSpacesData: Omit<Space, 'id'>[] = [
+  { name: 'ApeChain Community Call', projectUrl: 'https://apechain.com', dateTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), author: 'admin' },
+  { name: 'NFT Showcase with Yuga Labs', projectUrl: 'https://yuga.com', dateTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), author: 'admin' },
+  { name: 'DeFi on ApeChain Deep Dive', projectUrl: 'https://defionape.com', dateTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), author: 'admin' },
+  { name: 'Gaming Guild AMA', projectUrl: 'https://gamingguild.com', dateTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), author: 'user1' },
+  { name: 'Art & Culture on ApeChain', projectUrl: 'https://cultureape.com', dateTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), author: 'user2' },
 ];
 
-// In-memory user store for demonstration
-const users: User[] = [
-    { id: '1', name: 'Admin User', email: 'admin@example.com', password: 'password', role: 'admin' },
-    { id: '2', name: 'Test User', email: 'user@example.com', password: 'password', role: 'user' },
+const initialUsersData: Omit<User, 'id'>[] = [
+  { name: 'Admin User', email: 'admin@example.com', password: 'password', role: 'admin' },
+  { name: 'Test User', email: 'user@example.com', password: 'password', role: 'user' },
 ];
 
+// IMPORTANT: Run this function once to seed your Firestore database.
+// You can do this by creating a temporary page or a script.
+// Example: Create a temporary route in your app, call this function from there,
+// and then remove the route.
+export async function seedDatabase() {
+  const batch = writeBatch(db);
+
+  // Seed spaces
+  const spacesCollection = collection(db, 'spaces');
+  const existingSpaces = await getDocs(spacesCollection);
+  if (existingSpaces.empty) {
+    console.log("Seeding spaces...");
+    initialSpacesData.forEach(space => {
+      const docRef = addDoc(spacesCollection, {}); // placeholder to get a ref
+      batch.set(docRef, space);
+    });
+  } else {
+    console.log("Spaces collection already has data. Skipping seed.");
+  }
+
+  // Seed users
+  const usersCollection = collection(db, 'users');
+  const existingUsers = await getDocs(usersCollection);
+  if (existingUsers.empty) {
+    console.log("Seeding users...");
+    initialUsersData.forEach(user => {
+      const docRef = addDoc(usersCollection, {}); // placeholder
+      batch.set(docRef, user);
+    });
+  } else {
+    console.log("Users collection already has data. Skipping seed.");
+  }
+  
+  await batch.commit();
+  console.log("Database seeding complete (if not skipped).");
+}
 
 export async function getSpaces(): Promise<Space[]> {
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  // Sort spaces by date to ensure consistent order
-  return [...spaces].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  const spacesCollection = collection(db, 'spaces');
+  const snapshot = await getDocs(spacesCollection);
+  const spaces = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Space));
+  return spaces.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 }
 
 export async function addSpace(space: Omit<Space, 'id'>): Promise<Space> {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const newSpace: Space = {
-        id: new Date().getTime().toString(),
-        ...space,
-    };
-    spaces.push(newSpace);
-    return newSpace;
+  const spacesCollection = collection(db, 'spaces');
+  const docRef = await addDoc(spacesCollection, space);
+  return { id: docRef.id, ...space };
 }
 
-// User-related functions
 export async function getUserByEmail(email: string): Promise<User | undefined> {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return users.find(user => user.email === email);
+  const usersCollection = collection(db, 'users');
+  const q = query(usersCollection, where('email', '==', email));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) {
+    return undefined;
+  }
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() } as User;
 }
 
 export async function addUser(userData: Omit<User, 'id' | 'role'>): Promise<User> {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    const existingUser = await getUserByEmail(userData.email);
-    if (existingUser) {
-        throw new Error("User with this email already exists.");
-    }
-    const newUser: User = {
-        id: new Date().getTime().toString(),
-        ...userData,
-        role: 'user', // Default role for new users
-    };
-    users.push(newUser);
-    return newUser;
+  const existingUser = await getUserByEmail(userData.email);
+  if (existingUser) {
+    throw new Error("User with this email already exists.");
+  }
+
+  const newUser: Omit<User, 'id'> = {
+    ...userData,
+    role: 'user', // Default role
+  };
+
+  const usersCollection = collection(db, 'users');
+  const docRef = await addDoc(usersCollection, newUser);
+  return { id: docRef.id, ...newUser };
 }
