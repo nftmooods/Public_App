@@ -51,7 +51,8 @@ const spaces: Space[] = [
 export async function getSpaces(): Promise<Space[]> {
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 500));
-  return spaces;
+  // Sort spaces by date to ensure consistent order
+  return [...spaces].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 }
 
 export async function addSpace(space: Omit<Space, 'id'>): Promise<Space> {
