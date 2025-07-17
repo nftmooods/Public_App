@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import Stepper from './Stepper';
 import DashboardModal from './DashboardModal';
+import UserMenu from './UserMenu';
+import LoginModal from './LoginModal';
+import ApiKeyModal from './ApiKeyModal';
+import ApiKeysModal from './ApiKeysModal';
+import ProfileModal from './ProfileModal';
 import Step1 from './steps/Step1';
 import Step4 from './steps/Step4';
 import Step5 from './steps/Step5';
