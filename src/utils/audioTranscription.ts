@@ -274,7 +274,7 @@ export class TranscriptionServiceFactory {
     }
     
     // En dernier recours, utiliser le service de démonstration
-    console.log('🎭 Utilisation du service de démonstration');
+    console.log('⚠️ Aucun service de transcription disponible');
     return new MockTranscriptionService();
   }
 }

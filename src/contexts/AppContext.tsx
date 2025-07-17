@@ -47,7 +47,7 @@ const initialAppState: AppState = {
   },
   generatedContent: '',
   paymentInfo: {
-    accepted: true, // Always accepted in Beta Test
+    accepted: true,
     method: null,
     amount: 0,
     currency: 'USD'

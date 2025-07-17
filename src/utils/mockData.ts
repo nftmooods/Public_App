@@ -61,7 +61,7 @@ export const generateMockTranscription = (): TranscriptionData => {
 
   const fullText = timestamps.map(t => t.text).join(' ');
   const tokenCount = Math.floor(fullText.length / 4);
-  const estimatedCost = tokenCount * 0.0001;
+  const estimatedCost = 0; // Free in Beta Test
 
   return {
     text: fullText,
