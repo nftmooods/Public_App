@@ -38,10 +38,10 @@ export function SignupForm() {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update the user's profile with their name
+      // Update the user's profile with their name in Firebase Auth
       await updateProfile(user, { displayName: name });
 
-      // Create a user document in Firestore
+      // Create a user document in Firestore to store additional details
       await createUserProfileDocument(user, { name });
 
       toast({

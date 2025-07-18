@@ -1,4 +1,3 @@
-
 // src/lib/types.ts
 
 // The Space interface uses JavaScript Date objects,
@@ -18,4 +17,5 @@ export interface User {
   uid: string;
   email: string | null;
   name: string | null;
+  photoURL?: string | null;
 }

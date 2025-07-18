@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth } from "@/lib/firebase";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
+  email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -32,60 +32,68 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        toast({
-            title: "Login Successful!",
-            description: `Welcome back!`,
-        });
-        router.push("/");
-    } catch (error: any) {
-        toast({
-            title: "Login Failed",
-            description: "Invalid email or password.",
-            variant: "destructive",
-        });
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back! Redirecting you to the homepage.",
+      });
+
+      router.push('/'); 
+
+    } catch (error) {
+      console.error("Login Error:", error);
+      toast({
+        title: "Login Failed",
+        description: "The email or password you entered is incorrect.",
+        variant: "destructive",
+      });
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="ape_user@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+    <div className="flex w-full flex-col justify-center space-y-6">
+      <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                  <Input placeholder="name@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+          <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+              <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                  <Input type="password" placeholder="Your password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+              </FormItem>
+              )}
+          />
+          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? "Logging in..." : "Login"}
-        </Button>
-        <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="underline hover:text-primary">
-                Sign up
-            </Link>
-        </div>
-      </form>
-    </Form>
+          </Button>
+          </form>
+      </Form>
+      <p className="px-8 text-center text-sm text-muted-foreground">
+          <Link
+          href="/signup"
+          className="underline underline-offset-4 hover:text-primary"
+          >
+          Don't have an account? Sign Up
+          </Link>
+      </p>
+    </div>
   );
 }

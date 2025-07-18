@@ -1,4 +1,3 @@
-
 "use client";
 
 import { signOut } from "firebase/auth";
@@ -24,14 +23,15 @@ export function UserNav() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // The onAuthStateChanged listener in AuthProvider will handle the redirect.
+      // The onAuthStateChanged listener in AuthProvider will handle redirecting or state change
     } catch (error) {
       console.error("Error signing out: ", error);
     }
   };
 
   if (loading) {
-    return <Button variant="ghost" size="sm">Loading...</Button>;
+    // Show a minimal loading state to prevent layout shift
+    return <div className="h-10 w-20" />;
   }
 
   if (!user) {
@@ -43,11 +43,10 @@ export function UserNav() {
   }
   
   const getInitials = (name: string | null) => {
-    if (!name) return "";
+    if (!name) return "U";
     const names = name.split(' ');
-    if (names.length === 0) return '';
     const initials = names.map(n => n[0]).join('');
-    return initials.toUpperCase();
+    return initials.toUpperCase() || "U";
   }
 
   return (
@@ -55,7 +54,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={undefined} alt={user.name || "User"} />
+            <AvatarImage src={user.photoURL || undefined} alt={user.name || "User"} />
             <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
           </Avatar>
         </Button>

@@ -1,10 +1,10 @@
-
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User } from '@/lib/types';
 import { auth, getUserProfile } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -20,18 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
+            // User is signed in
             const userProfile = await getUserProfile(firebaseUser.uid);
             setUser({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
-                name: (userProfile as any)?.name || firebaseUser.displayName,
+                name: userProfile?.name || firebaseUser.displayName,
+                photoURL: firebaseUser.photoURL,
             });
         } else {
+            // User is signed out
             setUser(null);
         }
         setLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 

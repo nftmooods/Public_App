@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
+import { getAuth, User as FirebaseAuthUser } from "firebase/auth";
 import { 
   getFirestore, 
   collection, 
@@ -17,11 +17,12 @@ import {
   serverTimestamp,
   DocumentData,
   QueryDocumentSnapshot,
-  orderBy
+  orderBy,
+  Timestamp
 } from "firebase/firestore";
-import { Space } from "./types";
+import type { Space } from "./types";
 
-const firebaseConfig = {
+const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -37,20 +38,24 @@ const auth = getAuth(app);
 
 
 // --- User Functions ---
-export const createUserProfileDocument = async (userAuth: any, additionalData: any) => {
+
+/**
+ * Creates a user profile document in Firestore.
+ * This is called right after a user signs up to store their name and other info.
+ */
+export const createUserProfileDocument = async (userAuth: FirebaseAuthUser, additionalData: { name: string }) => {
     if (!userAuth) return;
     const userDocRef = doc(db, `users/${userAuth.uid}`);
     const snapshot = await getDoc(userDocRef);
 
     if (!snapshot.exists()) {
-        const { displayName, email } = userAuth;
+        const { email } = userAuth;
         const createdAt = new Date();
         try {
             await setDoc(userDocRef, {
-                name: displayName || additionalData.name,
+                name: additionalData.name,
                 email,
-                createdAt,
-                ...additionalData,
+                createdAt: serverTimestamp(),
             });
         } catch (error) {
             console.error("Error creating user document", error);
@@ -59,15 +64,23 @@ export const createUserProfileDocument = async (userAuth: any, additionalData: a
     return userDocRef;
 };
 
+/**
+ * Retrieves a user's profile from Firestore.
+ */
 export const getUserProfile = async (userId: string) => {
   if (!userId) return null;
-  const userDocRef = doc(db, "users", userId);
-  const userDocSnap = await getDoc(userDocRef);
-  if (userDocSnap.exists()) {
-    return userDocSnap.data();
-  } else {
-    console.log("No such user document!");
-    return null;
+  try {
+    const userDocRef = doc(db, "users", userId);
+    const userDocSnap = await getDoc(userDocRef);
+    if (userDocSnap.exists()) {
+      return userDocSnap.data() as { name: string; email: string; };
+    } else {
+      console.log("No such user document!");
+      return null;
+    }
+  } catch (error) {
+      console.error("Error getting user profile:", error);
+      return null;
   }
 };
 
@@ -84,19 +97,17 @@ export const getSpaces = async (): Promise<Space[]> => {
         return {
             id: snap.id,
             ...data,
-            // Ensure date fields are JS Date objects
-            dateTime: data.dateTime?.toDate(),
-            createdAt: data.createdAt?.toDate(),
+            // Ensure Firestore Timestamps are converted to JS Date objects
+            dateTime: (data.dateTime as Timestamp).toDate(),
+            createdAt: (data.createdAt as Timestamp).toDate(),
         } as Space;
     });
     return spaceList;
 };
 
-// Add a new space (for admins)
-// Partial type allows not requiring 'id' on creation
-export const addSpace = async (spaceData: Omit<Space, 'id'>) => {
+// Add a new space
+export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt'>) => {
   const spacesCol = collection(db, "spaces");
-  // Use serverTimestamp() for creation dates
   const newSpaceRef = await addDoc(spacesCol, {
       ...spaceData,
       createdAt: serverTimestamp()
@@ -104,13 +115,13 @@ export const addSpace = async (spaceData: Omit<Space, 'id'>) => {
   return newSpaceRef.id;
 };
 
-// Update a space (for admins)
+// Update a space
 export const updateSpace = async (spaceId: string, updatedData: Partial<Space>) => {
   const spaceDoc = doc(db, "spaces", spaceId);
   await updateDoc(spaceDoc, updatedData);
 };
 
-// Delete a space (for admins)
+// Delete a space
 export const deleteSpace = async (spaceId: string) => {
   const spaceDoc = doc(db, "spaces", spaceId);
   await deleteDoc(spaceDoc);
@@ -122,6 +133,12 @@ export const deleteSpace = async (spaceId: string) => {
 // Add a favorite for a user
 export const addFavorite = async (userId: string, spaceId: string) => {
   const favoritesCol = collection(db, "favorites");
+  // Check if it already exists to avoid duplicates
+  const q = query(favoritesCol, where("userId", "==", userId), where("spaceId", "==", spaceId));
+  const existing = await getDocs(q);
+  if (!existing.empty) {
+      return existing.docs[0].id;
+  }
   const newFavoriteRef = await addDoc(favoritesCol, { userId, spaceId, favoritedAt: serverTimestamp() });
   return newFavoriteRef.id;
 };
