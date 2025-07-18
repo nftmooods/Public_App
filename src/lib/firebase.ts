@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
-import { getAuth, User as FirebaseAuthUser } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { 
   getFirestore, 
   collection, 
@@ -43,14 +43,13 @@ const auth = getAuth(app);
  * Creates a user profile document in Firestore.
  * This is called right after a user signs up to store their name and other info.
  */
-export const createUserProfileDocument = async (userAuth: FirebaseAuthUser, additionalData: { name: string }) => {
+export const createUserProfileDocument = async (userAuth: import('firebase/auth').User, additionalData: { name: string }) => {
     if (!userAuth) return;
     const userDocRef = doc(db, `users/${userAuth.uid}`);
     const snapshot = await getDoc(userDocRef);
 
     if (!snapshot.exists()) {
         const { email } = userAuth;
-        const createdAt = new Date();
         try {
             await setDoc(userDocRef, {
                 name: additionalData.name,

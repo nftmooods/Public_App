@@ -34,18 +34,23 @@ export function LoginForm() {
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       
+      // The redirect is handled by the AuthProvider now
       toast({
         title: "Login Successful",
-        description: "Welcome back! Redirecting you to the homepage.",
+        description: "Welcome back!",
       });
 
       router.push('/'); 
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error);
+      let description = "An unknown error occurred. Please try again.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = "The email or password you entered is incorrect.";
+      }
       toast({
         title: "Login Failed",
-        description: "The email or password you entered is incorrect.",
+        description: description,
         variant: "destructive",
       });
     }

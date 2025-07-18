@@ -50,10 +50,15 @@ export function SignupForm() {
       });
       router.push("/");
     } catch (error: any) {
-        let description = "An unexpected error occurred.";
+        let description = "An unexpected error occurred. Please check your details and try again.";
         if (error.code === 'auth/email-already-in-use') {
             description = "This email is already in use. Please try another one.";
+        } else if (error.code === 'auth/weak-password') {
+            description = "The password is too weak. Please choose a stronger password.";
+        } else if (error.code === 'auth/invalid-email') {
+            description = "The email address is not valid.";
         }
+        console.error("Signup Error:", error);
       toast({
         title: "Sign up failed",
         description: description,
