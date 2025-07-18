@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User } from '@/lib/types';
 import { auth, getUserProfile } from '@/lib/firebase';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -21,14 +21,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
             const userProfile = await getUserProfile(firebaseUser.uid);
-            const idTokenResult = await firebaseUser.getIdTokenResult();
-            const isAdmin = idTokenResult.claims.admin === true;
-
             setUser({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 name: (userProfile as any)?.name || firebaseUser.displayName,
-                role: isAdmin ? 'admin' : 'user',
             });
         } else {
             setUser(null);

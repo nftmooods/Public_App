@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
-import { CreditCard, LogOut, PlusCircle, User as UserIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 
@@ -70,17 +69,6 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {user.role === 'admin' && (
-          <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/admin"><PlusCircle className="mr-2 h-4 w-4" /> Add Space</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/console"><CreditCard className="mr-2 h-4 w-4" /> Console</Link>
-              </DropdownMenuItem>
-          </DropdownMenuGroup>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

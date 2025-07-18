@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -15,7 +16,8 @@ import {
   setDoc,
   serverTimestamp,
   DocumentData,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  orderBy
 } from "firebase/firestore";
 import { Space } from "./types";
 
@@ -48,7 +50,6 @@ export const createUserProfileDocument = async (userAuth: any, additionalData: a
                 name: displayName || additionalData.name,
                 email,
                 createdAt,
-                role: 'user', // Default role for new users
                 ...additionalData,
             });
         } catch (error) {
@@ -76,7 +77,8 @@ export const getUserProfile = async (userId: string) => {
 // Get all spaces
 export const getSpaces = async (): Promise<Space[]> => {
     const spacesCol = collection(db, "spaces");
-    const spaceSnapshot = await getDocs(spacesCol);
+    const q = query(spacesCol, orderBy("dateTime", "asc"));
+    const spaceSnapshot = await getDocs(q);
     const spaceList = spaceSnapshot.docs.map((snap: QueryDocumentSnapshot<DocumentData>) => {
         const data = snap.data();
         return {
