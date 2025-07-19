@@ -94,7 +94,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     },
   });
 
-  const canEditAuthor = (isAdmin || user?.uid === space.createdBy);
+  const canEditAuthor = isAdmin || user?.uid === space.createdBy;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -266,4 +266,72 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a time" />
-                      </T_ALL | T_MOD>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="endTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Time (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a time" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
+         <FormField
+            control={form.control}
+            name="timezone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Timezone</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select the timezone for the time you entered" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {timezones.map(tz => (
+                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? "Updating..." : "Update Space"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
