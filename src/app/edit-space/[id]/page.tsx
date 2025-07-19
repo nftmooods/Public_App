@@ -10,8 +10,9 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getSpace } from '@/lib/firebase';
 import type { Space } from '@/lib/types';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 export default function EditSpacePage() {
   const { user, loading: authLoading } = useAuth();
@@ -71,7 +72,16 @@ export default function EditSpacePage() {
 
     if (error) {
        return (
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-lg relative">
+             <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.back()}
+                className="absolute top-4 right-4"
+             >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Error</CardTitle>
             </CardHeader>
@@ -88,7 +98,16 @@ export default function EditSpacePage() {
 
     if (space) {
         return (
-             <Card className="w-full max-w-lg">
+             <Card className="w-full max-w-lg relative">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => router.back()}
+                    className="absolute top-4 right-4"
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                </Button>
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">Edit your Space</CardTitle>
                     <CardDescription>
