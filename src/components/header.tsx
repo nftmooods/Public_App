@@ -19,7 +19,7 @@ export function Header() {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <ApeIcon className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline sm:inline-block">
-              ApeChain Spaces
+              Community Moment Hub
             </span>
           </Link>
         </div>
@@ -28,7 +28,7 @@ export function Header() {
               <Button asChild variant="outline" size="sm">
                 <Link href="/create-space">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Create Space
+                  Create Moment
                 </Link>
               </Button>
             )}

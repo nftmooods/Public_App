@@ -38,18 +38,18 @@ export default function EditSpacePage() {
           setLoading(true);
           const spaceData = await getSpace(spaceId);
           if (!spaceData) {
-            setError("The requested space could not be found.");
+            setError("The requested moment could not be found.");
             return;
           }
           if (spaceData.createdBy !== user.uid) {
-            setError("You do not have permission to edit this space.");
+            setError("You do not have permission to edit this moment.");
             // Optionally redirect
             // router.replace('/');
             return;
           }
           setSpace(spaceData);
         } catch (err) {
-          setError("An error occurred while fetching space details.");
+          setError("An error occurred while fetching moment details.");
           console.error(err);
         } finally {
           setLoading(false);
@@ -109,7 +109,7 @@ export default function EditSpacePage() {
                     Back
                 </Button>
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Edit your Space</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Edit your Moment</CardTitle>
                     <CardDescription>
                     Update the details for your event below.
                     </CardDescription>

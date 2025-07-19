@@ -113,7 +113,7 @@ export function CreateSpaceForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !user.name) {
-        toast({ title: "Error", description: "You must be logged in to create a space.", variant: "destructive" });
+        toast({ title: "Error", description: "You must be logged in to create a moment.", variant: "destructive" });
         return;
     }
     setIsSubmitting(true);
@@ -142,13 +142,13 @@ export function CreateSpaceForm() {
       await Promise.all(creationPromises);
 
       toast({
-        title: "Space(s) Created!",
+        title: "Moment(s) Created!",
         description: `Your event(s) have been added to the weekly schedule.`,
       });
       router.push("/");
       
     } catch (error) {
-      console.error("Failed to create space:", error);
+      console.error("Failed to create moment:", error);
       toast({
         title: "Creation Failed",
         description: "An unexpected error occurred. Please try again.",
@@ -167,7 +167,7 @@ export function CreateSpaceForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Space Name</FormLabel>
+              <FormLabel>Moment Name</FormLabel>
               <FormControl>
                 <Input placeholder="" {...field} />
               </FormControl>
@@ -391,7 +391,7 @@ export function CreateSpaceForm() {
             />
         
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Space(s)"}
+            {isSubmitting ? "Creating..." : "Create Moment(s)"}
         </Button>
       </form>
     </Form>

@@ -18,15 +18,7 @@ import {
 } from "date-fns";
 import { FullWeekView } from "./full-week-view";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-const timezones = [
-    { value: "UTC", label: "UTC" },
-    { value: "America/New_York", label: "EST" },
-    { value: "America/Los_Angeles", label: "PST" },
-    { value: "Europe/London", label: "GMT" },
-    { value: "Europe/Paris", label: "CET" },
-    { value: "Asia/Tokyo", label: "JST" },
-];
+import { timezones as cityTimezones } from "@/lib/timezones";
 
 const dayColors: { [key: number]: string } = {
     0: '#EAEAEA', // Sunday
@@ -71,7 +63,7 @@ const useSpaces = () => {
         setSpaces(processedSpaces);
       } catch (error) {
         console.error("Error fetching spaces:", error);
-        toast({ title: "Error", description: "Could not fetch spaces.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not fetch moments.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
@@ -150,9 +142,12 @@ export function SpaceSchedule() {
       setSelectedTimezone(user.timezone);
     } else if (typeof window !== 'undefined') {
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (timezones.some(tz => tz.value === detectedTimezone)) {
+        // Check if the detected timezone is in our simplified list
+        const exists = cityTimezones.some(tz => tz.value === detectedTimezone);
+        if (exists) {
           setSelectedTimezone(detectedTimezone);
         } else {
+           // Fallback to a default if not found (e.g., UTC)
            setSelectedTimezone('UTC');
         }
     }
@@ -234,7 +229,7 @@ export function SpaceSchedule() {
     if (loading) {
        return (
             <div className="col-span-full text-center py-12">
-                <p className="text-muted-foreground">Loading spaces...</p>
+                <p className="text-muted-foreground">Loading moments...</p>
             </div>
           )
     }
@@ -269,7 +264,7 @@ export function SpaceSchedule() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="col-span-full text-center py-12">
-                        <p className="text-muted-foreground">No spaces scheduled for this period.</p>
+                        <p className="text-muted-foreground">No moments scheduled for this period.</p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -281,10 +276,10 @@ export function SpaceSchedule() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight">
-          Weekly Schedule
+          Community Schedule
         </h1>
         <p className="text-muted-foreground mt-2">
-          Your weekly schedule of recurring Twitter Spaces.
+          Your central hub for community events and moments.
         </p>
       </div>
 
@@ -315,11 +310,11 @@ export function SpaceSchedule() {
               id="my-spaces-only"
               checked={showMySpaces}
               onCheckedChange={handleShowMySpacesChange}
-              aria-label="Show my spaces only"
+              aria-label="Show my moments only"
               disabled={!user}
             />
             <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
-              My Spaces { !user && "(Login required)"}
+              My Moments { !user && "(Login required)"}
             </Label>
           </div>
           <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
@@ -327,7 +322,7 @@ export function SpaceSchedule() {
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
-              {timezones.map(tz => (
+              {cityTimezones.map(tz => (
                 <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
               ))}
             </SelectContent>

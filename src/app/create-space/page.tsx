@@ -51,7 +51,7 @@ export default function CreateSpacePage() {
             Back
           </Button>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Create a new Space</CardTitle>
+            <CardTitle className="font-headline text-2xl">Create a new Moment</CardTitle>
             <CardDescription>
               Fill out the details below to add your event to the schedule.
             </CardDescription>

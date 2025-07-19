@@ -1,11 +1,12 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
 
 export const metadata: Metadata = {
-  title: 'ApeChain Spaces',
-  description: 'A schedule of upcoming Twitter Spaces in the ApeChain ecosystem.',
+  title: 'Community Moment Hub',
+  description: 'Your central hub for community events and moments.',
 };
 
 export default function RootLayout({

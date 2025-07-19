@@ -136,7 +136,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     navigator.clipboard.writeText(shareUrl);
     toast({
         title: "Link Copied!",
-        description: "The link to this space has been copied to your clipboard.",
+        description: "The link to this moment has been copied to your clipboard.",
     });
   };
 
@@ -181,12 +181,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             >
                 <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : ""}`} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space" className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
+            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share moment" className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
                 <Share2Icon className="w-5 h-5" />
             </Button>
             {canEdit && (
                 <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
-                    <Link href={`/edit-space/${space.id}`} aria-label="Edit space">
+                    <Link href={`/edit-space/${space.id}`} aria-label="Edit moment">
                         <PencilIcon className="w-5 h-5" />
                     </Link>
                 </Button>
@@ -201,5 +201,3 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     </Card>
   );
 }
-
-    

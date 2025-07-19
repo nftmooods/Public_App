@@ -134,7 +134,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
-        toast({ title: "Error", description: "You must be logged in to update a space.", variant: "destructive" });
+        toast({ title: "Error", description: "You must be logged in to update a moment.", variant: "destructive" });
         return;
     }
 
@@ -162,13 +162,13 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       await updateSpace(space.id, spaceUpdateData);
 
       toast({
-        title: "Space Updated!",
+        title: "Moment Updated!",
         description: `Your event has been successfully updated.`,
       });
       router.push("/");
       
     } catch (error) {
-      console.error("Failed to update space:", error);
+      console.error("Failed to update moment:", error);
       toast({
         title: "Update Failed",
         description: "An unexpected error occurred. Please try again.",
@@ -183,12 +183,12 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     try {
       await deleteSpace(space.id);
       toast({
-        title: "Space Deleted",
+        title: "Moment Deleted",
         description: "The event has been permanently removed.",
       });
       router.push("/");
     } catch (error) {
-      console.error("Failed to delete space:", error);
+      console.error("Failed to delete moment:", error);
       toast({
         title: "Deletion Failed",
         description: "An unexpected error occurred. Please try again.",
@@ -205,9 +205,9 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Space Name</FormLabel>
+              <FormLabel>Moment Name</FormLabel>
               <FormControl>
-                <Input placeholder="ApeChain Weekly Update" {...field} />
+                <Input placeholder="Community Weekly Update" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -421,14 +421,14 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" type="button" className="w-full sm:w-auto" disabled={isSubmitting}>
                     <Trash2Icon className="mr-2 h-4 w-4" />
-                    Delete Space
+                    Delete Moment
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete this space
+                    This action cannot be undone. This will permanently delete this moment
                     from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -439,7 +439,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
               </AlertDialogContent>
             </AlertDialog>
             <Button type="submit" className="w-full sm:w-auto mb-2 sm:mb-0" disabled={isSubmitting}>
-                {isSubmitting ? "Updating..." : "Update Space"}
+                {isSubmitting ? "Updating..." : "Update Moment"}
             </Button>
         </div>
       </form>
