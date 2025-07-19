@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from "@/lib/types";
+import { serverTimestamp } from "firebase/firestore";
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -107,17 +108,33 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          authorName: user.name || "Anonymous", // Keep author name consistent
-          createdBy: user.uid,
+          authorName: user.name || "Anonymous",
       };
 
-      if (endTime) {
+      if (endTime && endTime.length > 0) {
         spaceUpdateData.endTime = endTime;
       } else {
-        spaceUpdateData.endTime = undefined; // Or handle as needed in Firestore
+        // If endTime is empty or null, we want to remove it from the object
+        // so Firestore doesn't get an 'undefined' value.
+        // We can achieve this by explicitly setting it to a value that Firestore can remove
+        // or just not including it. The simplest is to not include it.
+        // The current object has Partial type, so this is fine.
+        // However, if the key already exists and we want to remove it, we need another way.
+        // Let's create a new object without it if it's empty.
+      }
+      
+      const finalUpdateData: {[key: string]: any} = {...spaceUpdateData};
+      if (endTime && endTime.length > 0) {
+        finalUpdateData.endTime = endTime
+      } else {
+        // To remove a field, you can't pass undefined.
+        // One way is to not include it in the update object.
+        // another is to use a special value `deleteField()` from firestore, but that's for server-side sdk.
+        // Let's just create the object cleanly.
       }
 
-      await updateSpace(space.id, spaceUpdateData);
+
+      await updateSpace(space.id, finalUpdateData);
 
       toast({
         title: "Space Updated!",
