@@ -13,6 +13,7 @@ import { Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, deleteUserAccount, updateUserSpacesAuthorName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -28,13 +29,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { getIANATimezone } from "@/ai/flows/timezone-flow";
+import { timezones as cityTimezones } from "@/lib/timezones";
 
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
-  city: z.string().optional(),
+  timezone: z.string().optional(),
 });
 
 export function DashboardForm() {
@@ -48,7 +49,7 @@ export function DashboardForm() {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
-      city: user?.city || "",
+      timezone: user?.timezone || "",
     },
   });
 
@@ -57,7 +58,7 @@ export function DashboardForm() {
       form.reset({
         name: user.name || "",
         email: user.email || "",
-        city: user.city || "",
+        timezone: user.timezone || "",
       });
     }
   }, [user, form]);
@@ -70,11 +71,11 @@ export function DashboardForm() {
     }
 
     setIsSaving(true);
-    const { name, email, city } = values;
+    const { name, email, timezone } = values;
     const promises = [];
     let nameChanged = false;
     
-    const updates: { name?: string; timezone?: string, city?: string } = {};
+    const updates: { name?: string; timezone?: string } = {};
 
     // --- Update Name ---
     if (name !== user.name) {
@@ -82,27 +83,9 @@ export function DashboardForm() {
         nameChanged = true;
     }
     
-    // --- Update City & Timezone ---
-    if (city && city !== user.city) {
-      try {
-        const { timezone } = await getIANATimezone({ city });
-        if (timezone) {
-          updates.timezone = timezone;
-          updates.city = city;
-        } else {
-          toast({ title: "Invalid City", description: "Could not determine a timezone for the provided city.", variant: "destructive" });
-          setIsSaving(false);
-          return;
-        }
-      } catch (e) {
-        console.error("Error getting timezone from city", e);
-        toast({ title: "Timezone Error", description: "Could not fetch timezone information. Please try again.", variant: "destructive" });
-        setIsSaving(false);
-        return;
-      }
-    } else if (!city && user.city) {
-      updates.timezone = "";
-      updates.city = "";
+    // --- Update Timezone ---
+    if (timezone !== user.timezone) {
+      updates.timezone = timezone;
     }
     
     // --- Update Email ---
@@ -115,7 +98,7 @@ export function DashboardForm() {
         promises.push(updateUserProfile(user.uid, updates));
     }
     
-    if (promises.length === 0 && !nameChanged && city === user.city) {
+    if (promises.length === 0 && !nameChanged && timezone === user.timezone) {
         toast({ title: "No Changes", description: "You haven't made any changes to your profile." });
         setIsSaving(false);
         return;
@@ -206,19 +189,28 @@ export function DashboardForm() {
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
             control={form.control}
-            name="city"
+            name="timezone"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Your City</FormLabel>
-                <FormControl>
-                    <Input placeholder="e.g., Paris, Tokyo, New York" {...field} />
-                </FormControl>
-                 <FormMessage />
+                    <FormLabel>Your Timezone</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select your city/timezone" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {cityTimezones.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
                 </FormItem>
             )}
-            />
+        />
         
         <Button type="submit" className="w-full" disabled={isSaving || !form.formState.isDirty}>
             {isSaving ? "Saving..." : "Save Changes"}

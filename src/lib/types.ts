@@ -26,5 +26,4 @@ export interface User {
   photoURL?: string | null;
   isAdmin?: boolean;
   timezone?: string;
-  city?: string;
 }

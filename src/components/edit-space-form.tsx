@@ -28,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2Icon } from "lucide-react";
-import { getIANATimezone } from "@/ai/flows/timezone-flow";
+import { timezones as cityTimezones } from "@/lib/timezones";
 
 
 const daysOfWeek = [
@@ -73,15 +73,12 @@ const formSchema = z.object({
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
-  city: z.string().min(1, { message: "Please enter a city for the timezone." }),
+  timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
 
 interface EditSpaceFormProps {
     space: Omit<Space, 'dateTime'>;
 }
-
-// A (very) simple cache to avoid re-fetching the city for a timezone
-const timezoneToCityCache = new Map<string, string>();
 
 export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { toast } = useToast();
@@ -99,16 +96,9 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       dayOfWeek: String(space.dayOfWeek),
       startTime: space.startTime || "",
       endTime: space.endTime || "",
-      city: timezoneToCityCache.get(space.timezone) || "", // Prefill from cache or leave empty
+      timezone: space.timezone || "",
     },
   });
-
-    // TODO: A better implementation would be a flow that gets city from timezone.
-    // For now, we'll just show the timezone ID if we don't have a city.
-    if (!form.getValues('city')) {
-        form.setValue('city', space.timezone);
-    }
-
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -124,15 +114,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, city } = values;
-
-      const { timezone } = await getIANATimezone({ city });
-      if (!timezone) {
-          toast({ title: "Invalid City", description: "Could not determine a timezone for the provided city.", variant: "destructive" });
-          setIsSubmitting(false);
-          return;
-      }
-      timezoneToCityCache.set(timezone, city);
+      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, timezone } = values;
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
@@ -325,17 +307,26 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         </div>
          <FormField
             control={form.control}
-            name="city"
+            name="timezone"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>City for Timezone</FormLabel>
-                 <FormControl>
-                    <Input placeholder="e.g., Paris, Tokyo, New York" {...field} />
-                </FormControl>
-                <FormDescription>
-                    We'll determine the correct timezone from your city.
-                </FormDescription>
-                <FormMessage />
+                    <FormLabel>Timezone</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a city/timezone" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {cityTimezones.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                     <FormDescription>
+                        Select the city that best represents your timezone.
+                    </FormDescription>
+                    <FormMessage />
                 </FormItem>
             )}
             />
