@@ -47,9 +47,13 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 
   try {
     const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
+    // Final check to ensure the created date is valid
+    if (!isValid(eventDateInOriginalTz)) {
+        throw new Error("toDate resulted in an invalid date");
+    }
     return eventDateInOriginalTz;
   } catch (e) {
-    console.error(`Error creating date for timezone ${space.timezone}`, e);
+    console.error(`Error creating date for timezone ${space.timezone} with string "${dateStringWithTime}"`, e);
     return new Date(NaN);
   }
 }
