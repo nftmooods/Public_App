@@ -41,7 +41,6 @@ const contentTypeTags = [
     { value: "NFT", label: "NFT" },
     { value: "DeFi", label: "DeFi" },
     { value: "Gaming", label: "Gaming" },
-    { value: "DAO", label: "DAO" },
     { value: "Art", label: "Art" },
     { value: "Music", label: "Music" },
 ];
@@ -231,9 +230,6 @@ export function CreateSpaceForm() {
               render={() => (
                 <FormItem>
                     <FormLabel>Content Type</FormLabel>
-                     <FormDescription>
-                        Select one or more tags that describe your event.
-                    </FormDescription>
                     <div className="flex flex-wrap gap-4 pt-2">
                       {contentTypeTags.map((item) => (
                         <FormField
