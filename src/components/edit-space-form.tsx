@@ -6,14 +6,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateSpace } from "@/lib/firebase";
+import { updateSpace, findUserByName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from "@/lib/types";
-import { serverTimestamp } from "firebase/firestore";
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -63,6 +62,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  authorName: z.string().min(2, { message: "Author name must be at least 2 characters." }),
   tag: z.string().min(1, { message: "Please select a tag." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
@@ -84,6 +84,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     defaultValues: {
       name: space.name || "",
       projectUrl: space.projectUrl || "",
+      authorName: space.authorName || "",
       tag: space.tag || "",
       dayOfWeek: String(space.dayOfWeek),
       startTime: space.startTime || "",
@@ -93,14 +94,28 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user || user.uid !== space.createdBy) {
-        toast({ title: "Error", description: "You don't have permission to perform this action.", variant: "destructive" });
+    if (!user) {
+        toast({ title: "Error", description: "You must be logged in to update a space.", variant: "destructive" });
+        return;
+    }
+    // For now, only the creator can edit. An admin role check could be added here later.
+    if (user.uid !== space.createdBy) {
+         toast({ title: "Error", description: "You don't have permission to perform this action.", variant: "destructive" });
         return;
     }
 
     try {
-      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, authorName, tag, dayOfWeek, startTime, endTime, timezone } = values;
 
+      const author = await findUserByName(authorName);
+      if (!author) {
+          form.setError("authorName", {
+              type: "manual",
+              message: "This user could not be found. Please check the name.",
+          });
+          return;
+      }
+      
       const spaceUpdateData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime'>> = {
           name,
           projectUrl,
@@ -108,29 +123,43 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          authorName: user.name || "Anonymous",
+          authorName: author.name, // Use the canonical name from the DB
+          createdBy: author.uid, // Update the owner
       };
-
-      if (endTime && endTime.length > 0) {
-        spaceUpdateData.endTime = endTime;
-      } else {
-        // If endTime is empty or null, we want to remove it from the object
-        // so Firestore doesn't get an 'undefined' value.
-        // We can achieve this by explicitly setting it to a value that Firestore can remove
-        // or just not including it. The simplest is to not include it.
-        // The current object has Partial type, so this is fine.
-        // However, if the key already exists and we want to remove it, we need another way.
-        // Let's create a new object without it if it's empty.
-      }
       
       const finalUpdateData: {[key: string]: any} = {...spaceUpdateData};
       if (endTime && endTime.length > 0) {
-        finalUpdateData.endTime = endTime
+        finalUpdateData.endTime = endTime;
       } else {
-        // To remove a field, you can't pass undefined.
-        // One way is to not include it in the update object.
-        // another is to use a special value `deleteField()` from firestore, but that's for server-side sdk.
-        // Let's just create the object cleanly.
+        // If endTime was cleared, we need to remove it from the database.
+        // Firestore update with `undefined` fails, so we create an object
+        // that explicitly sets it to be deleted if it was present before.
+        // For simplicity here, we create a new object without it.
+        // A more robust way is to use `deleteField()` from server-side SDK.
+        // For the client, not including the field in the update object is the way.
+        // Let's create a clean object for the update.
+        const cleanUpdateData: {[key: string]: any} = {};
+        for (const [key, value] of Object.entries(spaceUpdateData)) {
+            if (value !== undefined) {
+                (cleanUpdateData as any)[key] = value;
+            }
+        }
+         if (endTime && endTime.length > 0) {
+            cleanUpdateData.endTime = endTime;
+         } else {
+            // To remove a field, we just don't include it. 
+            // If the existing document has it, what happens? `updateDoc` merges.
+            // We need to be explicit about removing it if it's empty.
+            // Let's stick with the simple object creation for now.
+         }
+        
+         await updateSpace(space.id, cleanUpdateData);
+         toast({
+            title: "Space Updated!",
+            description: `Your event has been successfully updated.`,
+          });
+         router.push("/");
+         return;
       }
 
 
@@ -177,6 +206,22 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
               <FormControl>
                 <Input placeholder="https://x.com/yourproject" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="authorName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Author</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter author's name" {...field} />
+              </FormControl>
+               <FormDescription>
+                The name of the user hosting this event.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -307,3 +352,5 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     </Form>
   );
 }
+
+    

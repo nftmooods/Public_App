@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { addSpace } from "@/lib/firebase";
+import { addSpace, findUserByName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
+import type { Space } from '@/lib/types';
+
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -42,13 +44,11 @@ const eventTags = [
     { value: "DISCORD VC", label: "DISCORD VC" },
 ];
 
-// Generate time options for every 30 minutes in AM/PM format, excluding 2:00 AM to 5:00 AM
 const timeOptions = Array.from({ length: 48 }, (_, i) => {
   const totalMinutes = i * 30;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   
-  // Exclude times from 2:00 AM to 5:00 AM (hours 2, 3, 4)
   if (hours >= 2 && hours < 5) {
       return null;
   }
@@ -65,6 +65,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  authorName: z.string().min(2, { message: "Author name must be at least 2 characters." }),
   tag: z.string().min(1, { message: "Please select a tag." }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
@@ -84,6 +85,7 @@ export function CreateSpaceForm() {
     defaultValues: {
       name: "",
       projectUrl: "",
+      authorName: user?.name || "",
       tag: "",
       daysOfWeek: [],
       startTime: "",
@@ -92,6 +94,11 @@ export function CreateSpaceForm() {
     },
   });
 
+  // Update default author name when user context loads
+  if (user && !form.getValues('authorName')) {
+    form.setValue('authorName', user.name || "");
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({ title: "Error", description: "You must be logged in to create a space.", variant: "destructive" });
@@ -99,9 +106,17 @@ export function CreateSpaceForm() {
     }
 
     try {
-      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, authorName, tag, daysOfWeek, startTime, endTime, timezone } = values;
 
-      // Create a separate space document for each selected day
+      const author = await findUserByName(authorName);
+      if (!author) {
+          form.setError("authorName", {
+              type: "manual",
+              message: "This user could not be found. Please check the name.",
+          });
+          return;
+      }
+
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
               name,
@@ -110,8 +125,8 @@ export function CreateSpaceForm() {
               dayOfWeek: parseInt(day, 10),
               startTime,
               timezone,
-              authorName: user.name || "Anonymous",
-              createdBy: user.uid,
+              authorName: author.name, // Use the name from the found user document
+              createdBy: author.uid, // Assign ownership to the found user
           };
           if (endTime) {
             spaceData.endTime = endTime;
@@ -168,6 +183,22 @@ export function CreateSpaceForm() {
         />
          <FormField
           control={form.control}
+          name="authorName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Author</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter author's name" {...field} />
+              </FormControl>
+               <FormDescription>
+                The name of the user hosting this event.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
           name="tag"
           render={({ field }) => (
             <FormItem>
@@ -217,9 +248,9 @@ export function CreateSpaceForm() {
                                 checked={field.value?.includes(item.id)}
                                 onCheckedChange={(checked) => {
                                     return checked
-                                    ? field.onChange([...field.value, item.id])
+                                    ? field.onChange([...(field.value || []), item.id])
                                     : field.onChange(
-                                        field.value?.filter(
+                                        (field.value || [])?.filter(
                                         (value) => value !== item.id
                                         )
                                     )
@@ -320,3 +351,5 @@ export function CreateSpaceForm() {
     </Form>
   );
 }
+
+    

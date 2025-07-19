@@ -1,3 +1,4 @@
+
 // scripts/set-admin-role.ts
 import 'dotenv/config'; // Assurez-vous que les variables d'environnement sont chargées
 import { adminAuth, adminDb } from '../src/lib/firebase-admin';
@@ -30,7 +31,19 @@ const grantAdminRole = async (email: string) => {
     // 3. Mettre à jour le document utilisateur dans Firestore
     console.log(`Mise à jour du document dans Firestore pour l'utilisateur ${userId}...`);
     const userDocRef = adminDb.collection('users').doc(userId);
-    await userDocRef.update({ role: 'admin' });
+    const userDoc = await userDocRef.get();
+    
+    const updateData: {role: string, name_lowercase?: string} = { role: 'admin' };
+    
+    // Also update the lowercase name if the user document exists and has a name
+    if (userDoc.exists() && userDoc.data()?.name) {
+        updateData.name_lowercase = userDoc.data()!.name.toLowerCase();
+    } else if (user.displayName) {
+        // Fallback to displayName from auth if available
+        updateData.name_lowercase = user.displayName.toLowerCase();
+    }
+
+    await userDocRef.update(updateData);
 
     // 4. Confirmer le succès
     console.log(`✅ Succès ! L'utilisateur ${email} est maintenant un administrateur (claim et BDD).`);
@@ -49,3 +62,5 @@ const grantAdminRole = async (email: string) => {
 
 const emailArg = process.argv[2];
 grantAdminRole(emailArg);
+
+    
