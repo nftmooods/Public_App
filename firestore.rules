@@ -4,49 +4,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check for admin role
+    // Helper function to check for admin claims
     function isSuperAdmin() {
       return request.auth.token.admin == true;
     }
 
     // --- Users Collection ---
+    // Users can read their own profile.
+    // Anyone authenticated can create their own profile.
     match /users/{userId} {
-      // Anyone can create a user profile (on signup)
-      allow create: if request.auth != null;
-      // Only the authenticated user can read or update their own profile
-      allow read, update: if request.auth.uid == userId;
-      // No one can delete user profiles for now
-      allow delete: if false;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Admins can update any user's role, for example.
+      allow update: if isSuperAdmin();
     }
 
     // --- Spaces Collection ---
+    // Anyone can read spaces.
     match /spaces/{spaceId} {
-      // Anyone can read the list of spaces
       allow read: if true;
-      // A user must be logged in to create a space
-      allow create: if request.auth != null;
-
-      // UPDATE rules:
-      // 1. A SuperAdmin can update any document.
-      // 2. The original creator of the event can update it. This allows them
-      //    to transfer ownership by changing the 'createdBy' field, because
-      //    at the time of the request, they are still the owner according
-      //    to the existing document data (`resource.data`).
+      
+      // Users must be authenticated to create a space.
+      // The `createdBy` field must match the user's UID.
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      
+      // Update is allowed if:
+      // 1. The user is a SuperAdmin.
+      // 2. OR The user is the owner of the document at the time of the request.
+      //    This allows a user to transfer ownership by changing the `createdBy` field.
       allow update: if isSuperAdmin() || request.auth.uid == resource.data.createdBy;
 
-      // DELETE rules:
-      // Only the event creator or a SuperAdmin can delete an event.
+      // Deletion is allowed if:
+      // 1. The user is a SuperAdmin.
+      // 2. OR The user is the owner of the document.
       allow delete: if isSuperAdmin() || request.auth.uid == resource.data.createdBy;
     }
-    
+
     // --- Favorites Collection ---
+    // Anyone authenticated can create their own favorites.
+    // Users can only read, update, or delete their own favorite documents.
     match /favorites/{favoriteId} {
-        // Any authenticated user can create a favorite record for themselves.
-        allow create: if request.auth.uid == request.resource.data.userId;
-        // Users can only read or delete their own favorite records.
-        allow read, delete: if request.auth.uid == resource.data.userId;
+        allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
   }
 }
-
-    
