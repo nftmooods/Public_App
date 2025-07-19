@@ -23,6 +23,8 @@ import {
 const timezones = [
     { value: "UTC", label: "UTC" },
     { value: "America/New_York", label: "EST" },
+    { value: "America/Los_Angeles", label: "PST" },
+    { value: "Europe/London", label: "GMT" },
     { value: "Europe/Paris", label: "CET" },
     { value: "Asia/Tokyo", label: "JST" },
 ];
@@ -40,8 +42,12 @@ const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] =>
 };
 
 const getUpcomingDateForEvent = (dayOfWeek: number): Date => {
-    let eventDate = nextDay(new Date(), dayOfWeek);
-    return eventDate;
+    // 0 = Sunday, 1 = Monday, etc.
+    const today = new Date();
+    const currentDay = getDay(today); // 0 for Sunday, 1 for Monday...
+    const distance = (dayOfWeek - currentDay + 7) % 7;
+    const nextEventDate = addDays(today, distance);
+    return nextEventDate;
 };
 
 
@@ -135,7 +141,13 @@ export function SpaceSchedule() {
   useEffect(() => {
     // Set local timezone on mount
     if (typeof window !== 'undefined') {
-        setSelectedTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        // Check if the detected timezone is one of our options, otherwise default to UTC
+        if (timezones.some(tz => tz.value === detectedTimezone)) {
+          setSelectedTimezone(detectedTimezone);
+        } else {
+           setSelectedTimezone('UTC');
+        }
     }
     setIsMounted(true);
   }, []);
@@ -150,11 +162,6 @@ export function SpaceSchedule() {
     
     const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
 
-    const filterByDate = (space: Space, check: (date: Date) => boolean) => {
-      // The dateTime property is now guaranteed to be a valid Date
-      return check(space.dateTime);
-    };
-
     let result: Space[];
     const today = new Date();
     const todayDayOfWeek = getDay(today);
@@ -168,10 +175,7 @@ export function SpaceSchedule() {
         result = spacesToFilter.filter(space => space.dayOfWeek === tomorrowDayOfWeek);
         break;
       case "week":
-         result = spacesToFilter.filter(space => 
-            // Use isThisWeek with the calculated dateTime. weekStartsOn: 0 means Sunday.
-            filterByDate(space, date => isThisWeek(date, { weekStartsOn: 0 }))
-         );
+         result = spacesToFilter;
         break;
       default:
         result = spacesToFilter;
@@ -180,13 +184,18 @@ export function SpaceSchedule() {
     
     // Always sort by date
     return result.sort((a,b) => {
-        const dayDiff = a.dayOfWeek - b.dayOfWeek;
+        const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek; // Move Sunday to end of week
+        const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+        const dayDiff = dayA - dayB;
         if (dayDiff !== 0) return dayDiff;
+        
         // If same day, sort by start time
         return a.startTime.localeCompare(b.startTime);
     });
 
   }, [spaces, filter, showFavorites, favorites]);
+  
+  const effectiveTimezone = isMounted ? selectedTimezone : "UTC";
 
   return (
     <div className="space-y-8">
@@ -220,7 +229,7 @@ export function SpaceSchedule() {
               Favorites only { !user && "(Login required)"}
             </Label>
           </div>
-          <Select value={selectedTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+          <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
@@ -253,7 +262,7 @@ export function SpaceSchedule() {
                   space={space}
                   isFavorite={favorites.includes(space.id)}
                   onToggleFavorite={() => toggleFavorite(space.id)}
-                  displayTimezone={selectedTimezone}
+                  displayTimezone={effectiveTimezone}
                 />
               </motion.div>
             ))
