@@ -151,7 +151,7 @@ export function SpaceSchedule() {
       case "tomorrow":
         return spacesToFilter.filter(space => filterByDate(space, isTomorrow));
       case "week":
-        return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })) && !isPast(date));
+        return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })) && !isPast(space.dateTime));
       case "past":
         return spacesToFilter.filter(space => filterByDate(space, isPast)).sort((a,b) => b.dateTime.getTime() - a.dateTime.getTime());
       default:

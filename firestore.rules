@@ -12,9 +12,9 @@ service cloud.firestore {
     // Any logged-in user can create a space.
     // Only the creator of the space can update or delete it.
     match /spaces/{spaceId} {
-      allow read: if true;
+      allow read: if true; // CHANGED: Allow read for everyone
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
 
     // Users can only manage their own favorites.
