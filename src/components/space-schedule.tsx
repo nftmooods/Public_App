@@ -252,7 +252,6 @@ export function SpaceSchedule() {
                   isFavorite={favorites.includes(space.id)}
                   onToggleFavorite={() => toggleFavorite(space.id)}
                   displayTimezone={effectiveTimezone}
-                  filter={filter}
                 />
               </motion.div>
             ))

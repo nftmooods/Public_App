@@ -19,14 +19,18 @@ interface SpaceCardProps {
   isFavorite: boolean;
   onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
-  filter: "week" | "today" | "tomorrow";
 }
 
-const filterColors = {
-    week: "bg-blue-900/50 border-blue-400/50 text-blue-300",
-    today: "bg-green-900/50 border-green-400/50 text-green-300",
-    tomorrow: "bg-orange-900/50 border-orange-400/50 text-orange-300",
-}
+const dayColors: { [key: number]: string } = {
+    0: '#8CD0FD', // Sunday
+    1: '#BE82CF', // Monday
+    2: '#DD8298', // Tuesday
+    3: '#EB8E85', // Wednesday
+    4: '#EBA18E', // Thursday
+    5: '#EBB596', // Friday
+    6: '#CCC5BB', // Saturday
+};
+
 
 const getTimezoneAbbreviation = (timezone: string): string => {
     if (!timezone) return "";
@@ -64,7 +68,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
   }
 }
 
-export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone, filter }: SpaceCardProps) {
+export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -149,7 +153,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   };
 
   const canEdit = user && user.uid === space.createdBy;
-  const dayBadgeColorClass = filterColors[filter] || filterColors.week;
+  const dayBadgeColor = dayColors[space.dayOfWeek] || "#718096";
 
 
   return (
@@ -159,8 +163,8 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
             <div className="flex flex-col items-end gap-2">
                  <Badge 
-                    variant={"outline"} 
-                    className={`whitespace-nowrap flex-shrink-0 ${dayBadgeColorClass}`}
+                    style={{ backgroundColor: dayBadgeColor, color: '#002787', borderColor: 'transparent' }}
+                    className="whitespace-nowrap flex-shrink-0"
                  >
                     {formattedDateTime.day}
                 </Badge>
