@@ -10,21 +10,21 @@ body {
   :root {
     --background: 218 100% 10%; /* Darker background */
     --foreground: 210 40% 98%;
-    --card: 217 90% 20%; /* Darker card base for gradient */
-    --card-foreground: 210 40% 98%;
+    --card: 210 40% 98%; /* White card */
+    --card-foreground: 222.2 84% 4.9%; /* Dark text for cards */
     --popover: 218 100% 10%;
     --popover-foreground: 210 40% 98%;
     --primary: 217 100% 49%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 218 100% 26%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 32.6% 37.5%; /* Lighter border for contrast */
+    --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 217 100% 49%;
     --chart-1: 220 70% 50%;
@@ -38,13 +38,13 @@ body {
   .dark {
     --background: 218 100% 10%; /* Darker background */
     --foreground: 210 40% 98%;
-    --card: 217 90% 20%; /* Darker card base for gradient */
-    --card-foreground: 210 40% 98%;
+    --card: 210 40% 98%; /* White card */
+    --card-foreground: 222.2 84% 4.9%; /* Dark text for cards */
     --popover: 218 100% 10%;
     --popover-foreground: 210 40% 98%;
     --primary: 217 100% 49%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 218 100% 26%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -52,7 +52,7 @@ body {
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217 32.6% 37.5%; /* Lighter border for contrast */
+    --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 217 100% 49%;
     --chart-1: 220 70% 50%;
