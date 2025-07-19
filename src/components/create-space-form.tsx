@@ -35,6 +35,15 @@ const eventTags = [
     { value: "DISCORD VC", label: "DISCORD VC" },
 ];
 
+const communityTags = [
+    { value: "NFT", label: "NFT" },
+    { value: "DeFi", label: "DeFi" },
+    { value: "Gaming", label: "Gaming" },
+    { value: "DAO", label: "DAO" },
+    { value: "Art", label: "Art" },
+    { value: "Music", label: "Music" },
+];
+
 const timeOptions = Array.from({ length: 48 }, (_, i) => {
   const totalMinutes = i * 30;
   const hours = Math.floor(totalMinutes / 60);
@@ -57,7 +66,9 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   authorName: z.string(), // This is now read-only, populated from auth context
-  tag: z.string().min(1, { message: "Please select a tag." }),
+  tags: z.array(z.string()).refine((value) => value.length > 0, {
+    message: "You have to select at least one tag.",
+  }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
   }),
@@ -78,7 +89,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       authorName: user?.name || "",
-      tag: "SPACE", // Default tag
+      tags: ["SPACE"], // Default tag
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -108,13 +119,13 @@ export function CreateSpaceForm() {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, tags, daysOfWeek, startTime, endTime, timezone } = values;
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
               name,
               projectUrl,
-              tag: tag as "SPACE" | "STREAM" | "DISCORD VC",
+              tags: tags,
               dayOfWeek: parseInt(day, 10),
               startTime,
               timezone,
@@ -180,24 +191,85 @@ export function CreateSpaceForm() {
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
           control={form.control}
-          name="tag"
-          render={({ field }) => (
+          name="tags"
+          render={() => (
             <FormItem>
-              <FormLabel>Tag</FormLabel>
-               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                  <SelectTrigger>
-                      <SelectValue placeholder="Select a tag" />
-                  </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                  {eventTags.map(tag => (
-                      <SelectItem key={tag.value} value={tag.value}>{tag.label}</SelectItem>
+              <div>
+                <FormLabel>Tags</FormLabel>
+                <FormDescription>
+                  Select one or more tags that describe your event.
+                </FormDescription>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Content Type</p>
+                <div className="flex flex-wrap gap-4">
+                  {eventTags.map((item) => (
+                    <FormField
+                      key={item.value}
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem
+                          key={item.value}
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(item.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), item.value])
+                                  : field.onChange(
+                                      (field.value || [])?.filter(
+                                        (value) => value !== item.value
+                                      )
+                                    );
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">{item.label}</FormLabel>
+                        </FormItem>
+                      )}
+                    />
                   ))}
-                  </SelectContent>
-              </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Community Tags</p>
+                <div className="flex flex-wrap gap-4">
+                  {communityTags.map((item) => (
+                    <FormField
+                      key={item.value}
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem
+                          key={item.value}
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(item.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), item.value])
+                                  : field.onChange(
+                                      (field.value || [])?.filter(
+                                        (value) => value !== item.value
+                                      )
+                                    );
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">{item.label}</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -337,3 +409,5 @@ export function CreateSpaceForm() {
     </Form>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 // src/lib/types.ts
 
 // The Space interface uses a day of the week and time for recurring weekly events.
@@ -5,7 +6,7 @@ export interface Space {
     id: string;
     name: string;
     projectUrl: string;
-    tag: "SPACE" | "STREAM" | "DISCORD VC";
+    tags: string[];
     dayOfWeek: number; // 0 (Sunday) to 6 (Saturday)
     startTime: string; // "HH:mm"
     endTime?: string; // "HH:mm" - Optional
@@ -27,3 +28,5 @@ export interface User {
   isAdmin?: boolean;
   timezone?: string;
 }
+
+    

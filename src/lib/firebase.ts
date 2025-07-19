@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseOptions, } from "firebase/app";
 import { getAuth, updateProfile, deleteUser } from "firebase/auth";
@@ -184,7 +185,7 @@ export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime">
                 id: spaceDocSnap.id,
                 name: data.name,
                 projectUrl: data.projectUrl,
-                tag: data.tag,
+                tags: data.tags,
                 dayOfWeek: data.dayOfWeek,
                 startTime: data.startTime,
                 endTime: data.endTime,
@@ -215,7 +216,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             id: snap.id,
             name: data.name,
             projectUrl: data.projectUrl,
-            tag: data.tag,
+            tags: data.tags,
             dayOfWeek: data.dayOfWeek,
             startTime: data.startTime,
             endTime: data.endTime,
@@ -284,3 +285,5 @@ export const getFavorites = async (userId: string) => {
 
 
 export { app, db, auth };
+
+    

@@ -154,7 +154,9 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                  >
                     {formattedDateTime.day}
                 </Badge>
-                {space.tag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{space.tag}</Badge>}
+                <div className="flex flex-col items-end gap-1">
+                    {space.tags && space.tags.map((tag) => <Badge key={tag} variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{tag}</Badge>)}
+                </div>
             </div>
         </div>
         <CardDescription className="text-card-foreground/80">by {space.authorName || 'Anonymous'}</CardDescription>
@@ -199,3 +201,5 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     </Card>
   );
 }
+
+    
