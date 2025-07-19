@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { isValid } from "date-fns";
-import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 
 interface SmallSpaceCardProps {
@@ -74,12 +73,12 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
 
   return (
     <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className="block bg-background/50 hover:bg-background/80 transition-colors p-2 rounded-md text-xs group">
-      <div className="flex flex-col">
+      <div className="flex flex-col text-foreground">
         <div className="flex justify-between items-center mb-1">
-          <p className="font-bold text-foreground text-sm">{formattedTime}</p>
+          <p className="font-bold text-sm">{formattedTime}</p>
           {space.tag && <Badge variant="secondary" className="scale-75 origin-right">{space.tag}</Badge>}
         </div>
-        <p className="font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">{space.name}</p>
+        <p className="font-semibold leading-tight group-hover:text-primary transition-colors">{space.name}</p>
         <p className="text-muted-foreground truncate">{space.authorName}</p>
       </div>
     </Link>

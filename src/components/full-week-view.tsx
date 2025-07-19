@@ -38,7 +38,7 @@ export function FullWeekView({ spaces, displayTimezone }: FullWeekViewProps) {
       {dayOrder.map(dayIndex => (
         <div 
           key={dayIndex} 
-          className="bg-card/50 rounded-lg p-4 flex flex-col gap-3 min-h-[200px]"
+          className="bg-card text-card-foreground rounded-lg p-4 flex flex-col gap-3 min-h-[200px]"
           style={{ '--day-color': spacesByDay[dayIndex]?.[0]?.dayColor || 'hsl(var(--muted))' } as React.CSSProperties}
         >
           <h2 
