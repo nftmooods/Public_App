@@ -13,19 +13,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  startOfWeek, 
   addDays, 
-  isToday, 
-  isTomorrow, 
-  isSameDay,
-  nextDay,
   getDay,
-  isThisWeek
+  isThisWeek,
+  nextDay
 } from "date-fns";
 
 // Timezone mapping for the select dropdown
 const timezones = [
-    { value: "local", label: "My Timezone" },
     { value: "UTC", label: "UTC" },
     { value: "America/New_York", label: "EST" },
     { value: "Europe/Paris", label: "CET" },
@@ -130,7 +125,7 @@ const useFavorites = (user: any) => {
 export function SpaceSchedule() {
   const [filter, setFilter] = useState("week");
   const [showFavorites, setShowFavorites] = useState(false);
-  const [selectedTimezone, setSelectedTimezone] = useState<string>('local');
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
 
   const { user } = useAuth();
@@ -138,6 +133,10 @@ export function SpaceSchedule() {
   const { favorites, toggleFavorite } = useFavorites(user);
   
   useEffect(() => {
+    // Set local timezone on mount
+    if (typeof window !== 'undefined') {
+        setSelectedTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    }
     setIsMounted(true);
   }, []);
 
@@ -152,7 +151,8 @@ export function SpaceSchedule() {
     const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
 
     const filterByDate = (space: Space, check: (date: Date) => boolean) => {
-      return space.dateTime instanceof Date && check(space.dateTime);
+      // The dateTime property is now guaranteed to be a valid Date
+      return check(space.dateTime);
     };
 
     let result: Space[];
@@ -169,6 +169,7 @@ export function SpaceSchedule() {
         break;
       case "week":
          result = spacesToFilter.filter(space => 
+            // Use isThisWeek with the calculated dateTime. weekStartsOn: 0 means Sunday.
             filterByDate(space, date => isThisWeek(date, { weekStartsOn: 0 }))
          );
         break;
@@ -224,6 +225,7 @@ export function SpaceSchedule() {
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
+              {isMounted && <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>My Timezone</SelectItem>}
               {timezones.map(tz => (
                 <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
               ))}

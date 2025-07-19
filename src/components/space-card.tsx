@@ -22,14 +22,15 @@ interface SpaceCardProps {
 }
 
 const getTimezoneAbbreviation = (timezone: string): string => {
-    if (!timezone || timezone === 'local') return "Local";
+    if (!timezone) return "";
     try {
         const long = formatInTimeZone(new Date(), timezone, 'z');
         if (["UTC", "GMT"].includes(long)) return long;
+        // Attempt to get a short abbreviation
         const short = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value;
-        return short || long;
+        return short || long; // Fallback to the long name if short isn't available
     } catch {
-        return "Time"; // Fallback
+        return "Time"; // Fallback for invalid timezone identifiers
     }
 };
 
@@ -61,15 +62,6 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [effectiveTimezone, setEffectiveTimezone] = useState(displayTimezone);
-  
-  useEffect(() => {
-    if (displayTimezone === 'local') {
-      setEffectiveTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    } else {
-      setEffectiveTimezone(displayTimezone);
-    }
-  }, [displayTimezone]);
   
   if (!space.dateTime || !isValid(space.dateTime)) {
     return (
@@ -116,21 +108,21 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
 
   let formattedDateTime;
   try {
-     const startTimeFormatted = formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a");
+     const startTimeFormatted = formatInTimeZone(eventStartDate, displayTimezone, "h:mm a");
      let endTimeFormatted = '';
      if (space.endTime) {
         const eventEndDate = getEventDateWithTime(space, space.endTime, space.dateTime);
         if(isValid(eventEndDate)) {
-          endTimeFormatted = formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a");
+          endTimeFormatted = formatInTimeZone(eventEndDate, displayTimezone, "h:mm a");
         }
      }
 
      formattedDateTime = {
-      day: formatInTimeZone(eventStartDate, effectiveTimezone, "EEEE"), // Monday, Tuesday, etc.
+      day: formatInTimeZone(eventStartDate, displayTimezone, "EEEE"), // Monday, Tuesday, etc.
       startTime: startTimeFormatted,
       endTime: endTimeFormatted,
       timeRange: endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted,
-      timezone: getTimezoneAbbreviation(effectiveTimezone)
+      timezone: getTimezoneAbbreviation(displayTimezone)
     };
   } catch (e) {
     console.error("Error formatting date:", e);
