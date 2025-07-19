@@ -67,9 +67,7 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   contentPlace: z.string({ required_error: "You must select a content place." }),
-  contentType: z.array(z.string()).refine((value) => value.length > 0, {
-    message: "You have to select at least one content type.",
-  }),
+  contentType: z.string({ required_error: "You must select a content type." }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
   }),
@@ -90,7 +88,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       contentPlace: "SPACE",
-      contentType: ["ApeChain"],
+      contentType: "ApeChain",
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -120,7 +118,7 @@ export function CreateSpaceForm() {
 
     try {
       const { name, projectUrl, daysOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
-      const tags = [contentPlace, ...contentType];
+      const tags = [contentPlace, contentType];
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
@@ -220,43 +218,25 @@ export function CreateSpaceForm() {
             <FormField
               control={form.control}
               name="contentType"
-              render={() => (
-                <FormItem>
-                    <FormLabel>Content Type</FormLabel>
-                    <div className="flex flex-wrap gap-4 pt-2">
-                      {contentTypeTags.map((item) => (
-                        <FormField
-                          key={item.value}
-                          control={form.control}
-                          name="contentType"
-                          render={({ field }) => (
-                            <FormItem
-                              key={item.value}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item.value)}
-                                  onCheckedChange={(checked) => {
-                                    const currentValue = field.value || [];
-                                    if (checked) {
-                                      return field.onChange([...currentValue, item.value]);
-                                    } else {
-                                      return field.onChange(
-                                        currentValue.filter(
-                                          (value) => value !== item.value
-                                        )
-                                      );
-                                    }
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">{item.label}</FormLabel>
-                            </FormItem>
-                          )}
-                        />
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Content Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-wrap gap-x-4 gap-y-2"
+                    >
+                      {contentTypeTags.map((tag) => (
+                        <FormItem key={tag.value} className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value={tag.value} />
+                          </FormControl>
+                          <FormLabel className="font-normal">{tag.label}</FormLabel>
+                        </FormItem>
                       ))}
-                    </div>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

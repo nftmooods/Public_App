@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { updateSpace, deleteSpace } from "@/lib/firebase";
@@ -81,9 +80,7 @@ const formSchema = z.object({
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   authorName: z.string(), // Is now read-only
   contentPlace: z.string({ required_error: "You must select a content place." }),
-  contentType: z.array(z.string()).refine((value) => value.length > 0, {
-    message: "You have to select at least one content type.",
-  }),
+  contentType: z.string({ required_error: "You must select a content type." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
@@ -104,15 +101,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     const contentPlaceValues = contentPlaceTags.map(t => t.value);
     const contentTypeValues = contentTypeTags.map(t => t.value);
     
-    // Defensive check to ensure space.tags exists
     const tags = space.tags || [];
 
     const initialContentPlace = tags.find(tag => contentPlaceValues.includes(tag)) || "SPACE";
-    const initialContentType = tags.filter(tag => contentTypeValues.includes(tag));
-    
-    if (initialContentType.length === 0) {
-        initialContentType.push("ApeChain");
-    }
+    const initialContentType = tags.find(tag => contentTypeValues.includes(tag)) || "ApeChain";
 
     return { initialContentPlace, initialContentType };
   }, [space.tags]);
@@ -147,7 +139,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
 
     try {
       const { name, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
-      const tags = [contentPlace, ...contentType];
+      const tags = [contentPlace, contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
@@ -274,43 +266,25 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             <FormField
               control={form.control}
               name="contentType"
-              render={() => (
-                <FormItem>
-                    <FormLabel>Content Type</FormLabel>
-                    <div className="flex flex-wrap gap-4 pt-2">
-                      {contentTypeTags.map((item) => (
-                        <FormField
-                          key={item.value}
-                          control={form.control}
-                          name="contentType"
-                          render={({ field }) => (
-                            <FormItem
-                              key={item.value}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item.value)}
-                                  onCheckedChange={(checked) => {
-                                    const currentValue = field.value || [];
-                                    if (checked) {
-                                      return field.onChange([...currentValue, item.value]);
-                                    } else {
-                                      return field.onChange(
-                                        currentValue.filter(
-                                          (value) => value !== item.value
-                                        )
-                                      );
-                                    }
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">{item.label}</FormLabel>
-                            </FormItem>
-                          )}
-                        />
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Content Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-wrap gap-x-4 gap-y-2"
+                    >
+                      {contentTypeTags.map((tag) => (
+                        <FormItem key={tag.value} className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value={tag.value} />
+                          </FormControl>
+                          <FormLabel className="font-normal">{tag.label}</FormLabel>
+                        </FormItem>
                       ))}
-                    </div>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
