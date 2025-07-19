@@ -29,7 +29,7 @@ const timezones = [
 ];
 
 const dayColors: { [key: number]: string } = {
-    0: '#8CD0FD', // Sunday
+    0: '#EAEAEA', // Sunday
     1: '#BE82CF', // Monday
     2: '#DD8298', // Tuesday
     3: '#EB8E85', // Wednesday
