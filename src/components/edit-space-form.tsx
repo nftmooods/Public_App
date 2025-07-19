@@ -5,13 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { updateSpace, deleteSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -42,13 +43,14 @@ const daysOfWeek = [
     { id: '0', label: "Sunday" },
 ];
 
-const eventTags = [
+const contentPlaceTags = [
     { value: "SPACE", label: "SPACE" },
     { value: "STREAM", label: "STREAM" },
     { value: "DISCORD VC", label: "DISCORD VC" },
 ];
 
-const communityTags = [
+const contentTypeTags = [
+    { value: "ApeChain", label: "ApeChain" },
     { value: "NFT", label: "NFT" },
     { value: "DeFi", label: "DeFi" },
     { value: "Gaming", label: "Gaming" },
@@ -79,8 +81,9 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   authorName: z.string(), // Is now read-only
-  tags: z.array(z.string()).refine((value) => value.length > 0, {
-    message: "You have to select at least one tag.",
+  contentPlace: z.string({ required_error: "You must select a content place." }),
+  contentType: z.array(z.string()).refine((value) => value.length > 0, {
+    message: "You have to select at least one content type.",
   }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
@@ -98,13 +101,28 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { user } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { initialContentPlace, initialContentType } = useMemo(() => {
+    const contentPlaceValues = contentPlaceTags.map(t => t.value);
+    const contentTypeValues = contentTypeTags.map(t => t.value);
+
+    const initialContentPlace = space.tags.find(tag => contentPlaceValues.includes(tag)) || "SPACE";
+    const initialContentType = space.tags.filter(tag => contentTypeValues.includes(tag));
+    
+    if (initialContentType.length === 0) {
+        initialContentType.push("ApeChain");
+    }
+
+    return { initialContentPlace, initialContentType };
+  }, [space.tags]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: space.name || "",
       projectUrl: space.projectUrl || "",
       authorName: space.authorName || "",
-      tags: space.tags || [],
+      contentPlace: initialContentPlace,
+      contentType: initialContentType,
       dayOfWeek: String(space.dayOfWeek),
       startTime: space.startTime || "",
       endTime: space.endTime || "",
@@ -126,7 +144,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, tags, dayOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const tags = [contentPlace, ...contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
@@ -221,89 +240,83 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="tags"
-          render={() => (
-            <FormItem>
-              <div>
-                <FormLabel>Tags</FormLabel>
-                <FormDescription>
-                  Select one or more tags that describe your event.
-                </FormDescription>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Content Type</p>
-                <div className="flex flex-wrap gap-4">
-                  {eventTags.map((item) => (
-                    <FormField
-                      key={item.value}
-                      control={form.control}
-                      name="tags"
-                      render={({ field }) => (
-                        <FormItem
-                          key={item.value}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
+        
+        <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="contentPlace"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Content Place</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-row space-x-4"
+                    >
+                      {contentPlaceTags.map((tag) => (
+                        <FormItem key={tag.value} className="flex items-center space-x-2 space-y-0">
                           <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), item.value])
-                                  : field.onChange(
-                                      (field.value || [])?.filter(
-                                        (value) => value !== item.value
-                                      )
-                                    );
-                              }}
-                            />
+                            <RadioGroupItem value={tag.value} />
                           </FormControl>
-                          <FormLabel className="font-normal">{item.label}</FormLabel>
+                          <FormLabel className="font-normal">{tag.label}</FormLabel>
                         </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Community Tags</p>
-                <div className="flex flex-wrap gap-4">
-                  {communityTags.map((item) => (
-                    <FormField
-                      key={item.value}
-                      control={form.control}
-                      name="tags"
-                      render={({ field }) => (
-                        <FormItem
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contentType"
+              render={() => (
+                <FormItem>
+                    <FormLabel>Content Type</FormLabel>
+                     <FormDescription>
+                        Select one or more tags that describe your event.
+                    </FormDescription>
+                    <div className="flex flex-wrap gap-4 pt-2">
+                      {contentTypeTags.map((item) => (
+                        <FormField
                           key={item.value}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), item.value])
-                                  : field.onChange(
-                                      (field.value || [])?.filter(
-                                        (value) => value !== item.value
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">{item.label}</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                          control={form.control}
+                          name="contentType"
+                          render={({ field }) => (
+                            <FormItem
+                              key={item.value}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.value)}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || [];
+                                    if (checked) {
+                                      return field.onChange([...currentValue, item.value]);
+                                    } else {
+                                      return field.onChange(
+                                        currentValue.filter(
+                                          (value) => value !== item.value
+                                        )
+                                      );
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">{item.label}</FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
         
         <FormField
             control={form.control}
@@ -434,5 +447,3 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     </Form>
   );
 }
-
-    

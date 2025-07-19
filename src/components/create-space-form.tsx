@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -29,13 +30,14 @@ const daysOfWeek = [
     { id: '0', label: "Sunday" },
 ];
 
-const eventTags = [
+const contentPlaceTags = [
     { value: "SPACE", label: "SPACE" },
     { value: "STREAM", label: "STREAM" },
     { value: "DISCORD VC", label: "DISCORD VC" },
 ];
 
-const communityTags = [
+const contentTypeTags = [
+    { value: "ApeChain", label: "ApeChain" },
     { value: "NFT", label: "NFT" },
     { value: "DeFi", label: "DeFi" },
     { value: "Gaming", label: "Gaming" },
@@ -66,8 +68,9 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   authorName: z.string(), // This is now read-only, populated from auth context
-  tags: z.array(z.string()).refine((value) => value.length > 0, {
-    message: "You have to select at least one tag.",
+  contentPlace: z.string({ required_error: "You must select a content place." }),
+  contentType: z.array(z.string()).refine((value) => value.length > 0, {
+    message: "You have to select at least one content type.",
   }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
@@ -89,7 +92,8 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       authorName: user?.name || "",
-      tags: ["SPACE"], // Default tag
+      contentPlace: "SPACE",
+      contentType: ["ApeChain"],
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -119,7 +123,8 @@ export function CreateSpaceForm() {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, tags, daysOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, daysOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const tags = [contentPlace, ...contentType];
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
@@ -191,89 +196,83 @@ export function CreateSpaceForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="tags"
-          render={() => (
-            <FormItem>
-              <div>
-                <FormLabel>Tags</FormLabel>
-                <FormDescription>
-                  Select one or more tags that describe your event.
-                </FormDescription>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Content Type</p>
-                <div className="flex flex-wrap gap-4">
-                  {eventTags.map((item) => (
-                    <FormField
-                      key={item.value}
-                      control={form.control}
-                      name="tags"
-                      render={({ field }) => (
-                        <FormItem
-                          key={item.value}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
+        
+        <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="contentPlace"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Content Place</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-row space-x-4"
+                    >
+                      {contentPlaceTags.map((tag) => (
+                        <FormItem key={tag.value} className="flex items-center space-x-2 space-y-0">
                           <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), item.value])
-                                  : field.onChange(
-                                      (field.value || [])?.filter(
-                                        (value) => value !== item.value
-                                      )
-                                    );
-                              }}
-                            />
+                            <RadioGroupItem value={tag.value} />
                           </FormControl>
-                          <FormLabel className="font-normal">{item.label}</FormLabel>
+                          <FormLabel className="font-normal">{tag.label}</FormLabel>
                         </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Community Tags</p>
-                <div className="flex flex-wrap gap-4">
-                  {communityTags.map((item) => (
-                    <FormField
-                      key={item.value}
-                      control={form.control}
-                      name="tags"
-                      render={({ field }) => (
-                        <FormItem
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="contentType"
+              render={() => (
+                <FormItem>
+                    <FormLabel>Content Type</FormLabel>
+                     <FormDescription>
+                        Select one or more tags that describe your event.
+                    </FormDescription>
+                    <div className="flex flex-wrap gap-4 pt-2">
+                      {contentTypeTags.map((item) => (
+                        <FormField
                           key={item.value}
-                          className="flex flex-row items-start space-x-3 space-y-0"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(item.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), item.value])
-                                  : field.onChange(
-                                      (field.value || [])?.filter(
-                                        (value) => value !== item.value
-                                      )
-                                    );
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">{item.label}</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                          control={form.control}
+                          name="contentType"
+                          render={({ field }) => (
+                            <FormItem
+                              key={item.value}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.value)}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || [];
+                                    if (checked) {
+                                      return field.onChange([...currentValue, item.value]);
+                                    } else {
+                                      return field.onChange(
+                                        currentValue.filter(
+                                          (value) => value !== item.value
+                                        )
+                                      );
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">{item.label}</FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
         
         <FormField
             control={form.control}
@@ -409,5 +408,3 @@ export function CreateSpaceForm() {
     </Form>
   );
 }
-
-    
