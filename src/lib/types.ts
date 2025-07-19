@@ -16,6 +16,7 @@ export interface Space {
     createdAt: Date;
     // This will be dynamically calculated on the client
     dateTime?: Date; 
+    dayColor?: string;
 }
 
 // The User interface matches the structure of the authenticated user object.

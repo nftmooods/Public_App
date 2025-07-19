@@ -15,9 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   addDays, 
   getDay,
-  isThisWeek,
-  nextDay
 } from "date-fns";
+import { FullWeekView } from "./full-week-view";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -28,7 +28,17 @@ const timezones = [
     { value: "Asia/Tokyo", label: "JST" },
 ];
 
-const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] => {
+const dayColors: { [key: number]: string } = {
+    0: '#8CD0FD', // Sunday
+    1: '#BE82CF', // Monday
+    2: '#DD8298', // Tuesday
+    3: '#EB8E85', // Wednesday
+    4: '#EBA18E', // Thursday
+    5: '#EBB596', // Friday
+    6: '#CCC5BB', // Saturday
+};
+
+const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime" | "dayColor">[] => {
   return spaces.map(space => {
     const newSpace = { ...space };
     if (newSpace.createdAt && typeof newSpace.createdAt.toDate === 'function') {
@@ -48,7 +58,7 @@ const getUpcomingDateForEvent = (dayOfWeek: number): Date => {
 
 
 const useSpaces = () => {
-  const [spaces, setSpaces] = useState<Omit<Space, "dateTime">[]>([]);
+  const [spaces, setSpaces] = useState<Omit<Space, "dateTime" | "dayColor">[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -123,10 +133,11 @@ const useFavorites = (user: any) => {
 };
 
 export function SpaceSchedule() {
-  const [filter, setFilter] = useState<"week" | "today" | "tomorrow">("week");
+  const [filter, setFilter] = useState<"week" | "today" | "tomorrow" | "full">("week");
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
+  const isMobile = useIsMobile();
 
   const { user } = useAuth();
   const { spaces, loading } = useSpaces();
@@ -144,11 +155,18 @@ export function SpaceSchedule() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (isMobile && filter === 'full') {
+        setFilter('week');
+    }
+  }, [isMobile, filter]);
+
   const filteredSpaces = useMemo(() => {
     
     const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
         ...s,
-        dateTime: getUpcomingDateForEvent(s.dayOfWeek)
+        dateTime: getUpcomingDateForEvent(s.dayOfWeek),
+        dayColor: dayColors[s.dayOfWeek] || "#718096"
     }));
     
     const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
@@ -166,6 +184,7 @@ export function SpaceSchedule() {
         result = spacesToFilter.filter(space => space.dayOfWeek === tomorrowDayOfWeek);
         break;
       case "week":
+      case "full":
          result = spacesToFilter;
         break;
       default:
@@ -174,17 +193,66 @@ export function SpaceSchedule() {
     }
     
     return result.sort((a,b) => {
+        // Sort by day first (Monday = 1, Sunday = 7 for sorting)
         const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
         const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
         const dayDiff = dayA - dayB;
         if (dayDiff !== 0) return dayDiff;
         
+        // Then sort by start time
         return a.startTime.localeCompare(b.startTime);
     });
 
   }, [spaces, filter, showFavorites, favorites]);
   
   const effectiveTimezone = isMounted ? selectedTimezone : "UTC";
+
+  const renderContent = () => {
+    if (loading) {
+       return (
+            <div className="col-span-full text-center py-12">
+                <p className="text-muted-foreground">Loading spaces...</p>
+            </div>
+          )
+    }
+
+    if (filter === 'full' && !isMobile) {
+        return <FullWeekView spaces={filteredSpaces} displayTimezone={effectiveTimezone} />
+    }
+
+    return (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+             <AnimatePresence>
+                {filteredSpaces.length > 0 ? (
+                    filteredSpaces.map((space) => (
+                    <motion.div
+                        key={space.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        <SpaceCard
+                        space={space}
+                        isFavorite={favorites.includes(space.id)}
+                        onToggleFavorite={() => toggleFavorite(space.id)}
+                        displayTimezone={effectiveTimezone}
+                        />
+                    </motion.div>
+                    ))
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="col-span-full text-center py-12">
+                        <p className="text-muted-foreground">No spaces scheduled for this period.</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -198,11 +266,12 @@ export function SpaceSchedule() {
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <Tabs value={filter} onValueChange={(value) => setFilter(value as "week" | "today" | "tomorrow")}>
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
           <TabsList>
             <TabsTrigger value="week">This Week</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+            {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
           </TabsList>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -231,40 +300,7 @@ export function SpaceSchedule() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <AnimatePresence>
-          {loading ? (
-            <div className="col-span-full text-center py-12">
-                <p className="text-muted-foreground">Loading spaces...</p>
-            </div>
-          ) : filteredSpaces.length > 0 ? (
-            filteredSpaces.map((space) => (
-              <motion.div
-                key={space.id}
-                layout
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <SpaceCard
-                  space={space}
-                  isFavorite={favorites.includes(space.id)}
-                  onToggleFavorite={() => toggleFavorite(space.id)}
-                  displayTimezone={effectiveTimezone}
-                />
-              </motion.div>
-            ))
-          ) : (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="col-span-full text-center py-12">
-                <p className="text-muted-foreground">No spaces scheduled for this period.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {renderContent()}
     </div>
   );
 }

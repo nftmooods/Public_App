@@ -10,7 +10,6 @@ import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { isValid } from "date-fns";
 
@@ -20,17 +19,6 @@ interface SpaceCardProps {
   onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
 }
-
-const dayColors: { [key: number]: string } = {
-    0: '#8CD0FD', // Sunday
-    1: '#BE82CF', // Monday
-    2: '#DD8298', // Tuesday
-    3: '#EB8E85', // Wednesday
-    4: '#EBA18E', // Thursday
-    5: '#EBB596', // Friday
-    6: '#CCC5BB', // Saturday
-};
-
 
 const getTimezoneAbbreviation = (timezone: string): string => {
     if (!timezone) return "";
@@ -153,8 +141,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   };
 
   const canEdit = user && user.uid === space.createdBy;
-  const dayBadgeColor = dayColors[space.dayOfWeek] || "#718096";
-
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
@@ -163,7 +149,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
             <div className="flex flex-col items-end gap-2">
                  <Badge 
-                    style={{ backgroundColor: dayBadgeColor, color: '#002787', borderColor: 'transparent' }}
+                    style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
                     className="whitespace-nowrap flex-shrink-0"
                  >
                     {formattedDateTime.day}
