@@ -8,13 +8,13 @@ body {
 
 @layer base {
   :root {
-    --background: 218 100% 10%; /* Darker background */
+    --background: 221 100% 17%; /* Dark GN Blue */
     --foreground: 210 40% 98%;
-    --card: 210 40% 98%; /* White card */
-    --card-foreground: 222.2 84% 4.9%; /* Dark text for cards */
-    --popover: 218 100% 10%;
+    --card: 210 100% 95%; /* GM Blue */
+    --card-foreground: 221 100% 27%; /* GN Blue */
+    --popover: 221 100% 17%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 100% 49%;
+    --primary: 217 100% 49%; /* ApeCoin Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -26,7 +26,7 @@ body {
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 217 100% 49%;
+    --ring: 217 100% 49%; /* ApeCoin Blue */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -36,13 +36,13 @@ body {
   }
 
   .dark {
-    --background: 218 100% 10%; /* Darker background */
+    --background: 221 100% 17%; /* Dark GN Blue */
     --foreground: 210 40% 98%;
-    --card: 210 40% 98%; /* White card */
-    --card-foreground: 222.2 84% 4.9%; /* Dark text for cards */
-    --popover: 218 100% 10%;
+    --card: 210 100% 95%; /* GM Blue */
+    --card-foreground: 221 100% 27%; /* GN Blue */
+    --popover: 221 100% 17%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 100% 49%;
+    --primary: 217 100% 49%; /* ApeCoin Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -54,7 +54,7 @@ body {
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 217 100% 49%;
+    --ring: 217 100% 49%; /* ApeCoin Blue */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

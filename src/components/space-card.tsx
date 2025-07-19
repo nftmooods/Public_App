@@ -148,7 +148,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   const canEdit = user && user.uid === space.createdBy;
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground border-border/20">
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
@@ -159,12 +159,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 {space.tag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{space.tag}</Badge>}
             </div>
         </div>
-        <CardDescription>by {space.authorName || 'Anonymous'}</CardDescription>
+        <CardDescription className="text-card-foreground/80">by {space.authorName || 'Anonymous'}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <Alert>
+        <Alert className="bg-background/10 border-border/30 text-card-foreground">
           <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-card-foreground/80">
             Timezone: {formattedDateTime.timezone}
           </AlertDescription>
         </Alert>
@@ -177,14 +177,15 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 onClick={() => onToggleFavorite(space.id)}
                 disabled={!user}
                 aria-label="Toggle favorite"
+                className="text-card-foreground/60 hover:text-card-foreground"
             >
-                <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : "text-muted-foreground hover:text-foreground"}`} />
+                <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : "hover:text-red-400"}`} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space" className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space" className="text-card-foreground/60 hover:text-card-foreground">
                 <Share2Icon className="w-5 h-5" />
             </Button>
             {canEdit && (
-                <Button variant="ghost" size="icon" asChild className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-card-foreground">
                     <Link href={`/edit-space/${space.id}`} aria-label="Edit space">
                         <PencilIcon className="w-5 h-5" />
                     </Link>
