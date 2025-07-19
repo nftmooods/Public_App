@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -12,10 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { addSpace, findUserByName } from "@/lib/firebase";
+import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from '@/lib/types';
-import { useEffect } from "react";
 
 
 const timezones = [
@@ -66,7 +66,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
-  authorName: z.string().min(2, { message: "Author name must be at least 2 characters." }),
+  authorName: z.string(), // No validation needed, will be read-only
   tag: z.string().min(1, { message: "Please select a tag." }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
@@ -87,7 +87,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       authorName: user?.name || "",
-      tag: "SPACE",
+      tag: "SPACE", // Default tag
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -95,48 +95,27 @@ export function CreateSpaceForm() {
     },
   });
 
-  // Watch authorName for changes
-  const watchedAuthorName = form.watch('authorName');
+  const watchedAuthorName = user?.name || "";
 
   useEffect(() => {
-    // Pre-fill author name from user context if available and not already set
-    if (user && !form.getValues('authorName')) {
+    if (user) {
       form.setValue('authorName', user.name || "");
+      const urlFriendlyName = (user.name || "").replace(/\s+/g, '').replace(/[^\w-]/g, '');
+      if (!form.getValues('projectUrl')) {
+        form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
+      }
     }
   }, [user, form]);
 
 
-  useEffect(() => {
-    // Update project URL based on author name
-    if (watchedAuthorName) {
-        // Sanitize name for URL: remove spaces and special characters
-        const urlFriendlyName = watchedAuthorName.replace(/\s+/g, '').replace(/[^\w-]/g, '');
-        // Update if the URL field is empty or if the author field was the one just changed
-        if (!form.getValues('projectUrl') || form.formState.dirtyFields.authorName) {
-             form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedAuthorName, form.setValue, form.formState.dirtyFields.authorName]);
-
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
+    if (!user || !user.name) {
         toast({ title: "Error", description: "You must be logged in to create a space.", variant: "destructive" });
         return;
     }
 
     try {
-      const { name, projectUrl, authorName, tag, daysOfWeek, startTime, endTime, timezone } = values;
-
-      const author = await findUserByName(authorName);
-      if (!author) {
-          form.setError("authorName", {
-              type: "manual",
-              message: "This user could not be found. Please check the name.",
-          });
-          return;
-      }
+      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, timezone } = values;
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
@@ -146,8 +125,8 @@ export function CreateSpaceForm() {
               dayOfWeek: parseInt(day, 10),
               startTime,
               timezone,
-              authorName: author.name, // Use the name from the found user document
-              createdBy: author.uid, // Assign ownership to the found user
+              authorName: user.name!, // Use the authenticated user's name
+              createdBy: user.uid,   // Use the authenticated user's UID
           };
           if (endTime) {
             spaceData.endTime = endTime;
@@ -196,10 +175,10 @@ export function CreateSpaceForm() {
             <FormItem>
               <FormLabel>Author</FormLabel>
               <FormControl>
-                <Input placeholder="Enter author's name" {...field} />
+                <Input {...field} disabled />
               </FormControl>
                <FormDescription>
-                The name of the user hosting this event.
+                You are the author of this event. Ownership can be transferred after creation.
               </FormDescription>
               <FormMessage />
             </FormItem>
