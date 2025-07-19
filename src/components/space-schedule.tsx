@@ -225,7 +225,6 @@ export function SpaceSchedule() {
               <SelectValue placeholder="Select timezone" />
             </SelectTrigger>
             <SelectContent>
-              {isMounted && <SelectItem value={Intl.DateTimeFormat().resolvedOptions().timeZone}>My Timezone</SelectItem>}
               {timezones.map(tz => (
                 <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
               ))}
