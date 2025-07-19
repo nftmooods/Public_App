@@ -11,8 +11,8 @@ export interface Space {
     startTime: string; // "HH:mm"
     endTime?: string; // "HH:mm" - Optional
     timezone: string;
-    authorName: string;
-    createdBy: string;
+    authorName: string; // The display name of the user who created the event.
+    createdBy: string; // The UID of the user who created the event.
     createdAt: Date;
     // This will be dynamically calculated on the client
     dateTime?: Date; 

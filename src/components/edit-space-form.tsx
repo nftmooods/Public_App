@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateSpace, findUserByName } from "@/lib/firebase";
+import { updateSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from "@/lib/types";
 import { deleteField } from "firebase/firestore";
@@ -63,7 +63,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
-  authorName: z.string().min(2, { message: "Author name must be at least 2 characters." }),
+  authorName: z.string(), // Is now read-only
   tag: z.string().min(1, { message: "Please select a tag." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
@@ -78,7 +78,7 @@ interface EditSpaceFormProps {
 export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, isAdmin } = useAuth(); // isAdmin is now SuperAdmin
+  const { user } = useAuth(); 
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,21 +94,19 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     },
   });
 
-  const canEditAuthor = isAdmin || user?.uid === space.createdBy;
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({ title: "Error", description: "You must be logged in to update a space.", variant: "destructive" });
         return;
     }
-    // A standard user must be the creator to edit. A SuperAdmin can edit any space.
-    if (!isAdmin && user.uid !== space.createdBy) {
-         toast({ title: "Error", description: "You don't have permission to perform this action.", variant: "destructive" });
+
+    if (user.uid !== space.createdBy) {
+         toast({ title: "Permission Denied", description: "You can only edit events that you have created.", variant: "destructive" });
         return;
     }
 
     try {
-      const { name, projectUrl, authorName, tag, dayOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, timezone } = values;
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
@@ -117,29 +115,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          endTime: endTime ? endTime : deleteField(), // Use deleteField() to remove the field if empty
+          endTime: endTime ? endTime : deleteField(), 
       };
-      
-      // The author can be changed IF the user is the current creator OR a super admin
-      if (canEditAuthor && authorName !== space.authorName) {
-        const author = await findUserByName(authorName);
-        if (!author) {
-            form.setError("authorName", {
-                type: "manual",
-                message: "This user could not be found. Please check the name.",
-            });
-            return;
-        }
-        spaceUpdateData.authorName = author.name;
-        spaceUpdateData.createdBy = author.uid;
-      } else if (authorName === space.authorName) {
-        // No change, no need to update author fields
-      } else {
-        // This case should not be reached due to form field being disabled, but as a safeguard:
-        toast({ title: "Error", description: "You do not have permission to change the author.", variant: "destructive" });
-        return;
-      }
-
 
       await updateSpace(space.id, spaceUpdateData);
 
@@ -195,15 +172,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             <FormItem>
               <FormLabel>Author</FormLabel>
               <FormControl>
-                <Input placeholder="Enter author's name" {...field} disabled={!canEditAuthor} />
+                <Input {...field} disabled />
               </FormControl>
                <FormDescription>
-                {isAdmin 
-                    ? "As a SuperAdmin, you can re-assign this event." 
-                    : canEditAuthor 
-                        ? "You can transfer ownership by entering another user's name."
-                        : "Only the current creator or a SuperAdmin can change the author."
-                }
+                The author of an event cannot be changed.
               </FormDescription>
               <FormMessage />
             </FormItem>

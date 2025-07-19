@@ -43,7 +43,6 @@ export function SignupForm() {
       await updateProfile(user, { displayName: name });
 
       // Create a user document in Firestore to store additional details
-      // including the lowercase name for case-insensitive searching
       await createUserProfileDocument(user, { name });
 
       toast({
@@ -124,5 +123,3 @@ export function SignupForm() {
     </Form>
   );
 }
-
-    

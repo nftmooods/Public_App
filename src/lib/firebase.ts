@@ -55,7 +55,6 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
         try {
             await setDoc(userDocRef, {
                 name: name,
-                name_lowercase: name.toLowerCase(),
                 email,
                 createdAt: serverTimestamp(),
             });
@@ -84,33 +83,6 @@ export const getUserProfile = async (userId: string) => {
       console.error("Error getting user profile:", error);
       return null;
   }
-};
-
-/**
- * Finds a user by their display name (case-insensitive).
- * Returns the user's data including UID if found, otherwise null.
- */
-export const findUserByName = async (name: string): Promise<(User & { name: string }) | null> => {
-    if (!name) return null;
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("name_lowercase", "==", name.toLowerCase()), limit(1));
-
-    try {
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            return null;
-        }
-        const userDoc = querySnapshot.docs[0];
-        const userData = userDoc.data();
-        return {
-            uid: userDoc.id,
-            name: userData.name, // Ensure name is not null
-            email: userData.email,
-        };
-    } catch (error) {
-        console.error("Error finding user by name:", error);
-        return null;
-    }
 };
 
 
@@ -184,7 +156,7 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
 };
 
 // Update a space
-export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime' | 'author'>>) => {
+export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime' | 'authorName' | 'createdBy'>>) => {
   const spaceDoc = doc(db, "spaces", spaceId);
   await updateDoc(spaceDoc, updatedData);
 };
@@ -228,5 +200,3 @@ export const getFavorites = async (userId: string) => {
 
 
 export { app, db, auth };
-
-    

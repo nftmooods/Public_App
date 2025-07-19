@@ -66,7 +66,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
-  authorName: z.string(), // No validation needed, will be read-only
+  authorName: z.string(), // This is now read-only, populated from auth context
   tag: z.string().min(1, { message: "Please select a tag." }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
@@ -95,13 +95,11 @@ export function CreateSpaceForm() {
     },
   });
 
-  const watchedAuthorName = user?.name || "";
-
   useEffect(() => {
-    if (user) {
-      form.setValue('authorName', user.name || "");
-      const urlFriendlyName = (user.name || "").replace(/\s+/g, '').replace(/[^\w-]/g, '');
+    if (user?.name) {
+      form.setValue('authorName', user.name);
       if (!form.getValues('projectUrl')) {
+        const urlFriendlyName = user.name.replace(/\s+/g, '').replace(/[^\w-]/g, '');
         form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
       }
     }
@@ -125,8 +123,8 @@ export function CreateSpaceForm() {
               dayOfWeek: parseInt(day, 10),
               startTime,
               timezone,
-              authorName: user.name!, // Use the authenticated user's name
-              createdBy: user.uid,   // Use the authenticated user's UID
+              authorName: user.name!, // Always use the authenticated user's name
+              createdBy: user.uid,   // Always use the authenticated user's UID
           };
           if (endTime) {
             spaceData.endTime = endTime;
@@ -138,7 +136,7 @@ export function CreateSpaceForm() {
 
       toast({
         title: "Space(s) Created!",
-        description: `Your event(s) have been added to the weekly schedule for the selected days.`,
+        description: `Your event(s) have been added to the weekly schedule.`,
       });
       router.push("/");
       
@@ -178,7 +176,7 @@ export function CreateSpaceForm() {
                 <Input {...field} disabled />
               </FormControl>
                <FormDescription>
-                You are the author of this event. Ownership can be transferred after creation.
+                You are the author of this event.
               </FormDescription>
               <FormMessage />
             </FormItem>
