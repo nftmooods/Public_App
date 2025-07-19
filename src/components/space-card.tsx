@@ -169,7 +169,16 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 {contentPlaceTag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{contentPlaceTag}</Badge>}
             </div>
         </div>
-        <CardDescription className="text-card-foreground/80">by {space.authorName || 'Anonymous'}</CardDescription>
+        <CardDescription className="text-card-foreground/80 leading-tight flex flex-col">
+            <span>
+                <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
+            </span>
+            {space.coHostName && (
+                <span>
+                    <span className="font-semibold">Co-host:</span> {space.coHostName}
+                </span>
+            )}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <Alert className="bg-background/10 border-border/30 text-card-foreground flex flex-row justify-between items-center gap-2">

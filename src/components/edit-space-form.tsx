@@ -78,6 +78,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
+  coHostName: z.string().optional(),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   authorName: z.string(),
   contentPlace: z.string({ required_error: "You must select a content place." }),
@@ -120,6 +121,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: space.name || "",
+      coHostName: space.coHostName || "",
       projectUrl: space.projectUrl || "",
       authorName: space.authorName || "",
       contentPlace: initialContentPlace,
@@ -145,7 +147,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const { name, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
       const tags = [contentPlace, ...contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
@@ -155,7 +157,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          endTime: endTime ? endTime : deleteField(), 
+          endTime: endTime ? endTime : deleteField(),
+          coHostName: coHostName ? coHostName : deleteField(),
       };
 
       await updateSpace(space.id, spaceUpdateData);
@@ -207,6 +210,19 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
               <FormLabel>Moment Name</FormLabel>
               <FormControl>
                 <Input placeholder="Community Weekly Update" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="coHostName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Co-host Name (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Another community member" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

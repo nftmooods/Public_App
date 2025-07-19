@@ -20,7 +20,8 @@ import {
   orderBy,
   Timestamp,
   writeBatch,
-  limit
+  limit,
+  deleteField
 } from "firebase/firestore";
 import type { Space, User } from "./types";
 
@@ -191,6 +192,7 @@ export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime">
                 endTime: data.endTime,
                 timezone: data.timezone,
                 authorName: data.authorName,
+                coHostName: data.coHostName,
                 createdBy: data.createdBy,
                 createdAt: (data.createdAt as Timestamp).toDate(),
             } as Omit<Space, "dateTime">;
@@ -222,6 +224,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             endTime: data.endTime,
             timezone: data.timezone,
             authorName: data.authorName,
+            coHostName: data.coHostName,
             createdBy: data.createdBy,
             // Ensure Firestore Timestamps are converted to JS Date objects
             createdAt: (data.createdAt as Timestamp).toDate(),
@@ -233,17 +236,30 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
 // Add a new space
 export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'>) => {
   const spacesCol = collection(db, "spaces");
-  const newSpaceRef = await addDoc(spacesCol, {
+  const dataToSave = {
       ...spaceData,
       createdAt: serverTimestamp()
-  });
+  };
+   if (!dataToSave.coHostName) {
+    delete dataToSave.coHostName;
+  }
+  const newSpaceRef = await addDoc(spacesCol, dataToSave);
   return newSpaceRef.id;
 };
 
 // Update a space
 export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime' | 'authorName' | 'createdBy'>>) => {
   const spaceDoc = doc(db, "spaces", spaceId);
-  await updateDoc(spaceDoc, updatedData);
+  const dataToUpdate = {...updatedData};
+
+  if ('coHostName' in dataToUpdate && !dataToUpdate.coHostName) {
+      (dataToUpdate as any).coHostName = deleteField();
+  }
+  if ('endTime' in dataToUpdate && !dataToUpdate.endTime) {
+      (dataToUpdate as any).endTime = deleteField();
+  }
+
+  await updateDoc(spaceDoc, dataToUpdate);
 };
 
 // Delete a space
@@ -285,5 +301,3 @@ export const getFavorites = async (userId: string) => {
 
 
 export { app, db, auth };
-
-    

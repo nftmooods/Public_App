@@ -65,6 +65,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
+  coHostName: z.string().optional(),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string())
@@ -88,6 +89,7 @@ export function CreateSpaceForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      coHostName: "",
       projectUrl: "",
       contentPlace: "SPACE",
       contentType: ["ApeChain"],
@@ -119,7 +121,7 @@ export function CreateSpaceForm() {
     setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, daysOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const { name, coHostName, projectUrl, daysOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
       const tags = [contentPlace, ...contentType];
 
       const creationPromises = daysOfWeek.map(day => {
@@ -135,6 +137,9 @@ export function CreateSpaceForm() {
           };
           if (endTime) {
             spaceData.endTime = endTime;
+          }
+          if (coHostName) {
+            spaceData.coHostName = coHostName;
           }
           return addSpace(spaceData);
       });
@@ -170,6 +175,19 @@ export function CreateSpaceForm() {
               <FormLabel>Moment Name</FormLabel>
               <FormControl>
                 <Input placeholder="" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="coHostName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Co-host Name (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Another community member" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

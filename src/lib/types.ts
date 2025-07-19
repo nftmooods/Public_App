@@ -12,6 +12,7 @@ export interface Space {
     endTime?: string; // "HH:mm" - Optional
     timezone: string;
     authorName: string; // The display name of the user who created the event.
+    coHostName?: string; // Optional name for a co-host
     createdBy: string; // The UID of the user who created the event.
     createdAt: Date;
     // This will be dynamically calculated on the client
@@ -28,5 +29,3 @@ export interface User {
   isAdmin?: boolean;
   timezone?: string;
 }
-
-    
