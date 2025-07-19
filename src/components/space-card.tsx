@@ -148,12 +148,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   const canEdit = user && user.uid === space.createdBy;
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground border-border/20">
+    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
             <div className="flex flex-col items-end gap-2">
-                 <Badge variant={"outline"} className="whitespace-nowrap flex-shrink-0">
+                 <Badge variant={"outline"} className="whitespace-nowrap flex-shrink-0 text-card-foreground border-card-foreground/30">
                     {formattedDateTime.day}
                 </Badge>
                 {space.tag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{space.tag}</Badge>}
@@ -177,15 +177,15 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 onClick={() => onToggleFavorite(space.id)}
                 disabled={!user}
                 aria-label="Toggle favorite"
-                className="text-card-foreground/60 hover:text-card-foreground"
+                className="text-card-foreground/60 hover:text-red-500 hover:bg-red-500/10"
             >
-                <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : "hover:text-red-400"}`} />
+                <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : ""}`} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space" className="text-card-foreground/60 hover:text-card-foreground">
+            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space" className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
                 <Share2Icon className="w-5 h-5" />
             </Button>
             {canEdit && (
-                <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-card-foreground">
+                <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
                     <Link href={`/edit-space/${space.id}`} aria-label="Edit space">
                         <PencilIcon className="w-5 h-5" />
                     </Link>
