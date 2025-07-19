@@ -34,15 +34,24 @@ const getTimezoneAbbreviation = (timezone: string): string => {
 };
 
 const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
-  // 1. Create a date object from the stored time in its native timezone
+  if (!timeString || !isValid(baseDate)) {
+      return new Date(NaN); // Return an invalid date
+  }
+  
   const [hours, minutes] = timeString.split(':').map(Number);
-  // We need a base date to combine with the time. The dynamically calculated space.dateTime is perfect.
+  if (isNaN(hours) || isNaN(minutes)) {
+    return new Date(NaN);
+  }
+
   const dateStringWithTime = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}-${String(baseDate.getDate()).padStart(2, '0')}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:00`;
 
-  // Use toDate to parse the date string within the event's *own* timezone
-  const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
-
-  return eventDateInOriginalTz;
+  try {
+    const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
+    return eventDateInOriginalTz;
+  } catch (e) {
+    console.error(`Error creating date for timezone ${space.timezone}`, e);
+    return new Date(NaN);
+  }
 }
 
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
@@ -81,13 +90,35 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   // Get the absolute point-in-time for the event start
   const eventStartDate = getEventDateWithTime(space, space.startTime, space.dateTime);
   
+  if (!isValid(eventStartDate)) {
+       return (
+        <Card className="flex flex-col h-full bg-destructive/10 border-destructive/50">
+            <CardHeader>
+                <CardTitle className="font-headline text-lg text-destructive">{space.name || "Event Error"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Invalid Time</AlertTitle>
+                    <AlertDescription>
+                        Could not calculate a valid time for this event.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+             <CardFooter></CardFooter>
+        </Card>
+    );
+  }
+
   let formattedDateTime;
   try {
      const startTimeFormatted = formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a");
      let endTimeFormatted = '';
      if (space.endTime) {
         const eventEndDate = getEventDateWithTime(space, space.endTime, space.dateTime);
-        endTimeFormatted = formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a");
+        if(isValid(eventEndDate)) {
+          endTimeFormatted = formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a");
+        }
      }
 
      formattedDateTime = {
