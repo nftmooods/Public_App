@@ -99,9 +99,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
-             <Badge variant={"outline"} className="whitespace-nowrap flex-shrink-0">
-                {formattedDateTime.day}
-            </Badge>
+            <div className="flex flex-col items-end gap-2">
+                 <Badge variant={"outline"} className="whitespace-nowrap flex-shrink-0">
+                    {formattedDateTime.day}
+                </Badge>
+                {space.tag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{space.tag}</Badge>}
+            </div>
         </div>
         <CardDescription>by {space.authorName || 'Anonymous'}</CardDescription>
       </CardHeader>

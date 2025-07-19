@@ -98,6 +98,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             id: snap.id,
             name: data.name,
             projectUrl: data.projectUrl,
+            tag: data.tag,
             dayOfWeek: data.dayOfWeek,
             time: data.time,
             timezone: data.timezone,

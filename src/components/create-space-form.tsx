@@ -35,17 +35,30 @@ const daysOfWeek = [
     { value: "0", label: "Sunday" },
 ]
 
-// Generate time options for every 30 minutes
+const eventTags = [
+    { value: "SPACE", label: "SPACE" },
+    { value: "STREAM", label: "STREAM" },
+    { value: "DISCORD VC", label: "DISCORD VC" },
+];
+
+
+// Generate time options for every 30 minutes in AM/PM format
 const timeOptions = Array.from({ length: 48 }, (_, i) => {
-  const hours = Math.floor(i / 2).toString().padStart(2, '0');
-  const minutes = (i % 2 === 0) ? '00' : '30';
-  const time = `${hours}:${minutes}`;
-  return { value: time, label: time };
+  const totalMinutes = i * 30;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+  const displayMinutes = minutes.toString().padStart(2, '0');
+  const timeValue = `${hours.toString().padStart(2, '0')}:${displayMinutes}`;
+  const timeLabel = `${displayHours}:${displayMinutes} ${period}`;
+  return { value: timeValue, label: timeLabel };
 });
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  tag: z.string().min(1, { message: "Please select a tag." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   time: z.string().min(1, { message: "Please select a time." }),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
@@ -61,6 +74,7 @@ export function CreateSpaceForm() {
     defaultValues: {
       name: "",
       projectUrl: "",
+      tag: "",
       dayOfWeek: "",
       time: "",
       timezone: "UTC",
@@ -74,11 +88,12 @@ export function CreateSpaceForm() {
     }
 
     try {
-      const { name, projectUrl, dayOfWeek, time, timezone } = values;
+      const { name, projectUrl, tag, dayOfWeek, time, timezone } = values;
       
       const spaceData = {
           name,
           projectUrl,
+          tag,
           dayOfWeek: parseInt(dayOfWeek, 10),
           time,
           timezone,
@@ -125,10 +140,32 @@ export function CreateSpaceForm() {
           name="projectUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Project URL</FormLabel>
+              <FormLabel>URL</FormLabel>
               <FormControl>
                 <Input placeholder="https://x.com/yourproject" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="tag"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tag</FormLabel>
+               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                  <SelectTrigger>
+                      <SelectValue placeholder="Select a tag" />
+                  </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                  {eventTags.map(tag => (
+                      <SelectItem key={tag.value} value={tag.value}>{tag.label}</SelectItem>
+                  ))}
+                  </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
