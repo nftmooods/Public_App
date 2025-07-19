@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
@@ -11,6 +12,8 @@ interface SmallSpaceCardProps {
   space: Space;
   displayTimezone: string;
 }
+
+const contentPlaceTagsValues = ["SPACE", "STREAM", "DISCORD VC"];
 
 const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
   if (!timeString || !isValid(baseDate)) {
@@ -37,6 +40,11 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 }
 
 export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) {
+
+  const contentPlaceTag = useMemo(() => {
+    const tags = space.tags || [];
+    return tags.find(tag => contentPlaceTagsValues.includes(tag)) || null;
+  }, [space.tags]);
 
   if (!space.dateTime || !isValid(space.dateTime)) {
     return (
@@ -74,8 +82,9 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
   return (
     <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className="block bg-background/50 hover:bg-background/80 transition-colors p-2 rounded-md text-xs group">
       <div className="flex flex-col text-foreground">
-        <div className="flex justify-between items-start mb-1 flex-wrap gap-1">
+        <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
           <p className="font-bold text-sm whitespace-nowrap">{formattedTime}</p>
+          {contentPlaceTag && <Badge variant="secondary" className="text-xs">{contentPlaceTag}</Badge>}
         </div>
         <p className="font-semibold leading-tight transition-colors">{space.name}</p>
         <p className="text-muted-foreground truncate">{space.authorName}</p>
