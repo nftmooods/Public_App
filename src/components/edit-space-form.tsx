@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { updateSpace, findUserByName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from "@/lib/types";
+import { deleteField } from "firebase/firestore";
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -77,7 +78,7 @@ interface EditSpaceFormProps {
 export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,8 +99,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         toast({ title: "Error", description: "You must be logged in to update a space.", variant: "destructive" });
         return;
     }
-    // For now, only the creator can edit. An admin role check could be added here later.
-    if (user.uid !== space.createdBy) {
+    // A standard user can only edit their own space. An admin can edit any space.
+    if (!isAdmin && user.uid !== space.createdBy) {
          toast({ title: "Error", description: "You don't have permission to perform this action.", variant: "destructive" });
         return;
     }
@@ -107,63 +108,31 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     try {
       const { name, projectUrl, authorName, tag, dayOfWeek, startTime, endTime, timezone } = values;
 
-      const author = await findUserByName(authorName);
-      if (!author) {
-          form.setError("authorName", {
-              type: "manual",
-              message: "This user could not be found. Please check the name.",
-          });
-          return;
-      }
-      
-      const spaceUpdateData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime'>> = {
+      const spaceUpdateData: {[key:string]: any} = {
           name,
           projectUrl,
           tag: tag as "SPACE" | "STREAM" | "DISCORD VC",
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          authorName: author.name, // Use the canonical name from the DB
-          createdBy: author.uid, // Update the owner
+          endTime: endTime || deleteField(), // Use deleteField() to remove the field if empty
       };
-      
-      const finalUpdateData: {[key: string]: any} = {...spaceUpdateData};
-      if (endTime && endTime.length > 0) {
-        finalUpdateData.endTime = endTime;
-      } else {
-        // If endTime was cleared, we need to remove it from the database.
-        // Firestore update with `undefined` fails, so we create an object
-        // that explicitly sets it to be deleted if it was present before.
-        // For simplicity here, we create a new object without it.
-        // A more robust way is to use `deleteField()` from server-side SDK.
-        // For the client, not including the field in the update object is the way.
-        // Let's create a clean object for the update.
-        const cleanUpdateData: {[key: string]: any} = {};
-        for (const [key, value] of Object.entries(spaceUpdateData)) {
-            if (value !== undefined) {
-                (cleanUpdateData as any)[key] = value;
-            }
+
+      // Only change author if the name has changed AND the user is an admin
+      if (isAdmin && authorName !== space.authorName) {
+        const author = await findUserByName(authorName);
+        if (!author) {
+            form.setError("authorName", {
+                type: "manual",
+                message: "This user could not be found. Please check the name.",
+            });
+            return;
         }
-         if (endTime && endTime.length > 0) {
-            cleanUpdateData.endTime = endTime;
-         } else {
-            // To remove a field, we just don't include it. 
-            // If the existing document has it, what happens? `updateDoc` merges.
-            // We need to be explicit about removing it if it's empty.
-            // Let's stick with the simple object creation for now.
-         }
-        
-         await updateSpace(space.id, cleanUpdateData);
-         toast({
-            title: "Space Updated!",
-            description: `Your event has been successfully updated.`,
-          });
-         router.push("/");
-         return;
+        spaceUpdateData.authorName = author.name;
+        spaceUpdateData.createdBy = author.uid;
       }
 
-
-      await updateSpace(space.id, finalUpdateData);
+      await updateSpace(space.id, spaceUpdateData);
 
       toast({
         title: "Space Updated!",
@@ -217,10 +186,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             <FormItem>
               <FormLabel>Author</FormLabel>
               <FormControl>
-                <Input placeholder="Enter author's name" {...field} />
+                <Input placeholder="Enter author's name" {...field} disabled={!isAdmin} />
               </FormControl>
                <FormDescription>
-                The name of the user hosting this event.
+                {isAdmin ? "You can re-assign this event to another user." : "Only admins can change the author."}
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -352,5 +321,3 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     </Form>
   );
 }
-
-    
