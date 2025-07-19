@@ -10,10 +10,22 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateSpace } from "@/lib/firebase";
+import { updateSpace, deleteSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from "@/lib/types";
 import { deleteField } from "firebase/firestore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2Icon } from "lucide-react";
+
 
 const timezones = [
     { value: "UTC", label: "UTC" },
@@ -130,6 +142,24 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       console.error("Failed to update space:", error);
       toast({
         title: "Update Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      await deleteSpace(space.id);
+      toast({
+        title: "Space Deleted",
+        description: "The event has been permanently removed.",
+      });
+      router.push("/");
+    } catch (error) {
+      console.error("Failed to delete space:", error);
+      toast({
+        title: "Deletion Failed",
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
@@ -262,7 +292,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a time" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       {timeOptions.map(option => (
@@ -300,9 +330,32 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             )}
             />
         
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Updating..." : "Update Space"}
-        </Button>
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" type="button" disabled={form.formState.isSubmitting}>
+                    <Trash2Icon className="mr-2 h-4 w-4" />
+                    Delete Space
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete this space
+                    from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Updating..." : "Update Space"}
+            </Button>
+        </div>
       </form>
     </Form>
   );
