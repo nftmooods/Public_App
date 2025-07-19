@@ -160,28 +160,16 @@ export function CreateSpaceForm() {
             <FormItem>
               <FormLabel>Space Name</FormLabel>
               <FormControl>
-                <Input placeholder="ApeChain Weekly Update" {...field} />
+                <Input placeholder="" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="authorName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Author</FormLabel>
-              <FormControl>
-                <Input {...field} disabled />
-              </FormControl>
-               <FormDescription>
-                You are the author of this event.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-2">
+            <FormLabel>Author</FormLabel>
+            <p className="text-sm text-primary">{user?.name || "Loading..."}</p>
+        </div>
          <FormField
           control={form.control}
           name="projectUrl"
