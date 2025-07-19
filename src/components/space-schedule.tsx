@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -7,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion } from "framer-motion";
-import { isToday, isTomorrow, isThisWeek } from "date-fns";
+import { isToday, isTomorrow, isThisWeek, isPast } from "date-fns";
 import { useAuth } from "@/context/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
@@ -138,19 +139,21 @@ export function SpaceSchedule() {
   const filteredSpaces = useMemo(() => {
     const filterByDate = (space: Space, check: (date: Date) => boolean) => {
       // Ensure dateTime is a valid Date object before checking
-      return space.dateTime instanceof Date && check(space.dateTime);
+      const date = space.dateTime;
+      return date instanceof Date && check(date);
     };
 
     const spacesToFilter = showFavorites ? spaces.filter(space => favorites.includes(space.id)) : spaces;
 
     switch (filter) {
       case "today":
-        return spacesToFilter.filter(space => filterByDate(space, isToday));
+        return spacesToFilter.filter(space => filterByDate(space, isToday) && !isPast(space.dateTime));
       case "tomorrow":
         return spacesToFilter.filter(space => filterByDate(space, isTomorrow));
       case "week":
-        // isThisWeek checks from Sunday by default, let's make it Monday
-        return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })));
+        return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })) && !isPast(date));
+      case "past":
+        return spacesToFilter.filter(space => filterByDate(space, isPast)).sort((a,b) => b.dateTime.getTime() - a.dateTime.getTime());
       default:
         return spacesToFilter;
     }
@@ -173,6 +176,7 @@ export function SpaceSchedule() {
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
             <TabsTrigger value="week">This Week</TabsTrigger>
+            <TabsTrigger value="past">Past</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
