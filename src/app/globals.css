@@ -20,13 +20,13 @@ body {
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted-foreground: 221 100% 35%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --input: 221 100% 18%; /* Darker blue for inputs */
     --ring: 217 100% 49%; /* ApeCoin Blue */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -49,13 +49,13 @@ body {
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted-foreground: 221 100% 35%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --input: 221 100% 18%; /* Darker blue for inputs */
     --ring: 217 100% 49%; /* ApeCoin Blue */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
