@@ -35,11 +35,19 @@ const daysOfWeek = [
     { value: "0", label: "Sunday" },
 ]
 
+// Generate time options for every 30 minutes
+const timeOptions = Array.from({ length: 48 }, (_, i) => {
+  const hours = Math.floor(i / 2).toString().padStart(2, '0');
+  const minutes = (i % 2 === 0) ? '00' : '30';
+  const time = `${hours}:${minutes}`;
+  return { value: time, label: time };
+});
+
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Please enter a valid time (HH:MM)." }),
+  time: z.string().min(1, { message: "Please select a time." }),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
 
@@ -149,17 +157,28 @@ export function CreateSpaceForm() {
             )}
             />
             <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Time</FormLabel>
-                        <FormControl>
-                            <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
+              control={form.control}
+              name="time"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Time</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a time" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
         </div>
          <FormField
