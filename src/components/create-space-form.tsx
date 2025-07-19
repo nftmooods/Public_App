@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addSpace, findUserByName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from '@/lib/types';
+import { useEffect } from "react";
 
 
 const timezones = [
@@ -86,7 +87,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       authorName: user?.name || "",
-      tag: "",
+      tag: "SPACE",
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -94,10 +95,21 @@ export function CreateSpaceForm() {
     },
   });
 
-  // Update default author name when user context loads
-  if (user && !form.getValues('authorName')) {
-    form.setValue('authorName', user.name || "");
-  }
+  // Update default values when user context loads or authorName changes
+  useEffect(() => {
+    if (user && !form.getValues('authorName')) {
+      form.setValue('authorName', user.name || "");
+    }
+    const authorName = form.watch('authorName');
+    if(authorName) {
+        // Sanitize name for URL: remove spaces and special characters
+        const urlFriendlyName = authorName.replace(/\s+/g, '').replace(/[^\w-]/g, '');
+        if (!form.getValues('projectUrl') || form.formState.isDirty('authorName')) {
+             form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
+        }
+    }
+  }, [user, form.watch('authorName'), form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -170,19 +182,6 @@ export function CreateSpaceForm() {
         />
         <FormField
           control={form.control}
-          name="projectUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://x.com/yourproject" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <FormField
-          control={form.control}
           name="authorName"
           render={({ field }) => (
             <FormItem>
@@ -193,6 +192,19 @@ export function CreateSpaceForm() {
                <FormDescription>
                 The name of the user hosting this event.
               </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="projectUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>URL</FormLabel>
+              <FormControl>
+                <Input placeholder="https://x.com/yourproject" {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -351,5 +363,3 @@ export function CreateSpaceForm() {
     </Form>
   );
 }
-
-    
