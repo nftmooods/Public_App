@@ -95,20 +95,29 @@ export function CreateSpaceForm() {
     },
   });
 
-  // Update default values when user context loads or authorName changes
+  // Watch authorName for changes
+  const watchedAuthorName = form.watch('authorName');
+
   useEffect(() => {
+    // Pre-fill author name from user context if available and not already set
     if (user && !form.getValues('authorName')) {
       form.setValue('authorName', user.name || "");
     }
-    const authorName = form.watch('authorName');
-    if(authorName) {
+  }, [user, form]);
+
+
+  useEffect(() => {
+    // Update project URL based on author name
+    if (watchedAuthorName) {
         // Sanitize name for URL: remove spaces and special characters
-        const urlFriendlyName = authorName.replace(/\s+/g, '').replace(/[^\w-]/g, '');
-        if (!form.getValues('projectUrl') || form.formState.isDirty('authorName')) {
+        const urlFriendlyName = watchedAuthorName.replace(/\s+/g, '').replace(/[^\w-]/g, '');
+        // Update if the URL field is empty or if the author field was the one just changed
+        if (!form.getValues('projectUrl') || form.formState.dirtyFields.authorName) {
              form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
         }
     }
-  }, [user, form.watch('authorName'), form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedAuthorName, form.setValue, form.formState.dirtyFields.authorName]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
