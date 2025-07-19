@@ -13,8 +13,8 @@ body {
     --foreground: 210 40% 98%;
     --card: 210 100% 95%; /* GM Blue */
     --card-foreground: 221 100% 27%; /* GN Blue */
-    --popover: 221 100% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 100% 95%;
+    --popover-foreground: 221 100% 27%;
     --primary: 217 100% 49%; /* ApeCoin Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
@@ -42,8 +42,8 @@ body {
     --foreground: 210 40% 98%;
     --card: 210 100% 95%; /* GM Blue */
     --card-foreground: 221 100% 27%; /* GN Blue */
-    --popover: 221 100% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 100% 95%;
+    --popover-foreground: 221 100% 27%;
     --primary: 217 100% 49%; /* ApeCoin Blue */
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
