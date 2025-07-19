@@ -20,6 +20,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
@@ -292,7 +293,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a time" />
-                      </Trigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {timeOptions.map(option => (
@@ -330,10 +331,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             )}
             />
         
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2 pt-4">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" type="button" disabled={form.formState.isSubmitting}>
+                <Button variant="destructive" type="button" className="w-full sm:w-auto" disabled={form.formState.isSubmitting}>
                     <Trash2Icon className="mr-2 h-4 w-4" />
                     Delete Space
                 </Button>
@@ -348,11 +349,11 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Continue</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button type="submit" className="w-full sm:w-auto mb-2 sm:mb-0" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Updating..." : "Update Space"}
             </Button>
         </div>
@@ -360,3 +361,5 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     </Form>
   );
 }
+
+  
