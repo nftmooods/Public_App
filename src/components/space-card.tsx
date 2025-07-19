@@ -33,12 +33,12 @@ const getTimezoneAbbreviation = (timezone: string): string => {
     }
 };
 
-const getEventDateInTimezone = (space: Space): Date => {
+const getEventDateInTimezone = (space: Space, timeString: string): Date => {
   // 1. Create a date object from the stored time in its native timezone
-  const [hours, minutes] = space.time.split(':').map(Number);
+  const [hours, minutes] = timeString.split(':').map(Number);
   // We need a base date to combine with the time. The dynamically calculated space.dateTime is perfect.
   const baseDate = space.dateTime || new Date(); 
-  const dateStringWithTime = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()} ${space.time}`;
+  const dateStringWithTime = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()} ${timeString}`;
   
   // Use toDate to parse the date string within the event's *own* timezone
   const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
@@ -64,23 +64,26 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     return <Card className="flex flex-col h-full bg-muted/50 opacity-70"></Card>;
   }
 
-  // Get the absolute point-in-time for the event
-  const eventDate = getEventDateInTimezone(space);
+  // Get the absolute point-in-time for the event start
+  const eventStartDate = getEventDateInTimezone(space, space.startTime);
+  const eventEndDate = getEventDateInTimezone(space, space.endTime);
   
-  const isEventPast = isPast(eventDate);
+  const isEventPast = isPast(eventStartDate);
 
   let formattedDateTime;
   try {
      formattedDateTime = {
-      day: formatInTimeZone(eventDate, effectiveTimezone, "EEEE"), // Monday, Tuesday, etc.
-      time: formatInTimeZone(eventDate, effectiveTimezone, "h:mm a"),
+      day: formatInTimeZone(eventStartDate, effectiveTimezone, "EEEE"), // Monday, Tuesday, etc.
+      startTime: formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a"),
+      endTime: formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a"),
       timezone: getTimezoneAbbreviation(effectiveTimezone)
     };
   } catch (e) {
     // Fallback in case of an invalid timezone identifier
     formattedDateTime = {
       day: "Invalid Day",
-      time: "Invalid Time",
+      startTime: "Invalid Time",
+      endTime: "Invalid Time",
       timezone: "Error"
     }
   }
@@ -110,7 +113,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       </CardHeader>
       <CardContent className="flex-grow">
         <Alert>
-          <AlertTitle className="text-2xl font-bold">{formattedDateTime.time}</AlertTitle>
+          <AlertTitle className="text-2xl font-bold">{formattedDateTime.startTime} - {formattedDateTime.endTime}</AlertTitle>
           <AlertDescription>
             Timezone: {formattedDateTime.timezone}
           </AlertDescription>

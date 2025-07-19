@@ -48,7 +48,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   
-  // Exclude times from 2:00 AM to 5:00 AM (hours 2, 3, 4, 5)
+  // Exclude times from 2:00 AM to 5:00 AM (hours 2, 3, 4)
   if (hours >= 2 && hours < 5) {
       return null;
   }
@@ -69,7 +69,8 @@ const formSchema = z.object({
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
   }),
-  time: z.string().min(1, { message: "Please select a time." }),
+  startTime: z.string().min(1, { message: "Please select a start time." }),
+  endTime: z.string().min(1, { message: "Please select an end time." }),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
 
@@ -85,7 +86,8 @@ export function CreateSpaceForm() {
       projectUrl: "",
       tag: "",
       daysOfWeek: [],
-      time: "",
+      startTime: "",
+      endTime: "",
       timezone: "UTC",
     },
   });
@@ -97,7 +99,7 @@ export function CreateSpaceForm() {
     }
 
     try {
-      const { name, projectUrl, tag, daysOfWeek, time, timezone } = values;
+      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, timezone } = values;
 
       // Create a separate space document for each selected day
       const creationPromises = daysOfWeek.map(day => {
@@ -106,7 +108,8 @@ export function CreateSpaceForm() {
               projectUrl,
               tag,
               dayOfWeek: parseInt(day, 10),
-              time,
+              startTime,
+              endTime,
               timezone,
               authorName: user.name || "Anonymous",
               createdBy: user.uid,
@@ -238,10 +241,10 @@ export function CreateSpaceForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="time"
+              name="startTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Time</FormLabel>
+                  <FormLabel>Start Time</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -260,29 +263,53 @@ export function CreateSpaceForm() {
                 </FormItem>
               )}
             />
-             <FormField
-                control={form.control}
-                name="timezone"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Timezone</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select the timezone for the time you entered" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {timezones.map(tz => (
-                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+            <FormField
+              control={form.control}
+              name="endTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Time</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a time" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {timeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         </div>
+         <FormField
+            control={form.control}
+            name="timezone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Timezone</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select the timezone for the time you entered" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {timezones.map(tz => (
+                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
         
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? "Creating..." : "Create Space(s)"}

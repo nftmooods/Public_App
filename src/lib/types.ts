@@ -7,7 +7,8 @@ export interface Space {
     projectUrl: string;
     tag: "SPACE" | "STREAM" | "DISCORD VC";
     dayOfWeek: number; // 0 (Sunday) to 6 (Saturday)
-    time: string; // "HH:mm"
+    startTime: string; // "HH:mm"
+    endTime: string; // "HH:mm"
     timezone: string;
     authorName: string;
     createdBy: string;

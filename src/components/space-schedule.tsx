@@ -38,7 +38,7 @@ const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] =>
     if (newSpace.createdAt && typeof newSpace.createdAt.toDate === 'function') {
       newSpace.createdAt = newSpace.createdAt.toDate();
     }
-    // dayOfWeek, time, and timezone are stored directly
+    // dayOfWeek, startTime, endTime and timezone are stored directly
     return newSpace;
   });
 };
@@ -148,7 +148,7 @@ export function SpaceSchedule() {
     // Map raw space data to Space objects with calculated dateTime
     const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
         ...s,
-        dateTime: getUpcomingDateForEvent(s.dayOfWeek, s.time)
+        dateTime: getUpcomingDateForEvent(s.dayOfWeek, s.startTime)
     }));
     
     const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
