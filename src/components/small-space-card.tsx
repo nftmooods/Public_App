@@ -78,7 +78,7 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
           <p className="font-bold text-sm">{formattedTime}</p>
           {space.tag && <Badge variant="secondary" className="scale-75 origin-right">{space.tag}</Badge>}
         </div>
-        <p className="font-semibold leading-tight group-hover:text-primary transition-colors">{space.name}</p>
+        <p className="font-semibold leading-tight transition-colors">{space.name}</p>
         <p className="text-muted-foreground truncate">{space.authorName}</p>
       </div>
     </Link>
