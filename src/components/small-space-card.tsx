@@ -80,17 +80,15 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
   }
 
   return (
-    <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className="block bg-background/50 hover:bg-background/80 transition-colors p-2 rounded-md text-xs group">
+    <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className="block bg-background/50 hover:bg-background/80 transition-colors p-2 rounded-md text-xs group border border-border/20">
       <div className="flex flex-col text-foreground">
         <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
           <p className="font-bold text-sm whitespace-nowrap">{formattedTime}</p>
           {contentPlaceTag && <Badge variant="secondary" className="text-xs">{contentPlaceTag}</Badge>}
         </div>
-        <p className="font-semibold leading-tight transition-colors">{space.name}</p>
+        <p className="font-semibold leading-tight transition-colors text-card-foreground">{space.name}</p>
         <p className="text-muted-foreground truncate">{space.authorName}</p>
       </div>
     </Link>
   );
 }
-
-    
