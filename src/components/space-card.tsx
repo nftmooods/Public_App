@@ -12,6 +12,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { isValid } from "date-fns";
+import { useMemo } from "react";
 
 interface SpaceCardProps {
   space: Space;
@@ -19,6 +20,10 @@ interface SpaceCardProps {
   onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
 }
+
+const contentPlaceTagsValues = ["SPACE", "STREAM", "DISCORD VC"];
+const contentTypeTagsValues = ["ApeChain", "NFT", "DeFi", "Gaming", "Art", "Music"];
+
 
 const getTimezoneAbbreviation = (timezone: string): string => {
     if (!timezone) return "";
@@ -59,6 +64,13 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const { contentPlaceTag, contentTypeTag } = useMemo(() => {
+    const tags = space.tags || [];
+    const contentPlaceTag = tags.find(tag => contentPlaceTagsValues.includes(tag)) || null;
+    const contentTypeTag = tags.find(tag => contentTypeTagsValues.includes(tag)) || null;
+    return { contentPlaceTag, contentTypeTag };
+  }, [space.tags]);
   
   if (!space.dateTime || !isValid(space.dateTime)) {
     return (
@@ -154,19 +166,24 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                  >
                     {formattedDateTime.day}
                 </Badge>
-                <div className="flex flex-col items-end gap-1">
-                    {space.tags && space.tags.map((tag) => <Badge key={tag} variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{tag}</Badge>)}
-                </div>
+                {contentPlaceTag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{contentPlaceTag}</Badge>}
             </div>
         </div>
         <CardDescription className="text-card-foreground/80">by {space.authorName || 'Anonymous'}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <Alert className="bg-background/10 border-border/30 text-card-foreground">
-          <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
-          <AlertDescription className="text-card-foreground/80">
-            Timezone: {formattedDateTime.timezone}
-          </AlertDescription>
+        <Alert className="bg-background/10 border-border/30 text-card-foreground flex flex-col gap-2">
+            <div>
+              <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
+              <AlertDescription className="text-card-foreground/80">
+                Timezone: {formattedDateTime.timezone}
+              </AlertDescription>
+            </div>
+            {contentTypeTag && (
+              <div className="flex gap-2">
+                <Badge variant={"secondary"} className="whitespace-nowrap">{contentTypeTag}</Badge>
+              </div>
+            )}
         </Alert>
       </CardContent>
       <CardFooter className="flex justify-between">
