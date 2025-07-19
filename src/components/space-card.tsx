@@ -32,13 +32,12 @@ const getTimezoneAbbreviation = (timezone: string): string => {
     }
 };
 
-const getEventDateInTimezone = (space: Space, timeString: string): Date => {
+const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
   // 1. Create a date object from the stored time in its native timezone
   const [hours, minutes] = timeString.split(':').map(Number);
   // We need a base date to combine with the time. The dynamically calculated space.dateTime is perfect.
-  const baseDate = space.dateTime || new Date(); 
-  const dateStringWithTime = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()} ${timeString}`;
-  
+  const dateStringWithTime = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00`;
+
   // Use toDate to parse the date string within the event's *own* timezone
   const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
 
@@ -64,14 +63,14 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   }
 
   // Get the absolute point-in-time for the event start
-  const eventStartDate = getEventDateInTimezone(space, space.startTime);
+  const eventStartDate = getEventDateWithTime(space, space.startTime, space.dateTime);
   
   let formattedDateTime;
   try {
      const startTimeFormatted = formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a");
      let endTimeFormatted = '';
      if (space.endTime) {
-        const eventEndDate = getEventDateInTimezone(space, space.endTime);
+        const eventEndDate = getEventDateWithTime(space, space.endTime, space.dateTime);
         endTimeFormatted = formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a");
      }
 
@@ -83,11 +82,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       timezone: getTimezoneAbbreviation(effectiveTimezone)
     };
   } catch (e) {
+    console.error("Error formatting date:", e);
     // Fallback in case of an invalid timezone identifier
     formattedDateTime = {
       day: "Invalid Day",
       startTime: "Invalid Time",
-      endTime: "Invalid Time",
+      endTime: "",
       timeRange: "Invalid Time",
       timezone: "Error"
     }

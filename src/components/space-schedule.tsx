@@ -18,8 +18,9 @@ import {
   isToday, 
   isTomorrow, 
   isSameDay,
-  parse,
-  nextDay
+  nextDay,
+  getDay,
+  isThisWeek
 } from "date-fns";
 
 // Timezone mapping for the select dropdown
@@ -43,10 +44,8 @@ const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] =>
   });
 };
 
-const getUpcomingDateForEvent = (dayOfWeek: number, time: string): Date => {
-    const [hours, minutes] = time.split(':').map(Number);
+const getUpcomingDateForEvent = (dayOfWeek: number): Date => {
     let eventDate = nextDay(new Date(), dayOfWeek);
-    eventDate.setHours(hours, minutes, 0, 0);
     return eventDate;
 };
 
@@ -143,12 +142,11 @@ export function SpaceSchedule() {
   }, []);
 
   const filteredSpaces = useMemo(() => {
-    const today = new Date();
     
     // Map raw space data to Space objects with calculated dateTime
     const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
         ...s,
-        dateTime: getUpcomingDateForEvent(s.dayOfWeek, s.startTime)
+        dateTime: getUpcomingDateForEvent(s.dayOfWeek)
     }));
     
     const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
@@ -158,20 +156,21 @@ export function SpaceSchedule() {
     };
 
     let result: Space[];
+    const today = new Date();
+    const todayDayOfWeek = getDay(today);
 
     switch (filter) {
       case "today":
-        result = spacesToFilter.filter(space => filterByDate(space, isToday));
+        result = spacesToFilter.filter(space => space.dayOfWeek === todayDayOfWeek);
         break;
       case "tomorrow":
-        result = spacesToFilter.filter(space => filterByDate(space, isTomorrow));
+        const tomorrowDayOfWeek = getDay(addDays(today, 1));
+        result = spacesToFilter.filter(space => space.dayOfWeek === tomorrowDayOfWeek);
         break;
       case "week":
-         const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday
-         const endOfThisWeek = addDays(startOfThisWeek, 6); // Sunday
          result = spacesToFilter.filter(space => 
-            filterByDate(space, date => date >= startOfThisWeek && date <= endOfThisWeek)
-        );
+            filterByDate(space, date => isThisWeek(date, { weekStartsOn: 0 }))
+         );
         break;
       default:
         result = spacesToFilter;
@@ -179,7 +178,12 @@ export function SpaceSchedule() {
     }
     
     // Always sort by date
-    return result.sort((a,b) => (a.dateTime?.getTime() ?? 0) - (b.dateTime?.getTime() ?? 0));
+    return result.sort((a,b) => {
+        const dayDiff = a.dayOfWeek - b.dayOfWeek;
+        if (dayDiff !== 0) return dayDiff;
+        // If same day, sort by start time
+        return a.startTime.localeCompare(b.startTime);
+    });
 
   }, [spaces, filter, showFavorites, favorites]);
 
