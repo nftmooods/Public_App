@@ -78,7 +78,7 @@ interface EditSpaceFormProps {
 export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth(); // isAdmin is now SuperAdmin
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,12 +94,14 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     },
   });
 
+  const canEditAuthor = (isAdmin || user?.uid === space.createdBy);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
         toast({ title: "Error", description: "You must be logged in to update a space.", variant: "destructive" });
         return;
     }
-    // A standard user can only edit their own space. An admin can edit any space.
+    // A standard user must be the creator to edit. A SuperAdmin can edit any space.
     if (!isAdmin && user.uid !== space.createdBy) {
          toast({ title: "Error", description: "You don't have permission to perform this action.", variant: "destructive" });
         return;
@@ -115,11 +117,11 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
-          endTime: endTime || deleteField(), // Use deleteField() to remove the field if empty
+          endTime: endTime ? endTime : deleteField(), // Use deleteField() to remove the field if empty
       };
-
-      // Only change author if the name has changed AND the user is an admin
-      if (isAdmin && authorName !== space.authorName) {
+      
+      // The author can be changed IF the user is the current creator OR a super admin
+      if (canEditAuthor && authorName !== space.authorName) {
         const author = await findUserByName(authorName);
         if (!author) {
             form.setError("authorName", {
@@ -130,7 +132,14 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         }
         spaceUpdateData.authorName = author.name;
         spaceUpdateData.createdBy = author.uid;
+      } else if (authorName === space.authorName) {
+        // No change, no need to update author fields
+      } else {
+        // This case should not be reached due to form field being disabled, but as a safeguard:
+        toast({ title: "Error", description: "You do not have permission to change the author.", variant: "destructive" });
+        return;
       }
+
 
       await updateSpace(space.id, spaceUpdateData);
 
@@ -186,10 +195,15 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             <FormItem>
               <FormLabel>Author</FormLabel>
               <FormControl>
-                <Input placeholder="Enter author's name" {...field} disabled={!isAdmin} />
+                <Input placeholder="Enter author's name" {...field} disabled={!canEditAuthor} />
               </FormControl>
                <FormDescription>
-                {isAdmin ? "You can re-assign this event to another user." : "Only admins can change the author."}
+                {isAdmin 
+                    ? "As a SuperAdmin, you can re-assign this event." 
+                    : canEditAuthor 
+                        ? "You can transfer ownership by entering another user's name."
+                        : "Only the current creator or a SuperAdmin can change the author."
+                }
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -252,72 +266,4 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a time" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="endTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End Time (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a time" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {timeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-        </div>
-         <FormField
-            control={form.control}
-            name="timezone"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Timezone</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select the timezone for the time you entered" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {timezones.map(tz => (
-                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Updating..." : "Update Space"}
-        </Button>
-      </form>
-    </Form>
-  );
-}
+                      </T_ALL | T_MOD>
