@@ -10,7 +10,15 @@ export default function Home() {
         <SpaceSchedule />
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground">
-        Created for the ApeChain community
+        Created for the community by build&apos;ON&apos; more on{' '}
+        <a 
+            href="http://buildonapechain.xyz" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="underline hover:text-primary"
+        >
+            buildonapechain.xyz
+        </a>
       </footer>
     </div>
   );
