@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseOptions, } from "firebase/app";
-import { getAuth, updateProfile } from "firebase/auth";
+import { getAuth, updateProfile, deleteUser } from "firebase/auth";
 import { 
   getFirestore, 
   collection, 
@@ -116,6 +116,29 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
 
     await Promise.all(promises);
 };
+
+/**
+ * Deletes a user's account from Firebase Auth and Firestore.
+ */
+export const deleteUserAccount = async () => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("No user is currently signed in.");
+  }
+
+  // Firestore document reference
+  const userDocRef = doc(db, "users", currentUser.uid);
+
+  // Delete Firestore document first
+  await deleteDoc(userDocRef);
+  
+  // Then, delete the user from Firebase Auth
+  await deleteUser(currentUser);
+  
+  // Note: Deleting associated spaces or other user data is not handled here
+  // and would require a more complex cleanup, possibly with a Cloud Function.
+};
+
 
 
 // --- Space Functions ---

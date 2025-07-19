@@ -7,15 +7,27 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { updateEmail } from "firebase/auth";
+import { Trash2Icon } from "lucide-react";
 
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile } from "@/lib/firebase";
+import { updateUserProfile, deleteUserAccount } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { auth } from "@/lib/firebase";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 const formSchema = z.object({
@@ -102,6 +114,29 @@ export function DashboardForm() {
     }
   }
 
+   async function handleDeleteAccount() {
+    if (!user) return;
+    try {
+      await deleteUserAccount();
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+      router.push('/'); // Redirect to home page after deletion
+    } catch (error: any) {
+      console.error("Failed to delete account:", error);
+       let errorMessage = "An unexpected error occurred. Please try again.";
+       if (error.code === 'auth/requires-recent-login') {
+          errorMessage = "This is a sensitive operation. Please log out and log back in before deleting your account."
+      }
+      toast({
+        title: "Deletion Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -136,6 +171,36 @@ export function DashboardForm() {
             {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
       </form>
+       <div className="mt-8 border-t border-destructive/20 pt-6">
+        <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          This action cannot be undone. This will permanently delete your account and all associated data.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="mt-4 w-full sm:w-auto">
+                <Trash2Icon className="mr-2 h-4 w-4" />
+                Delete My Account
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your account,
+                your profile information, and any spaces you have created. Are you sure you
+                want to continue?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
+                Yes, delete my account
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </Form>
   );
 }
