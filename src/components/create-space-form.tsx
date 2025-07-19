@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from '@/lib/types';
-import { timezones } from "@/lib/timezones";
+import { getIANATimezone } from "@/ai/flows/timezone-flow";
 
 
 const daysOfWeek = [
@@ -63,13 +63,14 @@ const formSchema = z.object({
   }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
-  timezone: z.string().min(1, { message: "Please select a timezone." }),
+  city: z.string().min(1, { message: "Please enter a city for the timezone." }),
 });
 
 export function CreateSpaceForm() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,7 +82,7 @@ export function CreateSpaceForm() {
       daysOfWeek: [],
       startTime: "",
       endTime: "",
-      timezone: user?.timezone || "UTC",
+      city: user?.city || "",
     },
   });
 
@@ -93,8 +94,8 @@ export function CreateSpaceForm() {
         form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
       }
     }
-    if (user?.timezone) {
-      form.setValue('timezone', user.timezone);
+    if (user?.city) {
+      form.setValue('city', user.city);
     }
   }, [user, form]);
 
@@ -104,9 +105,17 @@ export function CreateSpaceForm() {
         toast({ title: "Error", description: "You must be logged in to create a space.", variant: "destructive" });
         return;
     }
+    setIsSubmitting(true);
 
     try {
-      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, tag, daysOfWeek, startTime, endTime, city } = values;
+
+      const { timezone } = await getIANATimezone({ city });
+      if (!timezone) {
+          toast({ title: "Invalid City", description: "Could not determine a timezone for the provided city.", variant: "destructive" });
+          setIsSubmitting(false);
+          return;
+      }
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
@@ -140,6 +149,8 @@ export function CreateSpaceForm() {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -302,29 +313,23 @@ export function CreateSpaceForm() {
         </div>
          <FormField
             control={form.control}
-            name="timezone"
+            name="city"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Timezone</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select the timezone for the time you entered" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {timezones.map(tz => (
-                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
+                <FormLabel>City for Timezone</FormLabel>
+                <FormControl>
+                    <Input placeholder="e.g., Paris, Tokyo, New York" {...field} />
+                </FormControl>
+                 <FormDescription>
+                    We'll determine the correct timezone from your city.
+                </FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
             />
         
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating..." : "Create Space(s)"}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Space(s)"}
         </Button>
       </form>
     </Form>

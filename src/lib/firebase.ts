@@ -1,4 +1,3 @@
-
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseOptions, } from "firebase/app";
 import { getAuth, updateProfile, deleteUser } from "firebase/auth";
@@ -76,7 +75,7 @@ export const getUserProfile = async (userId: string) => {
     const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
-      return userDocSnap.data() as { name: string; email: string; timezone?: string };
+      return userDocSnap.data() as { name: string; email: string; timezone?: string; city?: string };
     } else {
       console.log("No such user document!");
       return null;
@@ -91,7 +90,7 @@ export const getUserProfile = async (userId: string) => {
 /**
  * Updates a user's profile in Firestore and Firebase Auth.
  */
-export const updateUserProfile = async (userId: string, updates: { name?: string, timezone?: string }) => {
+export const updateUserProfile = async (userId: string, updates: { name?: string, timezone?: string, city?: string }) => {
     if (!userId) throw new Error("User ID is required to update profile.");
     
     const userDocRef = doc(db, "users", userId);
@@ -104,6 +103,9 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
     }
     if (updates.timezone) {
         firestoreUpdates.timezone = updates.timezone;
+    }
+     if (updates.city) {
+        firestoreUpdates.city = updates.city;
     }
 
     const promises = [];

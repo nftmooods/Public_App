@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { useState } from 'react';
+
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -26,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2Icon } from "lucide-react";
-import { timezones } from "@/lib/timezones";
+import { getIANATimezone } from "@/ai/flows/timezone-flow";
 
 
 const daysOfWeek = [
@@ -71,17 +73,21 @@ const formSchema = z.object({
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
-  timezone: z.string().min(1, { message: "Please select a timezone." }),
+  city: z.string().min(1, { message: "Please enter a city for the timezone." }),
 });
 
 interface EditSpaceFormProps {
     space: Omit<Space, 'dateTime'>;
 }
 
+// A (very) simple cache to avoid re-fetching the city for a timezone
+const timezoneToCityCache = new Map<string, string>();
+
 export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth(); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -93,9 +99,16 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       dayOfWeek: String(space.dayOfWeek),
       startTime: space.startTime || "",
       endTime: space.endTime || "",
-      timezone: space.timezone || "UTC",
+      city: timezoneToCityCache.get(space.timezone) || "", // Prefill from cache or leave empty
     },
   });
+
+    // TODO: A better implementation would be a flow that gets city from timezone.
+    // For now, we'll just show the timezone ID if we don't have a city.
+    if (!form.getValues('city')) {
+        form.setValue('city', space.timezone);
+    }
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -108,8 +121,18 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, timezone } = values;
+      const { name, projectUrl, tag, dayOfWeek, startTime, endTime, city } = values;
+
+      const { timezone } = await getIANATimezone({ city });
+      if (!timezone) {
+          toast({ title: "Invalid City", description: "Could not determine a timezone for the provided city.", variant: "destructive" });
+          setIsSubmitting(false);
+          return;
+      }
+      timezoneToCityCache.set(timezone, city);
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
@@ -136,6 +159,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -300,22 +325,16 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         </div>
          <FormField
             control={form.control}
-            name="timezone"
+            name="city"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Timezone</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select the timezone for the time you entered" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {timezones.map(tz => (
-                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
+                <FormLabel>City for Timezone</FormLabel>
+                 <FormControl>
+                    <Input placeholder="e.g., Paris, Tokyo, New York" {...field} />
+                </FormControl>
+                <FormDescription>
+                    We'll determine the correct timezone from your city.
+                </FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
@@ -324,7 +343,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2 pt-4">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" type="button" className="w-full sm:w-auto" disabled={form.formState.isSubmitting}>
+                <Button variant="destructive" type="button" className="w-full sm:w-auto" disabled={isSubmitting}>
                     <Trash2Icon className="mr-2 h-4 w-4" />
                     Delete Space
                 </Button>
@@ -343,8 +362,8 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button type="submit" className="w-full sm:w-auto mb-2 sm:mb-0" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Updating..." : "Update Space"}
+            <Button type="submit" className="w-full sm:w-auto mb-2 sm:mb-0" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Space"}
             </Button>
         </div>
       </form>
