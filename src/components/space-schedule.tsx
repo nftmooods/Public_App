@@ -19,7 +19,6 @@ import {
   nextDay
 } from "date-fns";
 
-// Timezone mapping for the select dropdown
 const timezones = [
     { value: "UTC", label: "UTC" },
     { value: "America/New_York", label: "EST" },
@@ -29,29 +28,25 @@ const timezones = [
     { value: "Asia/Tokyo", label: "JST" },
 ];
 
-// Utility function to convert Firestore Timestamps to JS Date objects for createdAt
 const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] => {
   return spaces.map(space => {
     const newSpace = { ...space };
     if (newSpace.createdAt && typeof newSpace.createdAt.toDate === 'function') {
       newSpace.createdAt = newSpace.createdAt.toDate();
     }
-    // dayOfWeek, startTime, endTime and timezone are stored directly
     return newSpace;
   });
 };
 
 const getUpcomingDateForEvent = (dayOfWeek: number): Date => {
-    // 0 = Sunday, 1 = Monday, etc.
     const today = new Date();
-    const currentDay = getDay(today); // 0 for Sunday, 1 for Monday...
+    const currentDay = getDay(today);
     const distance = (dayOfWeek - currentDay + 7) % 7;
     const nextEventDate = addDays(today, distance);
     return nextEventDate;
 };
 
 
-// Custom hook for fetching Space data
 const useSpaces = () => {
   const [spaces, setSpaces] = useState<Omit<Space, "dateTime">[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +72,6 @@ const useSpaces = () => {
   return { spaces, loading };
 };
 
-// Custom hook for managing favorites
 const useFavorites = (user: any) => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]);
@@ -129,7 +123,7 @@ const useFavorites = (user: any) => {
 };
 
 export function SpaceSchedule() {
-  const [filter, setFilter] = useState("week");
+  const [filter, setFilter] = useState<"week" | "today" | "tomorrow">("week");
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
@@ -139,10 +133,8 @@ export function SpaceSchedule() {
   const { favorites, toggleFavorite } = useFavorites(user);
   
   useEffect(() => {
-    // Set local timezone on mount
     if (typeof window !== 'undefined') {
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        // Check if the detected timezone is one of our options, otherwise default to UTC
         if (timezones.some(tz => tz.value === detectedTimezone)) {
           setSelectedTimezone(detectedTimezone);
         } else {
@@ -154,7 +146,6 @@ export function SpaceSchedule() {
 
   const filteredSpaces = useMemo(() => {
     
-    // Map raw space data to Space objects with calculated dateTime
     const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
         ...s,
         dateTime: getUpcomingDateForEvent(s.dayOfWeek)
@@ -182,14 +173,12 @@ export function SpaceSchedule() {
         break;
     }
     
-    // Always sort by date
     return result.sort((a,b) => {
-        const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek; // Move Sunday to end of week
+        const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
         const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
         const dayDiff = dayA - dayB;
         if (dayDiff !== 0) return dayDiff;
         
-        // If same day, sort by start time
         return a.startTime.localeCompare(b.startTime);
     });
 
@@ -209,7 +198,7 @@ export function SpaceSchedule() {
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <Tabs value={filter} onValueChange={setFilter}>
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as "week" | "today" | "tomorrow")}>
           <TabsList>
             <TabsTrigger value="week">This Week</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
@@ -263,6 +252,7 @@ export function SpaceSchedule() {
                   isFavorite={favorites.includes(space.id)}
                   onToggleFavorite={() => toggleFavorite(space.id)}
                   displayTimezone={effectiveTimezone}
+                  filter={filter}
                 />
               </motion.div>
             ))

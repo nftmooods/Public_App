@@ -19,6 +19,13 @@ interface SpaceCardProps {
   isFavorite: boolean;
   onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
+  filter: "week" | "today" | "tomorrow";
+}
+
+const filterColors = {
+    week: "bg-blue-900/50 border-blue-400/50 text-blue-300",
+    today: "bg-green-900/50 border-green-400/50 text-green-300",
+    tomorrow: "bg-orange-900/50 border-orange-400/50 text-orange-300",
 }
 
 const getTimezoneAbbreviation = (timezone: string): string => {
@@ -26,17 +33,16 @@ const getTimezoneAbbreviation = (timezone: string): string => {
     try {
         const long = formatInTimeZone(new Date(), timezone, 'z');
         if (["UTC", "GMT"].includes(long)) return long;
-        // Attempt to get a short abbreviation
         const short = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value;
-        return short || long; // Fallback to the long name if short isn't available
+        return short || long;
     } catch {
-        return "Time"; // Fallback for invalid timezone identifiers
+        return "Time";
     }
 };
 
 const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
   if (!timeString || !isValid(baseDate)) {
-      return new Date(NaN); // Return an invalid date
+      return new Date(NaN);
   }
   
   const [hours, minutes] = timeString.split(':').map(Number);
@@ -48,7 +54,6 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 
   try {
     const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
-    // Final check to ensure the created date is valid
     if (!isValid(eventDateInOriginalTz)) {
         throw new Error("toDate resulted in an invalid date");
     }
@@ -59,7 +64,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
   }
 }
 
-export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
+export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone, filter }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -83,7 +88,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     );
   }
 
-  // Get the absolute point-in-time for the event start
   const eventStartDate = getEventDateWithTime(space, space.startTime, space.dateTime);
   
   if (!isValid(eventStartDate)) {
@@ -118,7 +122,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
      }
 
      formattedDateTime = {
-      day: formatInTimeZone(eventStartDate, displayTimezone, "EEEE"), // Monday, Tuesday, etc.
+      day: formatInTimeZone(eventStartDate, displayTimezone, "EEEE"),
       startTime: startTimeFormatted,
       endTime: endTimeFormatted,
       timeRange: endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted,
@@ -126,7 +130,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     };
   } catch (e) {
     console.error("Error formatting date:", e);
-    // Fallback in case of an invalid timezone identifier
     formattedDateTime = {
       day: "Invalid Day",
       startTime: "Invalid Time",
@@ -146,6 +149,8 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   };
 
   const canEdit = user && user.uid === space.createdBy;
+  const dayBadgeColorClass = filterColors[filter] || filterColors.week;
+
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
@@ -153,7 +158,10 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
             <div className="flex flex-col items-end gap-2">
-                 <Badge variant={"outline"} className="whitespace-nowrap flex-shrink-0 text-card-foreground border-card-foreground/30">
+                 <Badge 
+                    variant={"outline"} 
+                    className={`whitespace-nowrap flex-shrink-0 ${dayBadgeColorClass}`}
+                 >
                     {formattedDateTime.day}
                 </Badge>
                 {space.tag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{space.tag}</Badge>}
