@@ -87,7 +87,6 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
           {contentPlaceTag && <Badge variant="secondary" className="text-xs">{contentPlaceTag}</Badge>}
         </div>
         <p className="font-semibold leading-tight transition-colors text-card-foreground">{space.name}</p>
-        <p className="text-muted-foreground truncate">{space.authorName}</p>
       </div>
     </Link>
   );
