@@ -86,6 +86,37 @@ export const getUserProfile = async (userId: string) => {
 
 // --- Space Functions ---
 
+// Get a single space by its ID
+export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime"> | null> => {
+    try {
+        const spaceDocRef = doc(db, "spaces", spaceId);
+        const spaceDocSnap = await getDoc(spaceDocRef);
+
+        if (spaceDocSnap.exists()) {
+            const data = spaceDocSnap.data();
+            return {
+                id: spaceDocSnap.id,
+                name: data.name,
+                projectUrl: data.projectUrl,
+                tag: data.tag,
+                dayOfWeek: data.dayOfWeek,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                timezone: data.timezone,
+                authorName: data.authorName,
+                createdBy: data.createdBy,
+                createdAt: (data.createdAt as Timestamp).toDate(),
+            } as Omit<Space, "dateTime">;
+        } else {
+            console.log("No such space document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting space:", error);
+        return null;
+    }
+};
+
 // Get all spaces
 export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
     const spacesCol = collection(db, "spaces");
@@ -123,7 +154,7 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
 };
 
 // Update a space
-export const updateSpace = async (spaceId: string, updatedData: Partial<Space>) => {
+export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Space, 'id' | 'createdAt' | 'dateTime'>>) => {
   const spaceDoc = doc(db, "spaces", spaceId);
   await updateDoc(spaceDoc, updatedData);
 };

@@ -5,12 +5,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLinkIcon, HeartIcon, Share2Icon } from "lucide-react";
+import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon } from "lucide-react";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface SpaceCardProps {
   space: Space;
@@ -101,6 +102,8 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     });
   };
 
+  const canEdit = user && user.uid === space.createdBy;
+
   return (
     <Card className={`flex flex-col h-full transition-all duration-300 bg-card`}>
       <CardHeader>
@@ -137,6 +140,13 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share space">
                 <Share2Icon className="w-5 h-5" />
             </Button>
+            {canEdit && (
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href={`/edit-space/${space.id}`} aria-label="Edit space">
+                        <PencilIcon className="w-5 h-5" />
+                    </Link>
+                </Button>
+            )}
         </div>
         <Button asChild>
           <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
