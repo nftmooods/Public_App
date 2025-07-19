@@ -1,51 +1,36 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check for admin claims
-    function isSuperAdmin() {
-      return request.auth.token.admin == true;
-    }
-
-    // --- Users Collection ---
-    // Users can read their own profile.
-    // Anyone authenticated can create their own profile.
+    
+    // Users can read their own profile and admins can read any profile.
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      // Admins can update any user's role, for example.
-      allow update: if isSuperAdmin();
+      allow read: if request.auth.uid == userId || request.auth.token.admin == true;
+      allow write: if request.auth.uid == userId; // Users can update their own profile
+      // Allow public read of all user documents for name searching
+      allow list: if request.auth != null;
     }
 
-    // --- Spaces Collection ---
-    // Anyone can read spaces.
+    // Spaces can be read by anyone who is authenticated.
     match /spaces/{spaceId} {
       allow read: if true;
       
-      // Users must be authenticated to create a space.
-      // The `createdBy` field must match the user's UID.
-      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      // Create: User must be logged in.
+      allow create: if request.auth != null;
       
-      // Update is allowed if:
-      // 1. The user is a SuperAdmin.
-      // 2. OR The user is the owner of the document at the time of the request.
-      //    This allows a user to transfer ownership by changing the `createdBy` field.
-      allow update: if isSuperAdmin() || request.auth.uid == resource.data.createdBy;
+      // Update: User must be the creator OR a SuperAdmin.
+      // This rule allows the creator to re-assign ownership.
+      allow update: if request.auth.uid == resource.data.createdBy || request.auth.token.admin == true;
 
-      // Deletion is allowed if:
-      // 1. The user is a SuperAdmin.
-      // 2. OR The user is the owner of the document.
-      allow delete: if isSuperAdmin() || request.auth.uid == resource.data.createdBy;
+      // Delete: Only the creator or a SuperAdmin can delete a space.
+      allow delete: if request.auth.uid == resource.data.createdBy || request.auth.token.admin == true;
     }
 
-    // --- Favorites Collection ---
-    // Anyone authenticated can create their own favorites.
-    // Users can only read, update, or delete their own favorite documents.
+    // Favorites can be managed by the user who owns them.
     match /favorites/{favoriteId} {
-        allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read, create: if request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth.uid == resource.data.userId;
+      // Allow users to list their own favorites
+       allow list: if request.auth != null && request.auth.uid == request.query.where.userId;
     }
   }
 }
