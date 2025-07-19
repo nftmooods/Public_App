@@ -8,8 +8,8 @@ body {
 
 @layer base {
   :root {
-    --background: 221 100% 12%; /* Darker GN Blue */
-    --background-end: 221 100% 20%; /* Darker variant for gradient */
+    --background: 221 100% 7%; /* Even Darker GN Blue */
+    --background-end: 221 100% 15%; /* Darker variant for gradient */
     --foreground: 210 40% 98%;
     --card: 210 100% 95%; /* GM Blue */
     --card-foreground: 221 100% 27%; /* GN Blue */
@@ -37,8 +37,8 @@ body {
   }
 
   .dark {
-    --background: 221 100% 12%; /* Darker GN Blue */
-    --background-end: 221 100% 20%; /* Darker variant for gradient */
+    --background: 221 100% 7%; /* Even Darker GN Blue */
+    --background-end: 221 100% 15%; /* Darker variant for gradient */
     --foreground: 210 40% 98%;
     --card: 210 100% 95%; /* GM Blue */
     --card-foreground: 221 100% 27%; /* GN Blue */
