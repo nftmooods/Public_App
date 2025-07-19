@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, deleteUserAccount } from "@/lib/firebase";
+import { updateUserProfile, deleteUserAccount, updateUserSpacesAuthorName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { auth } from "@/lib/firebase";
 import {
@@ -66,19 +66,17 @@ export function DashboardForm() {
 
     const { name, email } = values;
     const promises = [];
-    let profileUpdated = false;
-    let emailUpdated = false;
+    let nameChanged = false;
 
     // --- Update Name ---
     if (name !== user.name) {
         promises.push(updateUserProfile(user.uid, { name }));
-        profileUpdated = true;
+        nameChanged = true;
     }
 
     // --- Update Email ---
     if (email !== user.email) {
        promises.push(updateEmail(auth.currentUser, email));
-       emailUpdated = true;
     }
     
     if (promises.length === 0) {
@@ -88,6 +86,11 @@ export function DashboardForm() {
 
     try {
       await Promise.all(promises);
+
+      // If name was changed, update all their spaces
+      if (nameChanged) {
+          await updateUserSpacesAuthorName(user.uid, name);
+      }
       
       toast({
         title: "Profile Updated!",

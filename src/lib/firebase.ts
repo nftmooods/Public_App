@@ -19,6 +19,7 @@ import {
   QueryDocumentSnapshot,
   orderBy,
   Timestamp,
+  writeBatch,
   limit
 } from "firebase/firestore";
 import type { Space, User } from "./types";
@@ -116,6 +117,32 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
 
     await Promise.all(promises);
 };
+
+/**
+ * Updates the authorName on all spaces created by a specific user.
+ */
+export const updateUserSpacesAuthorName = async (userId: string, newName: string) => {
+    if (!userId || !newName) return;
+    
+    const spacesRef = collection(db, "spaces");
+    const q = query(spacesRef, where("createdBy", "==", userId));
+    
+    try {
+        const querySnapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        
+        querySnapshot.forEach((docSnap) => {
+            batch.update(docSnap.ref, { authorName: newName });
+        });
+        
+        await batch.commit();
+        console.log(`Successfully updated authorName to "${newName}" for user ${userId} on ${querySnapshot.size} spaces.`);
+    } catch (error) {
+        console.error("Error updating authorName on spaces: ", error);
+        // We don't re-throw here to avoid breaking the UI flow, but we log it.
+    }
+};
+
 
 /**
  * Deletes a user's account from Firebase Auth and Firestore.
