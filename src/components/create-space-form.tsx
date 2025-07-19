@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -26,14 +27,14 @@ const timezones = [
 ];
 
 const daysOfWeek = [
-    { value: "1", label: "Monday" },
-    { value: "2", label: "Tuesday" },
-    { value: "3", label: "Wednesday" },
-    { value: "4", label: "Thursday" },
-    { value: "5", label: "Friday" },
-    { value: "6", label: "Saturday" },
-    { value: "0", label: "Sunday" },
-]
+    { id: '1', label: "Monday" },
+    { id: '2', label: "Tuesday" },
+    { id: '3', label: "Wednesday" },
+    { id: '4', label: "Thursday" },
+    { id: '5', label: "Friday" },
+    { id: '6', label: "Saturday" },
+    { id: '0', label: "Sunday" },
+];
 
 const eventTags = [
     { value: "SPACE", label: "SPACE" },
@@ -41,25 +42,33 @@ const eventTags = [
     { value: "DISCORD VC", label: "DISCORD VC" },
 ];
 
-
-// Generate time options for every 30 minutes in AM/PM format
+// Generate time options for every 30 minutes in AM/PM format, excluding 2:00 AM to 5:00 AM
 const timeOptions = Array.from({ length: 48 }, (_, i) => {
   const totalMinutes = i * 30;
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+  
+  // Exclude times from 2:00 AM to 5:00 AM (hours 2, 3, 4, 5)
+  if (hours >= 2 && hours < 5) {
+      return null;
+  }
+
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 === 0 ? 12 : hours % 12;
   const displayMinutes = minutes.toString().padStart(2, '0');
   const timeValue = `${hours.toString().padStart(2, '0')}:${displayMinutes}`;
   const timeLabel = `${displayHours}:${displayMinutes} ${period}`;
   return { value: timeValue, label: timeLabel };
-});
+}).filter(Boolean) as { value: string; label: string }[];
+
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   tag: z.string().min(1, { message: "Please select a tag." }),
-  dayOfWeek: z.string().min(1, { message: "Please select a day." }),
+  daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one day.",
+  }),
   time: z.string().min(1, { message: "Please select a time." }),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
@@ -75,7 +84,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       tag: "",
-      dayOfWeek: "",
+      daysOfWeek: [],
       time: "",
       timezone: "UTC",
     },
@@ -88,24 +97,28 @@ export function CreateSpaceForm() {
     }
 
     try {
-      const { name, projectUrl, tag, dayOfWeek, time, timezone } = values;
-      
-      const spaceData = {
-          name,
-          projectUrl,
-          tag,
-          dayOfWeek: parseInt(dayOfWeek, 10),
-          time,
-          timezone,
-          authorName: user.name || "Anonymous",
-          createdBy: user.uid,
-      };
+      const { name, projectUrl, tag, daysOfWeek, time, timezone } = values;
 
-      await addSpace(spaceData as any);
+      // Create a separate space document for each selected day
+      const creationPromises = daysOfWeek.map(day => {
+          const spaceData = {
+              name,
+              projectUrl,
+              tag,
+              dayOfWeek: parseInt(day, 10),
+              time,
+              timezone,
+              authorName: user.name || "Anonymous",
+              createdBy: user.uid,
+          };
+          return addSpace(spaceData as any);
+      });
+
+      await Promise.all(creationPromises);
 
       toast({
-        title: "Space Created!",
-        description: "Your event has been added to the weekly schedule.",
+        title: "Space(s) Created!",
+        description: `Your event(s) have been added to the weekly schedule for the selected days.`,
       });
       router.push("/");
       
@@ -170,29 +183,59 @@ export function CreateSpaceForm() {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
+        
+        <FormField
             control={form.control}
-            name="dayOfWeek"
-            render={({ field }) => (
+            name="daysOfWeek"
+            render={() => (
                 <FormItem>
-                <FormLabel>Day of the Week</FormLabel>
-                 <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a day" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {daysOfWeek.map(day => (
-                        <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
+                <div className="mb-4">
+                    <FormLabel className="text-base">Day(s) of the Week</FormLabel>
+                    <FormDescription>
+                    Select one or more days for your recurring event.
+                    </FormDescription>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {daysOfWeek.map((item) => (
+                    <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="daysOfWeek"
+                        render={({ field }) => {
+                        return (
+                            <FormItem
+                            key={item.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                            <FormControl>
+                                <Checkbox
+                                checked={field.value?.includes(item.id)}
+                                onCheckedChange={(checked) => {
+                                    return checked
+                                    ? field.onChange([...field.value, item.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                        (value) => value !== item.id
+                                        )
+                                    )
+                                }}
+                                />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                                {item.label}
+                            </FormLabel>
+                            </FormItem>
+                        )
+                        }}
+                    />
                     ))}
-                    </SelectContent>
-                </Select>
+                </div>
                 <FormMessage />
                 </FormItem>
             )}
             />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="time"
@@ -217,32 +260,32 @@ export function CreateSpaceForm() {
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="timezone"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Timezone</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select the timezone for the time you entered" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {timezones.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
         </div>
-         <FormField
-            control={form.control}
-            name="timezone"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Timezone of Input</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select the timezone for the time you entered" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {timezones.map(tz => (
-                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-                 <FormDescription>Select the timezone in which you entered the time above.</FormDescription>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+        
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating..." : "Create Space"}
+            {form.formState.isSubmitting ? "Creating..." : "Create Space(s)"}
         </Button>
       </form>
     </Form>
