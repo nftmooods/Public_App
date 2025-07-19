@@ -70,7 +70,7 @@ const formSchema = z.object({
     message: "You have to select at least one day.",
   }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
-  endTime: z.string().min(1, { message: "Please select an end time." }),
+  endTime: z.string().optional(),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
 
@@ -103,18 +103,20 @@ export function CreateSpaceForm() {
 
       // Create a separate space document for each selected day
       const creationPromises = daysOfWeek.map(day => {
-          const spaceData = {
+          const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
               name,
               projectUrl,
-              tag,
+              tag: tag as "SPACE" | "STREAM" | "DISCORD VC",
               dayOfWeek: parseInt(day, 10),
               startTime,
-              endTime,
               timezone,
               authorName: user.name || "Anonymous",
               createdBy: user.uid,
           };
-          return addSpace(spaceData as any);
+          if (endTime) {
+            spaceData.endTime = endTime;
+          }
+          return addSpace(spaceData);
       });
 
       await Promise.all(creationPromises);
@@ -268,7 +270,7 @@ export function CreateSpaceForm() {
               name="endTime"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>End Time</FormLabel>
+                  <FormLabel>End Time (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>

@@ -8,11 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLinkIcon, HeartIcon, Share2Icon } from "lucide-react";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
-import { format, isPast, parse } from 'date-fns';
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { utcToZonedTime } from 'date-fns-tz';
 
 interface SpaceCardProps {
   space: Space;
@@ -66,16 +64,21 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
 
   // Get the absolute point-in-time for the event start
   const eventStartDate = getEventDateInTimezone(space, space.startTime);
-  const eventEndDate = getEventDateInTimezone(space, space.endTime);
   
-  const isEventPast = isPast(eventStartDate);
-
   let formattedDateTime;
   try {
+     const startTimeFormatted = formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a");
+     let endTimeFormatted = '';
+     if (space.endTime) {
+        const eventEndDate = getEventDateInTimezone(space, space.endTime);
+        endTimeFormatted = formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a");
+     }
+
      formattedDateTime = {
       day: formatInTimeZone(eventStartDate, effectiveTimezone, "EEEE"), // Monday, Tuesday, etc.
-      startTime: formatInTimeZone(eventStartDate, effectiveTimezone, "h:mm a"),
-      endTime: formatInTimeZone(eventEndDate, effectiveTimezone, "h:mm a"),
+      startTime: startTimeFormatted,
+      endTime: endTimeFormatted,
+      timeRange: endTimeFormatted ? `${startTimeFormatted} - ${endTimeFormatted}` : startTimeFormatted,
       timezone: getTimezoneAbbreviation(effectiveTimezone)
     };
   } catch (e) {
@@ -84,6 +87,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       day: "Invalid Day",
       startTime: "Invalid Time",
       endTime: "Invalid Time",
+      timeRange: "Invalid Time",
       timezone: "Error"
     }
   }
@@ -113,7 +117,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       </CardHeader>
       <CardContent className="flex-grow">
         <Alert>
-          <AlertTitle className="text-2xl font-bold">{formattedDateTime.startTime} - {formattedDateTime.endTime}</AlertTitle>
+          <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
           <AlertDescription>
             Timezone: {formattedDateTime.timezone}
           </AlertDescription>
