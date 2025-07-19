@@ -37,12 +37,12 @@ const contentPlaceTags = [
 ];
 
 const contentTypeTags = [
-    { value: "ApeChain", label: "ApeChain" },
-    { value: "NFT", label: "NFT" },
-    { value: "DeFi", label: "DeFi" },
-    { value: "Gaming", label: "Gaming" },
-    { value: "Art", label: "Art" },
-    { value: "Music", label: "Music" },
+    { id: "ApeChain", label: "ApeChain" },
+    { id: "NFT", label: "NFT" },
+    { id: "DeFi", label: "DeFi" },
+    { id: "Gaming", label: "Gaming" },
+    { id: "Art", label: "Art" },
+    { id: "Music", label: "Music" },
 ];
 
 const timeOptions = Array.from({ length: 48 }, (_, i) => {
@@ -67,7 +67,9 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
   contentPlace: z.string({ required_error: "You must select a content place." }),
-  contentType: z.string({ required_error: "You must select a content type." }),
+  contentType: z.array(z.string())
+    .refine((value) => value.length >= 1, { message: "You have to select at least one content type." })
+    .refine((value) => value.length <= 2, { message: "You can select a maximum of two content types." }),
   daysOfWeek: z.array(z.string()).refine((value) => value.some((item) => item), {
     message: "You have to select at least one day.",
   }),
@@ -88,7 +90,7 @@ export function CreateSpaceForm() {
       name: "",
       projectUrl: "",
       contentPlace: "SPACE",
-      contentType: "ApeChain",
+      contentType: ["ApeChain"],
       daysOfWeek: [],
       startTime: "",
       endTime: "",
@@ -118,7 +120,7 @@ export function CreateSpaceForm() {
 
     try {
       const { name, projectUrl, daysOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
-      const tags = [contentPlace, contentType];
+      const tags = [contentPlace, ...contentType];
 
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
@@ -218,25 +220,44 @@ export function CreateSpaceForm() {
             <FormField
               control={form.control}
               name="contentType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Content Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-wrap gap-x-4 gap-y-2"
-                    >
-                      {contentTypeTags.map((tag) => (
-                        <FormItem key={tag.value} className="flex items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <RadioGroupItem value={tag.value} />
-                          </FormControl>
-                          <FormLabel className="font-normal">{tag.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
+              render={() => (
+                <FormItem>
+                    <FormLabel>Content Type</FormLabel>
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {contentTypeTags.map((item) => (
+                      <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="contentType"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={item.id}
+                              className="flex flex-row items-start space-x-2 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item.id)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...field.value, item.id])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item.id
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item.label}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

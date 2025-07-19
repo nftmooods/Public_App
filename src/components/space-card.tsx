@@ -65,11 +65,11 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const { contentPlaceTag, contentTypeTag } = useMemo(() => {
+  const { contentPlaceTag, contentTypeTags } = useMemo(() => {
     const tags = space.tags || [];
     const contentPlaceTag = tags.find(tag => contentPlaceTagsValues.includes(tag)) || null;
-    const contentTypeTag = tags.find(tag => contentTypeTagsValues.includes(tag)) || null;
-    return { contentPlaceTag, contentTypeTag };
+    const contentTypeTags = tags.filter(tag => contentTypeTagsValues.includes(tag));
+    return { contentPlaceTag, contentTypeTags };
   }, [space.tags]);
   
   if (!space.dateTime || !isValid(space.dateTime)) {
@@ -179,9 +179,11 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 Timezone: {formattedDateTime.timezone}
               </AlertDescription>
             </div>
-            {contentTypeTag && (
-              <div>
-                <Badge variant={"secondary"} className="whitespace-nowrap">{contentTypeTag}</Badge>
+            {contentTypeTags.length > 0 && (
+              <div className="flex flex-col items-end gap-1">
+                {contentTypeTags.map(tag => (
+                    <Badge key={tag} variant={"secondary"} className="whitespace-nowrap">{tag}</Badge>
+                ))}
               </div>
             )}
         </Alert>
