@@ -104,9 +104,12 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const { initialContentPlace, initialContentType } = useMemo(() => {
     const contentPlaceValues = contentPlaceTags.map(t => t.value);
     const contentTypeValues = contentTypeTags.map(t => t.value);
+    
+    // Defensive check to ensure space.tags exists
+    const tags = space.tags || [];
 
-    const initialContentPlace = space.tags.find(tag => contentPlaceValues.includes(tag)) || "SPACE";
-    const initialContentType = space.tags.filter(tag => contentTypeValues.includes(tag));
+    const initialContentPlace = tags.find(tag => contentPlaceValues.includes(tag)) || "SPACE";
+    const initialContentType = tags.filter(tag => contentTypeValues.includes(tag));
     
     if (initialContentType.length === 0) {
         initialContentType.push("ApeChain");
