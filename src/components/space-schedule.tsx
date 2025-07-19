@@ -135,6 +135,7 @@ const useFavorites = (user: any) => {
 export function SpaceSchedule() {
   const [filter, setFilter] = useState<"week" | "today" | "tomorrow" | "full">("week");
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showMySpaces, setShowMySpaces] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile();
@@ -162,6 +163,20 @@ export function SpaceSchedule() {
         setFilter('week');
     }
   }, [isMobile, filter]);
+  
+  const handleShowFavoritesChange = (checked: boolean) => {
+    setShowFavorites(checked);
+    if (checked) {
+      setShowMySpaces(false);
+    }
+  };
+
+  const handleShowMySpacesChange = (checked: boolean) => {
+    setShowMySpaces(checked);
+    if (checked) {
+      setShowFavorites(false);
+    }
+  };
 
   const filteredSpaces = useMemo(() => {
     
@@ -171,7 +186,13 @@ export function SpaceSchedule() {
         dayColor: dayColors[s.dayOfWeek] || "#718096"
     }));
     
-    const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
+    let spacesToFilter = spacesWithCalculatedDates;
+    
+    if (showFavorites) {
+        spacesToFilter = spacesWithCalculatedDates.filter(space => favorites.includes(space.id));
+    } else if (showMySpaces && user) {
+        spacesToFilter = spacesWithCalculatedDates.filter(space => space.createdBy === user.uid);
+    }
 
     let result: Space[];
     const today = new Date();
@@ -205,7 +226,7 @@ export function SpaceSchedule() {
         return a.startTime.localeCompare(b.startTime);
     });
 
-  }, [spaces, filter, showFavorites, favorites]);
+  }, [spaces, filter, showFavorites, showMySpaces, favorites, user]);
   
   const effectiveTimezone = isMounted ? selectedTimezone : "UTC";
 
@@ -281,12 +302,24 @@ export function SpaceSchedule() {
             <Switch
               id="favorites-only"
               checked={showFavorites}
-              onCheckedChange={setShowFavorites}
+              onCheckedChange={handleShowFavoritesChange}
               aria-label="Show favorites only"
               disabled={!user}
             />
             <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
               Favorites only { !user && "(Login required)"}
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="my-spaces-only"
+              checked={showMySpaces}
+              onCheckedChange={handleShowMySpacesChange}
+              aria-label="Show my spaces only"
+              disabled={!user}
+            />
+            <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
+              My Spaces { !user && "(Login required)"}
             </Label>
           </div>
           <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
