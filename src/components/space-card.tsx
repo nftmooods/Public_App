@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon } from "lucide-react";
+import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon, AlertCircle } from "lucide-react";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { isValid } from "date-fns";
 
 interface SpaceCardProps {
   space: Space;
@@ -36,7 +37,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
   // 1. Create a date object from the stored time in its native timezone
   const [hours, minutes] = timeString.split(':').map(Number);
   // We need a base date to combine with the time. The dynamically calculated space.dateTime is perfect.
-  const dateStringWithTime = `${baseDate.getFullYear()}-${baseDate.getMonth() + 1}-${baseDate.getDate()}T${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00`;
+  const dateStringWithTime = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}-${String(baseDate.getDate()).padStart(2, '0')}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:00`;
 
   // Use toDate to parse the date string within the event's *own* timezone
   const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
@@ -57,9 +58,24 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     }
   }, [displayTimezone]);
   
-  if (!space.dateTime) {
-    // This can happen briefly while data is loading. Render a placeholder.
-    return <Card className="flex flex-col h-full bg-muted/50 opacity-70"></Card>;
+  if (!space.dateTime || !isValid(space.dateTime)) {
+    return (
+        <Card className="flex flex-col h-full bg-destructive/10 border-destructive/50">
+            <CardHeader>
+                <CardTitle className="font-headline text-lg text-destructive">{space.name || "Event Error"}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Invalid Date</AlertTitle>
+                    <AlertDescription>
+                        There was a problem calculating the date for this event.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+             <CardFooter></CardFooter>
+        </Card>
+    );
   }
 
   // Get the absolute point-in-time for the event start
