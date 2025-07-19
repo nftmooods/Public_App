@@ -131,9 +131,6 @@ export function SpaceSchedule() {
   
   useEffect(() => {
     setIsMounted(true);
-    // Detect user's timezone on the client-side
-    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setSelectedTimezone(detectedTimezone);
   }, []);
 
   const filteredSpaces = useMemo(() => {

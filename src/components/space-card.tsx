@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExternalLinkIcon, HeartIcon, Share2Icon } from "lucide-react";
 import type { Space } from "@/lib/types";
-import { format as formatTZ, toDate } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 import { format, isPast } from 'date-fns';
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
 
 interface SpaceCardProps {
   space: Space;
@@ -19,31 +21,53 @@ interface SpaceCardProps {
 }
 
 const getTimezoneAbbreviation = (timezone: string): string => {
+    if (!timezone || timezone === 'local') return "Local";
     try {
-        const long = formatTZ(new Date(), 'z', { timeZone: timezone });
+        const long = formatInTimeZone(new Date(), timezone, 'z');
         if (["UTC", "GMT"].includes(long)) return long;
-        const short = long.split(" ").map(word => word[0]).join("");
-        return short || "TZ";
+        // Attempt to create a more common abbreviation
+        const short = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value;
+        return short || long;
     } catch {
-        return "Time";
+        return "Time"; // Fallback
     }
 };
 
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [effectiveTimezone, setEffectiveTimezone] = useState(displayTimezone);
+
+  useEffect(() => {
+    if (displayTimezone === 'local') {
+      // Set the actual local timezone once the component has mounted on the client
+      setEffectiveTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } else {
+      setEffectiveTimezone(displayTimezone);
+    }
+  }, [displayTimezone]);
   
-  // Assurez-vous que space.dateTime est un objet Date
-  const eventDate = typeof space.dateTime === 'string' ? new Date(space.dateTime) : space.dateTime;
+  // Ensure space.dateTime is a valid Date object
+  const eventDate = space.dateTime instanceof Date ? space.dateTime : new Date(space.dateTime);
   const isEventPast = isPast(eventDate);
 
-  const formattedDateTime = {
+  // Use a try-catch block for robust date formatting
+  let formattedDateTime;
+  try {
+     formattedDateTime = {
+      date: formatInTimeZone(eventDate, effectiveTimezone, "MMMM d, yyyy"),
+      time: formatInTimeZone(eventDate, effectiveTimezone, "h:mm a"),
+      timezone: getTimezoneAbbreviation(effectiveTimezone)
+    };
+  } catch (e) {
+    // Fallback in case of an invalid timezone identifier
+    formattedDateTime = {
       date: format(eventDate, "MMMM d, yyyy"),
-      time: displayTimezone === 'local' 
-        ? format(eventDate, "h:mm a")
-        : formatTZ(eventDate, "h:mm a", { timeZone: displayTimezone }),
-      timezone: displayTimezone === 'local' ? "Local" : getTimezoneAbbreviation(displayTimezone)
-  };
+      time: format(eventDate, "h:mm a"),
+      timezone: "Local"
+    }
+  }
+
 
   const handleShare = () => {
     const shareUrl = `${window.location.origin}/space/${space.id}`;
