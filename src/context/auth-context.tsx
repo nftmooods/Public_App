@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { auth, getUserProfile } from '@/lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  forceReload: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,35 +20,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-        if (firebaseUser) {
-            // User is signed in
-            const userProfile = await getUserProfile(firebaseUser.uid);
-            const tokenResult = await firebaseUser.getIdTokenResult();
-            const isAdminClaim = !!tokenResult.claims.admin;
+  const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
+     if (firebaseUser) {
+        // User is signed in
+        const userProfile = await getUserProfile(firebaseUser.uid);
+        // Force refresh of the token to get the latest claims
+        const tokenResult = await firebaseUser.getIdTokenResult(true);
+        const isAdminClaim = !!tokenResult.claims.admin;
 
-            setIsAdmin(isAdminClaim);
-            setUser({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                name: userProfile?.name || firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
-                isAdmin: isAdminClaim,
-            });
-        } else {
-            // User is signed out
-            setUser(null);
-            setIsAdmin(false);
-        }
-        setLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+        setIsAdmin(isAdminClaim);
+        setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: userProfile?.name || firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            isAdmin: isAdminClaim,
+        });
+    } else {
+        // User is signed out
+        setUser(null);
+        setIsAdmin(false);
+    }
+    setLoading(false);
   }, []);
 
-  const value = { user, loading, isAdmin };
+  const forceReload = useCallback(async () => {
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+        setLoading(true);
+        await fetchUser(firebaseUser);
+    }
+  }, [fetchUser]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, fetchUser);
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [fetchUser]);
+
+  const value = { user, loading, isAdmin, forceReload };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

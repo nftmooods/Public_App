@@ -1,7 +1,7 @@
 
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps, getApp, FirebaseOptions, } from "firebase/app";
+import { getAuth, updateProfile } from "firebase/auth";
 import { 
   getFirestore, 
   collection, 
@@ -55,6 +55,7 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
         try {
             await setDoc(userDocRef, {
                 name: name,
+                name_lowercase: name.toLowerCase(),
                 email,
                 createdAt: serverTimestamp(),
             });
@@ -83,6 +84,37 @@ export const getUserProfile = async (userId: string) => {
       console.error("Error getting user profile:", error);
       return null;
   }
+};
+
+
+/**
+ * Updates a user's profile in Firestore and Firebase Auth.
+ */
+export const updateUserProfile = async (userId: string, updates: { name?: string }) => {
+    if (!userId) throw new Error("User ID is required to update profile.");
+    
+    const userDocRef = doc(db, "users", userId);
+    const authUser = auth.currentUser;
+
+    const firestoreUpdates: { [key: string]: any } = {};
+    if (updates.name) {
+        firestoreUpdates.name = updates.name;
+        firestoreUpdates.name_lowercase = updates.name.toLowerCase();
+    }
+
+    const promises = [];
+
+    // Update Firestore document
+    if (Object.keys(firestoreUpdates).length > 0) {
+        promises.push(updateDoc(userDocRef, firestoreUpdates));
+    }
+
+    // Update Firebase Auth profile
+    if (authUser && updates.name) {
+        promises.push(updateProfile(authUser, { displayName: updates.name }));
+    }
+
+    await Promise.all(promises);
 };
 
 

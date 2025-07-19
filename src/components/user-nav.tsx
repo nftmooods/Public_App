@@ -1,3 +1,4 @@
+
 "use client";
 
 import { signOut } from "firebase/auth";
@@ -10,10 +11,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 
@@ -68,6 +70,15 @@ export function UserNav() {
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+           <DropdownMenuItem asChild>
+             <Link href="/dashboard">
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Mon Compte</span>
+             </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
