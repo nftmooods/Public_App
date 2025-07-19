@@ -66,7 +66,6 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
-  authorName: z.string(), // This is now read-only, populated from auth context
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string()).refine((value) => value.length > 0, {
     message: "You have to select at least one content type.",
@@ -90,7 +89,6 @@ export function CreateSpaceForm() {
     defaultValues: {
       name: "",
       projectUrl: "",
-      authorName: user?.name || "",
       contentPlace: "SPACE",
       contentType: ["ApeChain"],
       daysOfWeek: [],
@@ -102,7 +100,6 @@ export function CreateSpaceForm() {
 
   useEffect(() => {
     if (user?.name) {
-      form.setValue('authorName', user.name);
       if (!form.getValues('projectUrl')) {
         const urlFriendlyName = user.name.replace(/\s+/g, '').replace(/[^\w-]/g, '');
         form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
@@ -178,10 +175,6 @@ export function CreateSpaceForm() {
             </FormItem>
           )}
         />
-        <div className="space-y-2">
-            <FormLabel>Author</FormLabel>
-            <p className="text-sm text-primary">{user?.name || "Loading..."}</p>
-        </div>
          <FormField
           control={form.control}
           name="projectUrl"
