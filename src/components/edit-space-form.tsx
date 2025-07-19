@@ -26,18 +26,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2Icon } from "lucide-react";
+import { timezones } from "@/lib/timezones";
 
-
-const timezones = [
-    { value: "UTC", label: "UTC" },
-    { value: "America/New_York", label: "EST (New York)" },
-    { value: "America/Chicago", label: "CST (Chicago)" },
-    { value: "America/Denver", label: "MST (Denver)" },
-    { value: "America/Los_Angeles", label: "PST (Los Angeles)" },
-    { value: "Europe/London", label: "GMT (London)" },
-    { value: "Europe/Paris", label: "CET (Paris)" },
-    { value: "Asia/Tokyo", label: "JST (Tokyo)" },
-];
 
 const daysOfWeek = [
     { id: '1', label: "Monday" },
@@ -361,5 +351,3 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     </Form>
   );
 }
-
-  

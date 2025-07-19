@@ -144,7 +144,10 @@ export function SpaceSchedule() {
   const { favorites, toggleFavorite } = useFavorites(user);
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setIsMounted(true);
+    if (user?.timezone) {
+      setSelectedTimezone(user.timezone);
+    } else if (typeof window !== 'undefined') {
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (timezones.some(tz => tz.value === detectedTimezone)) {
           setSelectedTimezone(detectedTimezone);
@@ -152,8 +155,7 @@ export function SpaceSchedule() {
            setSelectedTimezone('UTC');
         }
     }
-    setIsMounted(true);
-  }, []);
+  }, [user?.timezone]);
 
   useEffect(() => {
     if (isMobile && filter === 'full') {

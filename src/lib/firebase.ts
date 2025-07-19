@@ -76,7 +76,7 @@ export const getUserProfile = async (userId: string) => {
     const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
-      return userDocSnap.data() as { name: string; email: string; };
+      return userDocSnap.data() as { name: string; email: string; timezone?: string };
     } else {
       console.log("No such user document!");
       return null;
@@ -91,7 +91,7 @@ export const getUserProfile = async (userId: string) => {
 /**
  * Updates a user's profile in Firestore and Firebase Auth.
  */
-export const updateUserProfile = async (userId: string, updates: { name?: string }) => {
+export const updateUserProfile = async (userId: string, updates: { name?: string, timezone?: string }) => {
     if (!userId) throw new Error("User ID is required to update profile.");
     
     const userDocRef = doc(db, "users", userId);
@@ -101,6 +101,9 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
     if (updates.name) {
         firestoreUpdates.name = updates.name;
         firestoreUpdates.name_lowercase = updates.name.toLowerCase();
+    }
+    if (updates.timezone) {
+        firestoreUpdates.timezone = updates.timezone;
     }
 
     const promises = [];

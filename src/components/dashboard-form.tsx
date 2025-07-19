@@ -13,6 +13,7 @@ import { Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, deleteUserAccount, updateUserSpacesAuthorName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -28,11 +29,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { timezones } from "@/lib/timezones";
 
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
+  timezone: z.string().optional(),
 });
 
 export function DashboardForm() {
@@ -45,6 +48,7 @@ export function DashboardForm() {
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
+      timezone: user?.timezone || "",
     },
   });
 
@@ -53,6 +57,7 @@ export function DashboardForm() {
       form.reset({
         name: user.name || "",
         email: user.email || "",
+        timezone: user.timezone || "",
       });
     }
   }, [user, form]);
@@ -64,14 +69,21 @@ export function DashboardForm() {
         return;
     }
 
-    const { name, email } = values;
+    const { name, email, timezone } = values;
     const promises = [];
     let nameChanged = false;
+    
+    const updates: { name?: string; timezone?: string } = {};
 
     // --- Update Name ---
     if (name !== user.name) {
-        promises.push(updateUserProfile(user.uid, { name }));
+        updates.name = name;
         nameChanged = true;
+    }
+    
+    // --- Update Timezone ---
+    if (timezone !== user.timezone) {
+        updates.timezone = timezone;
     }
 
     // --- Update Email ---
@@ -79,7 +91,12 @@ export function DashboardForm() {
        promises.push(updateEmail(auth.currentUser, email));
     }
     
-    if (promises.length === 0) {
+    // --- Update Firestore Profile ---
+    if (Object.keys(updates).length > 0) {
+        promises.push(updateUserProfile(user.uid, updates));
+    }
+    
+    if (promises.length === 0 && !nameChanged && timezone === user.timezone) {
         toast({ title: "No Changes", description: "You haven't made any changes to your profile." });
         return;
     }
@@ -169,6 +186,28 @@ export function DashboardForm() {
             </FormItem>
           )}
         />
+         <FormField
+            control={form.control}
+            name="timezone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Default Timezone</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select your preferred timezone" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {timezones.map(tz => (
+                        <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
         
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
             {form.formState.isSubmitting ? "Saving..." : "Save Changes"}

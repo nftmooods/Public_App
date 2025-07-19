@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: userProfile?.name || firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
             isAdmin: isAdminClaim,
+            timezone: userProfile?.timezone,
         });
     } else {
         // User is signed out

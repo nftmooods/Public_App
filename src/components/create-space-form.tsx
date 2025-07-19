@@ -16,18 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import type { Space } from '@/lib/types';
+import { timezones } from "@/lib/timezones";
 
-
-const timezones = [
-    { value: "UTC", label: "UTC" },
-    { value: "America/New_York", label: "EST (New York)" },
-    { value: "America/Chicago", label: "CST (Chicago)" },
-    { value: "America/Denver", label: "MST (Denver)" },
-    { value: "America/Los_Angeles", label: "PST (Los Angeles)" },
-    { value: "Europe/London", label: "GMT (London)" },
-    { value: "Europe/Paris", label: "CET (Paris)" },
-    { value: "Asia/Tokyo", label: "JST (Tokyo)" },
-];
 
 const daysOfWeek = [
     { id: '1', label: "Monday" },
@@ -91,7 +81,7 @@ export function CreateSpaceForm() {
       daysOfWeek: [],
       startTime: "",
       endTime: "",
-      timezone: "UTC",
+      timezone: user?.timezone || "UTC",
     },
   });
 
@@ -102,6 +92,9 @@ export function CreateSpaceForm() {
         const urlFriendlyName = user.name.replace(/\s+/g, '').replace(/[^\w-]/g, '');
         form.setValue('projectUrl', `https://x.com/${urlFriendlyName}`, { shouldValidate: true });
       }
+    }
+    if (user?.timezone) {
+      form.setValue('timezone', user.timezone);
     }
   }, [user, form]);
 
