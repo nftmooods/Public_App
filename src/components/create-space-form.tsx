@@ -5,19 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { toZonedTime } from 'date-fns-tz';
-
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import { addSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 
@@ -32,10 +25,20 @@ const timezones = [
     { value: "Asia/Tokyo", label: "JST (Tokyo)" },
 ];
 
+const daysOfWeek = [
+    { value: "1", label: "Monday" },
+    { value: "2", label: "Tuesday" },
+    { value: "3", label: "Wednesday" },
+    { value: "4", label: "Thursday" },
+    { value: "5", label: "Friday" },
+    { value: "6", label: "Saturday" },
+    { value: "0", label: "Sunday" },
+]
+
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }),
-  date: z.date({ required_error: "A date is required." }),
+  dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Please enter a valid time (HH:MM)." }),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
 });
@@ -50,6 +53,7 @@ export function CreateSpaceForm() {
     defaultValues: {
       name: "",
       projectUrl: "",
+      dayOfWeek: "",
       time: "",
       timezone: "UTC",
     },
@@ -62,19 +66,14 @@ export function CreateSpaceForm() {
     }
 
     try {
-      const { name, projectUrl, date, time, timezone } = values;
-      const [hours, minutes] = time.split(':').map(Number);
-      
-      // Set hours and minutes on the selected date
-      date.setHours(hours, minutes, 0, 0);
-
-      // Convert the local date to a zoned time, then get the final UTC Date object for Firestore
-      const dateInTz = toZonedTime(date, timezone);
+      const { name, projectUrl, dayOfWeek, time, timezone } = values;
       
       const spaceData = {
           name,
           projectUrl,
-          dateTime: dateInTz, // Pass the final Date object
+          dayOfWeek: parseInt(dayOfWeek, 10),
+          time,
+          timezone,
           authorName: user.name || "Anonymous",
           createdBy: user.uid,
       };
@@ -83,7 +82,7 @@ export function CreateSpaceForm() {
 
       toast({
         title: "Space Created!",
-        description: "Your event has been added to the schedule.",
+        description: "Your event has been added to the weekly schedule.",
       });
       router.push("/");
       
@@ -129,40 +128,23 @@ export function CreateSpaceForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
             control={form.control}
-            name="date"
+            name="dayOfWeek"
             render={({ field }) => (
-                <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                        <FormControl>
-                            <Button
-                            variant={"outline"}
-                            className={cn(
-                                "pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                            )}
-                            >
-                            {field.value ? (
-                                format(field.value, "PPP")
-                            ) : (
-                                <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                        </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
-                            initialFocus
-                        />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
+                <FormItem>
+                <FormLabel>Day of the Week</FormLabel>
+                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a day" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {daysOfWeek.map(day => (
+                        <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
                 </FormItem>
             )}
             />

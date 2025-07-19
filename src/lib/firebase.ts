@@ -87,25 +87,31 @@ export const getUserProfile = async (userId: string) => {
 // --- Space Functions ---
 
 // Get all spaces
-export const getSpaces = async (): Promise<Space[]> => {
+export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
     const spacesCol = collection(db, "spaces");
-    const q = query(spacesCol, orderBy("dateTime", "asc"));
+    // We sort by day of week now
+    const q = query(spacesCol, orderBy("dayOfWeek", "asc"));
     const spaceSnapshot = await getDocs(q);
     const spaceList = spaceSnapshot.docs.map((snap: QueryDocumentSnapshot<DocumentData>) => {
         const data = snap.data();
         return {
             id: snap.id,
-            ...data,
+            name: data.name,
+            projectUrl: data.projectUrl,
+            dayOfWeek: data.dayOfWeek,
+            time: data.time,
+            timezone: data.timezone,
+            authorName: data.authorName,
+            createdBy: data.createdBy,
             // Ensure Firestore Timestamps are converted to JS Date objects
-            dateTime: (data.dateTime as Timestamp).toDate(),
             createdAt: (data.createdAt as Timestamp).toDate(),
-        } as Space;
+        } as Omit<Space, "dateTime">;
     });
     return spaceList;
 };
 
 // Add a new space
-export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt'>) => {
+export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'>) => {
   const spacesCol = collection(db, "spaces");
   const newSpaceRef = await addDoc(spacesCol, {
       ...spaceData,

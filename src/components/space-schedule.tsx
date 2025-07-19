@@ -8,11 +8,19 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion } from "framer-motion";
-import { isToday, isTomorrow, isThisWeek, isPast } from "date-fns";
 import { useAuth } from "@/context/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  startOfWeek, 
+  addDays, 
+  isToday, 
+  isTomorrow, 
+  isSameDay,
+  parse,
+  nextDay
+} from "date-fns";
 
 // Timezone mapping for the select dropdown
 const timezones = [
@@ -23,23 +31,29 @@ const timezones = [
     { value: "Asia/Tokyo", label: "JST" },
 ];
 
-// Utility function to convert Firestore Timestamps to JS Date objects
-const convertFirestoreTimestamps = (spaces: any[]): Space[] => {
+// Utility function to convert Firestore Timestamps to JS Date objects for createdAt
+const convertFirestoreTimestamps = (spaces: any[]): Omit<Space, "dateTime">[] => {
   return spaces.map(space => {
     const newSpace = { ...space };
-    if (newSpace.dateTime && typeof newSpace.dateTime.toDate === 'function') {
-      newSpace.dateTime = newSpace.dateTime.toDate();
-    }
     if (newSpace.createdAt && typeof newSpace.createdAt.toDate === 'function') {
       newSpace.createdAt = newSpace.createdAt.toDate();
     }
-    return newSpace as Space;
+    // dayOfWeek, time, and timezone are stored directly
+    return newSpace;
   });
 };
 
+const getUpcomingDateForEvent = (dayOfWeek: number, time: string): Date => {
+    const [hours, minutes] = time.split(':').map(Number);
+    let eventDate = nextDay(new Date(), dayOfWeek);
+    eventDate.setHours(hours, minutes, 0, 0);
+    return eventDate;
+};
+
+
 // Custom hook for fetching Space data
 const useSpaces = () => {
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spaces, setSpaces] = useState<Omit<Space, "dateTime">[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -48,10 +62,8 @@ const useSpaces = () => {
       try {
         setLoading(true);
         const fetchedSpaces = await getSpaces();
-        const spacesWithDates = convertFirestoreTimestamps(fetchedSpaces);
-        // Sort spaces by date to ensure consistent order
-        spacesWithDates.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
-        setSpaces(spacesWithDates);
+        const processedSpaces = convertFirestoreTimestamps(fetchedSpaces);
+        setSpaces(processedSpaces);
       } catch (error) {
         console.error("Error fetching spaces:", error);
         toast({ title: "Error", description: "Could not fetch spaces.", variant: "destructive" });
@@ -68,7 +80,7 @@ const useSpaces = () => {
 // Custom hook for managing favorites
 const useFavorites = (user: any) => {
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]); // To store the full favorite doc for deletion
+  const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,7 +92,6 @@ const useFavorites = (user: any) => {
       };
       fetchFavorites();
     } else {
-      // Clear favorites when user logs out
       setFavorites([]);
       setFavoriteDocs([]);
     }
@@ -95,7 +106,6 @@ const useFavorites = (user: any) => {
     const isFavorite = favorites.includes(spaceId);
     try {
       if (isFavorite) {
-        // Find the favorite document to get its ID for deletion
         const favoriteDoc = favoriteDocs.find(doc => doc.spaceId === spaceId);
         if (favoriteDoc) {
           await removeFavorite(favoriteDoc.id);
@@ -105,7 +115,6 @@ const useFavorites = (user: any) => {
         }
       } else {
         const newFavoriteId = await addFavorite(user.uid, spaceId);
-        // Optimistically update the UI
         setFavorites(prev => [...prev, spaceId]);
         setFavoriteDocs(prev => [...prev, { id: newFavoriteId, userId: user.uid, spaceId }]);
         toast({ title: "Added to favorites!" });
@@ -120,7 +129,7 @@ const useFavorites = (user: any) => {
 };
 
 export function SpaceSchedule() {
-  const [filter, setFilter] = useState("today");
+  const [filter, setFilter] = useState("week");
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('local');
   const [isMounted, setIsMounted] = useState(false);
@@ -134,46 +143,63 @@ export function SpaceSchedule() {
   }, []);
 
   const filteredSpaces = useMemo(() => {
+    const today = new Date();
+    
+    // Map raw space data to Space objects with calculated dateTime
+    const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
+        ...s,
+        dateTime: getUpcomingDateForEvent(s.dayOfWeek, s.time)
+    }));
+    
+    const spacesToFilter = showFavorites ? spacesWithCalculatedDates.filter(space => favorites.includes(space.id)) : spacesWithCalculatedDates;
+
     const filterByDate = (space: Space, check: (date: Date) => boolean) => {
-      // Ensure dateTime is a valid Date object before checking
-      const date = space.dateTime;
-      return date instanceof Date && check(date);
+      return space.dateTime instanceof Date && check(space.dateTime);
     };
 
-    const spacesToFilter = showFavorites ? spaces.filter(space => favorites.includes(space.id)) : spaces;
+    let result: Space[];
 
     switch (filter) {
       case "today":
-        return spacesToFilter.filter(space => filterByDate(space, isToday) && !isPast(space.dateTime));
+        result = spacesToFilter.filter(space => filterByDate(space, isToday));
+        break;
       case "tomorrow":
-        return spacesToFilter.filter(space => filterByDate(space, isTomorrow));
+        result = spacesToFilter.filter(space => filterByDate(space, isTomorrow));
+        break;
       case "week":
-        return spacesToFilter.filter(space => filterByDate(space, date => isThisWeek(date, { weekStartsOn: 1 })) && !isPast(space.dateTime));
-      case "past":
-        return spacesToFilter.filter(space => filterByDate(space, isPast)).sort((a,b) => b.dateTime.getTime() - a.dateTime.getTime());
+         const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+         const endOfThisWeek = addDays(startOfThisWeek, 6); // Sunday
+         result = spacesToFilter.filter(space => 
+            filterByDate(space, date => date >= startOfThisWeek && date <= endOfThisWeek)
+        );
+        break;
       default:
-        return spacesToFilter;
+        result = spacesToFilter;
+        break;
     }
+    
+    // Always sort by date
+    return result.sort((a,b) => (a.dateTime?.getTime() ?? 0) - (b.dateTime?.getTime() ?? 0));
+
   }, [spaces, filter, showFavorites, favorites]);
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight">
-          Upcoming Spaces
+          Weekly Schedule
         </h1>
         <p className="text-muted-foreground mt-2">
-          Your daily schedule of Twitter Spaces.
+          Your weekly schedule of recurring Twitter Spaces.
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList>
+            <TabsTrigger value="week">This Week</TabsTrigger>
             <TabsTrigger value="today">Today</TabsTrigger>
             <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
-            <TabsTrigger value="week">This Week</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
