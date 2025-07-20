@@ -180,7 +180,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 >
                     {formattedDateTime.day}
                 </Badge>
-                {contentPlaceTag && <span className="text-sm text-muted-foreground whitespace-nowrap">{contentPlaceTag}</span>}
             </div>
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
@@ -192,22 +191,21 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-2">
+      <CardContent className="flex-grow flex flex-col gap-1">
         <Alert className="bg-background/10 border-border/30 text-card-foreground">
             <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
             <AlertDescription className="text-card-foreground/80">
               Timezone: {formattedDateTime.timezone}
             </AlertDescription>
         </Alert>
-        {contentTypeTags.length > 0 && (
-          <div className="bg-input rounded-md p-2 min-h-[36px] flex items-center">
+        <div className="bg-input rounded-md p-2 min-h-[36px] flex items-center">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
+              {contentPlaceTag && <span>{contentPlaceTag}</span>}
               {contentTypeTags.map(tag => (
                   <span key={tag}>{tag}</span>
               ))}
             </div>
           </div>
-        )}
       </CardContent>
       <CardFooter className="flex justify-between items-center">
         <div className="flex items-center gap-2">
