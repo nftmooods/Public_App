@@ -123,9 +123,9 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
 };
 
 /**
- * Updates the authorName on all spaces created by a specific user.
+ * Updates the hostName on all spaces created by a specific user.
  */
-export const updateUserSpacesAuthorName = async (userId: string, newName: string) => {
+export const updateUserSpacesHostName = async (userId: string, newName: string) => {
     if (!userId || !newName) return;
     
     const spacesRef = collection(db, "spaces");
@@ -140,10 +140,54 @@ export const updateUserSpacesAuthorName = async (userId: string, newName: string
         });
         
         await batch.commit();
-        console.log(`Successfully updated authorName to "${newName}" for user ${userId} on ${querySnapshot.size} spaces.`);
+        console.log(`Successfully updated hostName to "${newName}" for user ${userId} on ${querySnapshot.size} spaces.`);
     } catch (error) {
-        console.error("Error updating authorName on spaces: ", error);
+        console.error("Error updating hostName on spaces: ", error);
         // We don't re-throw here to avoid breaking the UI flow, but we log it.
+    }
+};
+
+/**
+ * Updates a user's name in their profile and propagates it to all their associated spaces.
+ * This is an admin action.
+ */
+export const updateHostNameForUser = async (uid: string, newName: string) => {
+    const batch = writeBatch(db);
+
+    // 1. Update the user document
+    const userDocRef = doc(db, "users", uid);
+    batch.update(userDocRef, { 
+        name: newName,
+        name_lowercase: newName.toLowerCase()
+    });
+
+    // 2. Find all spaces where the user is a host and update hostName
+    const hostSpacesQuery = query(collection(db, "spaces"), where("createdBy", "==", uid));
+    const hostSpacesSnapshot = await getDocs(hostSpacesQuery);
+    hostSpacesSnapshot.forEach(spaceDoc => {
+        batch.update(spaceDoc.ref, { hostName: newName, authorName: newName });
+    });
+
+    // 3. Find all spaces where the user is a co-host and update coHostName
+    const originalUserDoc = await getDoc(userDocRef);
+    const originalName = originalUserDoc.data()?.name;
+
+    if (originalName) {
+        const coHostSpacesQuery = query(collection(db, "spaces"), where("coHostName", "==", originalName));
+        const coHostSpacesSnapshot = await getDocs(coHostSpacesQuery);
+        coHostSpacesSnapshot.forEach(spaceDoc => {
+            batch.update(spaceDoc.ref, { coHostName: newName });
+        });
+    }
+
+    // Commit all changes
+    await batch.commit();
+
+    // Also update the Auth display name
+    // This is a separate operation as it can't be batched.
+    const user = await getAuth().getUser(uid);
+    if (user) {
+        await updateProfile(user, { displayName: newName });
     }
 };
 
@@ -173,15 +217,17 @@ export const deleteUserAccount = async () => {
 /**
  * Retrieves all users from Firestore.
  */
-export const getAllUsers = async (): Promise<Omit<User, 'uid'>[]> => {
+export const getAllUsers = async (): Promise<User[]> => {
     const usersCol = collection(db, "users");
     const usersSnapshot = await getDocs(query(usersCol, orderBy("name_lowercase")));
     const userList = usersSnapshot.docs.map((snap) => {
         const data = snap.data();
         return {
+            uid: snap.id,
             name: data.name,
             email: data.email,
-        } as Omit<User, 'uid'>;
+            isCertified: data.isCertified || false,
+        } as User;
     });
     return userList;
 }
@@ -269,7 +315,8 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
     delete (dataToSave as Partial<typeof dataToSave>).projectUrl;
   }
    if (!dataToSave.hostName) {
-    delete (dataToSave as Partial<typeof dataToSave>).hostName;
+     // This case should not happen with the new logic, but as a safeguard
+    dataToSave.hostName = dataToSave.authorName;
   }
   const newSpaceRef = await addDoc(spacesCol, dataToSave);
   return newSpaceRef.id;
@@ -348,3 +395,7 @@ export const getFavoriteCounts = async (): Promise<Record<string, number>> => {
 
 
 export { app, db, auth };
+
+// NOTE: The Firebase Admin SDK is initialized in a separate file (e.g., src/lib/firebase-admin.ts)
+// for server-side operations (like scripts) to avoid exposing admin credentials to the client.
+// The `getAuth()` from 'firebase-admin/auth' is used there, not to be confused with client-side `getAuth()`.
