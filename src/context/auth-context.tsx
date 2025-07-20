@@ -24,15 +24,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
      if (firebaseUser) {
-        const [userProfile, tokenResult] = await Promise.all([
-            getUserProfile(firebaseUser.uid),
-            firebaseUser.getIdTokenResult(true) // Force refresh for latest claims
-        ]);
+        const userProfile = await getUserProfile(firebaseUser.uid);
 
-        const isSuperAdminClaim = !!tokenResult.claims.SuperAdmin;
+        const isSuperAdminDb = userProfile?.isSuperAdmin ?? false;
         const isHostUser = userProfile?.isHost ?? false;
 
-        setIsSuperAdmin(isSuperAdminClaim);
+        setIsSuperAdmin(isSuperAdminDb);
         setIsHost(isHostUser);
         
         setUser({
@@ -40,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             email: firebaseUser.email,
             name: userProfile?.name || firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
-            isSuperAdmin: isSuperAdminClaim,
+            isSuperAdmin: isSuperAdminDb,
             isHost: isHostUser,
             timezone: userProfile?.timezone,
         });
@@ -57,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const firebaseUser = auth.currentUser;
     if (firebaseUser) {
         setLoading(true);
+        // We force a token refresh to ensure custom claims are up-to-date,
+        // although we prioritize the database field for roles.
+        await firebaseUser.getIdToken(true); 
         await fetchUser(firebaseUser);
     }
   }, [fetchUser]);
