@@ -29,7 +29,8 @@ export interface User {
   email: string | null;
   name: string | null;
   photoURL?: string | null;
-  isSuperAdmin: boolean; // From Auth custom claim
-  isHost: boolean; // From Firestore document
+  isSuperAdmin: boolean;
+  isHost: boolean;
+  isCertified?: boolean; // Added for user certification
   timezone?: string;
 }

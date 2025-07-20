@@ -62,6 +62,7 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
                 createdAt: serverTimestamp(),
                 host: false, // Default role
                 SuperAdmin: false, // Default role
+                isCertified: false, // Default certification status
             });
         } catch (error) {
             console.error("Error creating user document", error);
@@ -86,6 +87,7 @@ export const getUserProfile = async (userId: string) => {
           timezone: data.timezone, 
           isHost: data.host, 
           isSuperAdmin: data.SuperAdmin, 
+          isCertified: data.isCertified,
       };
     } else {
       console.log("No such user document!");
@@ -113,9 +115,9 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
         firestoreUpdates.name_lowercase = updates.name.toLowerCase();
     }
     if (updates.timezone) {
-        firestoreUpdates.timezone = timezone;
+      firestoreUpdates.timezone = updates.timezone;
     }
-
+    
     const promises = [];
 
     // Update Firestore document
@@ -230,7 +232,7 @@ export const getAllUsers = async (): Promise<User[]> => {
             email: data.email,
             isHost: !!data.host,
             isSuperAdmin: !!data.SuperAdmin,
-            // Fallback for older data that might not have these fields
+            isCertified: !!data.isCertified,
         } as User;
     });
     return userList;
@@ -239,7 +241,7 @@ export const getAllUsers = async (): Promise<User[]> => {
 /**
  * Updates a user's roles in Firestore.
  */
-export const updateUserRoles = async (userId: string, roles: { host?: boolean; SuperAdmin?: boolean }) => {
+export const updateUserRoles = async (userId: string, roles: { host?: boolean; SuperAdmin?: boolean, isCertified?: boolean }) => {
     if (!userId) throw new Error("User ID is required to update roles.");
     const userDocRef = doc(db, "users", userId);
     await updateDoc(userDocRef, roles);

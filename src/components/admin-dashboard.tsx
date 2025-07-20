@@ -28,7 +28,7 @@ type EditableNames = {
     hostName: EditableNameState;
 };
 
-type EditableRoles = Record<string, { isHost: boolean; isSuperAdmin: boolean }>;
+type EditableRoles = Record<string, { isHost: boolean; isSuperAdmin: boolean; isCertified: boolean; }>;
 
 
 export function AdminDashboard() {
@@ -73,7 +73,11 @@ export function AdminDashboard() {
             setEditableNames(initialEditableState);
 
              const initialRolesState = fetchedUsers.reduce((acc, user) => {
-                acc[user.uid] = { isHost: user.isHost, isSuperAdmin: user.isSuperAdmin };
+                acc[user.uid] = { 
+                    isHost: user.isHost, 
+                    isSuperAdmin: user.isSuperAdmin,
+                    isCertified: user.isCertified || false,
+                };
                 return acc;
             }, {} as EditableRoles);
             setEditableRoles(initialRolesState);
@@ -93,7 +97,7 @@ export function AdminDashboard() {
     }, [fetchData]);
     
     
-    const handleRoleChange = (userId: string, role: 'isHost' | 'isSuperAdmin', value: boolean) => {
+    const handleRoleChange = (userId: string, role: 'isHost' | 'isSuperAdmin' | 'isCertified', value: boolean) => {
         setEditableRoles(prev => ({
             ...prev,
             [userId]: { ...prev[userId], [role]: value }
@@ -103,10 +107,18 @@ export function AdminDashboard() {
     const handleSaveRoles = async () => {
         setIsSavingRoles(true);
         const promises = users.map(user => {
-            const originalRoles = { isHost: user.isHost, isSuperAdmin: user.isSuperAdmin };
+            const originalRoles = { 
+                isHost: user.isHost, 
+                isSuperAdmin: user.isSuperAdmin,
+                isCertified: user.isCertified || false,
+            };
             const newRoles = editableRoles[user.uid];
-            if (originalRoles.isHost !== newRoles.isHost || originalRoles.isSuperAdmin !== newRoles.isSuperAdmin) {
-                return updateUserRoles(user.uid, { host: newRoles.isHost, SuperAdmin: newRoles.isSuperAdmin });
+            if (originalRoles.isHost !== newRoles.isHost || originalRoles.isSuperAdmin !== newRoles.isSuperAdmin || originalRoles.isCertified !== newRoles.isCertified) {
+                return updateUserRoles(user.uid, { 
+                    host: newRoles.isHost, 
+                    SuperAdmin: newRoles.isSuperAdmin,
+                    isCertified: newRoles.isCertified
+                });
             }
             return Promise.resolve();
         });
@@ -262,6 +274,7 @@ export function AdminDashboard() {
                                     <TableHead>Author</TableHead>
                                     <TableHead className="w-[100px] text-center">Host</TableHead>
                                     <TableHead className="w-[100px] text-center">Super Admin</TableHead>
+                                    <TableHead className="w-[100px] text-center">Certified</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -283,6 +296,13 @@ export function AdminDashboard() {
                                                 checked={editableRoles[user.uid]?.isSuperAdmin ?? false}
                                                 onCheckedChange={(checked) => handleRoleChange(user.uid, 'isSuperAdmin', !!checked)}
                                                 aria-label={`Set super admin for ${user.name}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Checkbox
+                                                checked={editableRoles[user.uid]?.isCertified ?? false}
+                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isCertified', !!checked)}
+                                                aria-label={`Set certified status for ${user.name}`}
                                             />
                                         </TableCell>
                                     </TableRow>

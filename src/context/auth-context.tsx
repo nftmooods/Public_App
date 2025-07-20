@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const isSuperAdminDb = userProfile?.isSuperAdmin ?? false;
         const isHostUser = userProfile?.isHost ?? false;
+        const isCertifiedUser = userProfile?.isCertified ?? false;
 
         setIsSuperAdmin(isSuperAdminDb);
         setIsHost(isHostUser);
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             photoURL: firebaseUser.photoURL,
             isSuperAdmin: isSuperAdminDb,
             isHost: isHostUser,
+            isCertified: isCertifiedUser,
             timezone: userProfile?.timezone,
         });
     } else {
