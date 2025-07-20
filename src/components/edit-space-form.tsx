@@ -224,7 +224,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -298,7 +298,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="space-y-6">
             <FormField
               control={form.control}
               name="contentPlace"
@@ -373,7 +373,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             />
         </div>
         
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
             <FormField
                 control={form.control}
                 name="dayOfWeek"
