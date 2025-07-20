@@ -14,13 +14,14 @@ import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 
 // Liste statique temporaire des membres certifiés
-const certifiedMembers = ["L'équipe ApeChain", "build'ON"];
+const initialCertifiedMembers = ["L'équipe ApeChain", "build'ON"];
 
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
     const [spaces, setSpaces] = useState<Omit<Space, 'dateTime'>[]>([]);
     const [hosts, setHosts] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [certifiedMembers, setCertifiedMembers] = useState<string[]>(initialCertifiedMembers);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,6 +52,17 @@ export function AdminDashboard() {
 
         fetchData();
     }, [isSuperAdmin]);
+
+    const handleCertificationChange = (name: string, isChecked: boolean) => {
+        setCertifiedMembers(prev => {
+            if (isChecked) {
+                return [...prev, name];
+            } else {
+                return prev.filter(memberName => memberName !== name);
+            }
+        });
+        // Note: This change is temporary and will not be saved to the database.
+    };
     
     if (loading) {
         return (
@@ -119,8 +131,7 @@ export function AdminDashboard() {
                                         <TableCell>
                                             <Checkbox
                                                 checked={certifiedMembers.includes(name)}
-                                                // La fonctionnalité de mise à jour sera ajoutée plus tard
-                                                // onCheckedChange={() => {}} 
+                                                onCheckedChange={(isChecked) => handleCertificationChange(name, !!isChecked)} 
                                                 aria-label={`Certify ${name}`}
                                             />
                                         </TableCell>
