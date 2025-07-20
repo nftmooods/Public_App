@@ -4,10 +4,10 @@ import 'dotenv/config'; // Assurez-vous que les variables d'environnement sont c
 import { adminAuth, adminDb } from '../src/lib/firebase-admin';
 
 /**
- * Ce script assigne un rôle d'administrateur à un utilisateur.
+ * Ce script assigne un rôle de super-administrateur à un utilisateur.
  * Il fait deux choses :
- * 1. Ajoute une "custom claim" { admin: true } au token d'authentification pour les règles de sécurité.
- * 2. Ajoute un champ { role: 'admin' } au document de l'utilisateur dans Firestore pour un accès facile côté client.
+ * 1. Ajoute une "custom claim" { SuperAdmin: true } au token d'authentification pour les règles de sécurité.
+ * 2. Ajoute un champ { SuperAdmin: true } au document de l'utilisateur dans Firestore pour un accès facile côté client.
  *
  * Usage:
  * npx ts-node --project tsconfig.scripts.json scripts/set-admin-role.ts <email_de_l_utilisateur>
@@ -24,30 +24,20 @@ const grantAdminRole = async (email: string) => {
     const user = await adminAuth.getUserByEmail(email);
     const userId = user.uid;
 
-    // 2. Assigner la "custom claim" d'administrateur
-    console.log(`Assignation de la custom claim 'admin' à l'utilisateur ${userId}...`);
-    await adminAuth.setCustomUserClaims(userId, { admin: true });
+    // 2. Assigner la "custom claim" de SuperAdmin
+    console.log(`Assignation de la custom claim 'SuperAdmin' à l'utilisateur ${userId}...`);
+    await adminAuth.setCustomUserClaims(userId, { SuperAdmin: true });
 
     // 3. Mettre à jour le document utilisateur dans Firestore
     console.log(`Mise à jour du document dans Firestore pour l'utilisateur ${userId}...`);
     const userDocRef = adminDb.collection('users').doc(userId);
-    const userDoc = await userDocRef.get();
     
-    const updateData: {role: string, name_lowercase?: string} = { role: 'admin' };
-    
-    // Also update the lowercase name if the user document exists and has a name
-    if (userDoc.exists() && userDoc.data()?.name) {
-        updateData.name_lowercase = userDoc.data()!.name.toLowerCase();
-    } else if (user.displayName) {
-        // Fallback to displayName from auth if available
-        updateData.name_lowercase = user.displayName.toLowerCase();
-    }
-
-    await userDocRef.update(updateData);
+    // Mettre à jour ou créer le champ SuperAdmin
+    await userDocRef.set({ SuperAdmin: true }, { merge: true });
 
     // 4. Confirmer le succès
-    console.log(`✅ Succès ! L'utilisateur ${email} est maintenant un administrateur (claim et BDD).`);
-    console.log("   Il devra peut-être se déconnecter et se reconnecter pour que les changements prennent effet.");
+    console.log(`✅ Succès ! L'utilisateur ${email} est maintenant un Super Administrateur (claim et BDD).`);
+    console.log("   Il devra se déconnecter et se reconnecter pour que les changements prennent effet.");
 
   } catch (error: any) {
     console.error('❌ Une erreur est survenue :');
@@ -62,5 +52,3 @@ const grantAdminRole = async (email: string) => {
 
 const emailArg = process.argv[2];
 grantAdminRole(emailArg);
-
-    
