@@ -5,7 +5,7 @@
 export interface Space {
     id: string;
     name: string;
-    projectUrl: string;
+    projectUrl?: string;
     tags: string[];
     dayOfWeek: number; // 0 (Sunday) to 6 (Saturday)
     startTime: string; // "HH:mm"

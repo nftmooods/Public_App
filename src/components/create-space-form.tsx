@@ -66,7 +66,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   coHostName: z.string().optional(),
-  projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  projectUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string())
     .refine((value) => value.length >= 1, { message: "You have to select at least one content type." })
@@ -127,7 +127,6 @@ export function CreateSpaceForm() {
       const creationPromises = daysOfWeek.map(day => {
           const spaceData: Omit<Space, 'id' | 'createdAt' | 'dateTime'> = {
               name,
-              projectUrl,
               tags: tags,
               dayOfWeek: parseInt(day, 10),
               startTime,
@@ -135,6 +134,9 @@ export function CreateSpaceForm() {
               authorName: user.name!, // Always use the authenticated user's name
               createdBy: user.uid,   // Always use the authenticated user's UID
           };
+          if (projectUrl) {
+            spaceData.projectUrl = projectUrl;
+          }
           if (endTime) {
             spaceData.endTime = endTime;
           }
@@ -198,7 +200,7 @@ export function CreateSpaceForm() {
           name="projectUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL</FormLabel>
+              <FormLabel>URL (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="https://x.com/yourproject" {...field} />
               </FormControl>

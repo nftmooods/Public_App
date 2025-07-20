@@ -241,7 +241,10 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
       createdAt: serverTimestamp()
   };
    if (!dataToSave.coHostName) {
-    delete dataToSave.coHostName;
+    delete (dataToSave as Partial<typeof dataToSave>).coHostName;
+  }
+  if (!dataToSave.projectUrl) {
+    delete (dataToSave as Partial<typeof dataToSave>).projectUrl;
   }
   const newSpaceRef = await addDoc(spacesCol, dataToSave);
   return newSpaceRef.id;
@@ -254,6 +257,9 @@ export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Spa
 
   if ('coHostName' in dataToUpdate && !dataToUpdate.coHostName) {
       (dataToUpdate as any).coHostName = deleteField();
+  }
+   if ('projectUrl' in dataToUpdate && !dataToUpdate.projectUrl) {
+      (dataToUpdate as any).projectUrl = deleteField();
   }
   if ('endTime' in dataToUpdate && !dataToUpdate.endTime) {
       (dataToUpdate as any).endTime = deleteField();

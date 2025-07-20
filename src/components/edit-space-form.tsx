@@ -79,7 +79,7 @@ const timeOptions = Array.from({ length: 48 }, (_, i) => {
 const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   coHostName: z.string().optional(),
-  projectUrl: z.string().url({ message: "Please enter a valid URL." }),
+  projectUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   authorName: z.string(),
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string())
@@ -152,11 +152,11 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
 
       const spaceUpdateData: {[key:string]: any} = {
           name,
-          projectUrl,
           tags: tags,
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
+          projectUrl: projectUrl ? projectUrl : deleteField(),
           endTime: endTime ? endTime : deleteField(),
           coHostName: coHostName ? coHostName : deleteField(),
       };
@@ -233,7 +233,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           name="projectUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>URL</FormLabel>
+              <FormLabel>URL (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="https://x.com/yourproject" {...field} />
               </FormControl>
