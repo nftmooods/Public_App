@@ -42,11 +42,12 @@ export default function EditSpacePage() {
           return;
         }
 
-        // Extended permission check
+        // Permission check: user must be the creator, the co-host, or a Super Admin.
         const isCreator = spaceData.createdBy === user.uid;
         const isCoHost = spaceData.coHostName && spaceData.coHostName === user.name;
+        const canEdit = isSuperAdmin || isCreator || isCoHost;
         
-        if (!isSuperAdmin && !isCreator && !isCoHost) {
+        if (!canEdit) {
           setError("You do not have permission to edit this moment.");
           return;
         }
