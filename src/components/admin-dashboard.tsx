@@ -218,7 +218,7 @@ export function AdminDashboard() {
                                                     onChange={(e) => handleNameChange(space.id, 'authorName', e.target.value)}
                                                     className={cn(
                                                         "h-8",
-                                                        namesAreDifferent && "bg-yellow-500/10 border-yellow-500/50"
+                                                        namesAreDifferent && "bg-muted border-foreground/30"
                                                     )}
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
@@ -253,7 +253,7 @@ export function AdminDashboard() {
                                                     onChange={(e) => handleNameChange(space.id, 'hostName', e.target.value)}
                                                     className={cn(
                                                         "h-8",
-                                                        namesAreDifferent && "bg-yellow-500/10 border-yellow-500/50"
+                                                        namesAreDifferent && "bg-muted border-foreground/30"
                                                     )}
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
