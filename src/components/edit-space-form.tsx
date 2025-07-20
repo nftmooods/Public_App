@@ -263,7 +263,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <Input {...field} disabled={!isSuperAdmin} />
                 </FormControl>
                  <FormDescription className="text-xs">
-                    {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed."}
+                    {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed, contact nftmooods for a manual editing"}
                 </FormDescription>
                 <FormMessage />
             </FormItem>
