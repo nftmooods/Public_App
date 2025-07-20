@@ -23,6 +23,7 @@ import {
 import { FullWeekView } from "./full-week-view";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { timezones as cityTimezones } from "@/lib/timezones";
+import { ScrollArea } from "./ui/scroll-area";
 
 const dayColors: { [key: number]: string } = {
     0: '#EAEAEA', // Sunday
@@ -279,17 +280,22 @@ export function SpaceSchedule() {
   const renderContent = () => {
     if (loading) {
        return (
-            <div className="col-span-full text-center py-12">
+            <div className="flex-1 flex items-center justify-center text-center py-12">
                 <p className="text-muted-foreground">Loading moments...</p>
             </div>
           )
     }
 
     if (filter === 'full' && !isMobile) {
-        return <FullWeekView spaces={filteredSpaces} displayTimezone={effectiveTimezone} />
+        return (
+          <div className="flex-1 overflow-y-auto">
+            <FullWeekView spaces={filteredSpaces} displayTimezone={effectiveTimezone} />
+          </div>
+        )
     }
 
     return (
+      <ScrollArea className="flex-1 pr-4 -mr-4">
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
              <AnimatePresence>
                 {filteredSpaces.length > 0 ? (
@@ -320,12 +326,13 @@ export function SpaceSchedule() {
                 )}
             </AnimatePresence>
         </div>
+      </ScrollArea>
     )
   }
 
   return (
-    <div className="space-y-8">
-      <div>
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0">
         <h1 className="text-3xl md:text-4xl font-bold font-headline tracking-tight">
           Community Schedule
         </h1>
@@ -334,7 +341,7 @@ export function SpaceSchedule() {
         </p>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-4 py-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
             <TabsList>

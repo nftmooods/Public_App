@@ -4,13 +4,12 @@ import { SpaceSchedule } from "@/components/space-schedule";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       <Header />
-      <main className="flex-1 w-full container mx-auto px-4 py-8">
-        {/* The SpaceSchedule component now fetches its own data */}
+      <div className="flex-1 container mx-auto px-4 py-8 overflow-hidden">
         <SpaceSchedule />
-      </main>
-      <footer className="py-6 text-center text-sm text-foreground/70">
+      </div>
+      <footer className="py-4 text-center text-sm text-foreground/70 border-t">
         Created for the community by build&apos;ON&apos; more on{' '}
         <a 
             href="http://buildonapechain.xyz" 
