@@ -342,17 +342,30 @@ export function SpaceSchedule() {
       </div>
       
       <div className="space-y-4 py-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
-            <TabsList>
-                <TabsTrigger value="week">This Week</TabsTrigger>
-                <TabsTrigger value="today">Today</TabsTrigger>
-                <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
-                <TabsTrigger value="live">Live</TabsTrigger>
-                {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
-            </TabsList>
-            </Tabs>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+                <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
+                    <TabsList>
+                        <TabsTrigger value="week">This Week</TabsTrigger>
+                        <TabsTrigger value="today">Today</TabsTrigger>
+                        <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+                        <TabsTrigger value="live">Live</TabsTrigger>
+                        {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
+                    </TabsList>
+                </Tabs>
+                <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {cityTimezones.map(tz => (
+                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="flex items-center gap-4">
               {(!isMobile || user) && (
                 <>
                   <div className="flex items-center space-x-2">
@@ -381,16 +394,6 @@ export function SpaceSchedule() {
                   </div>
                 </>
               )}
-              <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                  {cityTimezones.map(tz => (
-                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                  ))}
-                  </SelectContent>
-              </Select>
             </div>
         </div>
         <div className="relative">
