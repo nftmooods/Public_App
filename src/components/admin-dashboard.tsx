@@ -251,7 +251,7 @@ export function AdminDashboard() {
 
     if (loading) {
         return (
-            <div className="w-full max-w-4xl space-y-4">
+            <div className="w-full max-w-6xl space-y-4">
                 <Skeleton className="h-10 w-1/3" />
                 <Skeleton className="h-6 w-1/2" />
                 <Skeleton className="h-96 w-full" />
@@ -344,12 +344,12 @@ export function AdminDashboard() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Event Name</TableHead>
+                                    <TableHead className="w-[25%]">Event Name</TableHead>
                                     <TableHead>Author</TableHead>
                                     <TableHead className="w-[40px] p-0"></TableHead>
                                     <TableHead>Host</TableHead>
                                     <TableHead className="w-[80px] text-center">Active</TableHead>
-                                    <TableHead className="text-right w-[220px]">Actions</TableHead>
+                                    <TableHead className="text-right w-[150px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
