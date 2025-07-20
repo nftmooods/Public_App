@@ -237,24 +237,22 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             </FormItem>
           )}
         />
-        {isSuperAdmin && (
-            <FormField
+        <FormField
             control={form.control}
             name="authorName"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Author Name (Legacy)</FormLabel>
+                <FormLabel>Author Name</FormLabel>
                 <FormControl>
-                    <Input {...field} />
+                    <Input {...field} disabled={!isSuperAdmin} />
                 </FormControl>
                 <FormDescription>
-                    The original author field. Change with caution.
+                    {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed."}
                 </FormDescription>
                 <FormMessage />
                 </FormItem>
             )}
             />
-        )}
         <FormField
             control={form.control}
             name="hostName"
