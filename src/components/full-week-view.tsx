@@ -34,7 +34,7 @@ export function FullWeekView({ spaces, displayTimezone }: FullWeekViewProps) {
   }, [spaces]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2 items-start">
       {dayOrder.map(dayIndex => {
         const hasEvents = spacesByDay[dayIndex] && spacesByDay[dayIndex].length > 0;
         const dayColor = hasEvents ? spacesByDay[dayIndex][0].dayColor : 'hsl(var(--muted))';
