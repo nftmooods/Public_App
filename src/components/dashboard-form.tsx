@@ -240,50 +240,46 @@ export function DashboardForm() {
       </form>
        
        <div className="mt-8 border-t border-border/20 pt-6">
-        <h3 className="text-lg font-semibold">Password & Security</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-            Click the button to receive an email to reset your password.
-        </p>
-         <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleSendResetEmail} 
-            disabled={isSendingReset}
-            className="mt-4 w-full sm:w-auto"
-        >
-          {isSendingReset ? 'Sending...' : 'Send Password Reset Email'}
-        </Button>
-      </div>
+            <h3 className="text-lg font-semibold">Security</h3>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">
+                Manage your password or delete your account. These actions are irreversible.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleSendResetEmail} 
+                    disabled={isSendingReset}
+                    className="flex-1"
+                >
+                {isSendingReset ? 'Sending...' : 'Send Password Reset Email'}
+                </Button>
 
-       <div className="mt-8 border-t border-destructive/20 pt-6">
-        <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          This action cannot be undone. This will permanently delete your account and all associated data.
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" className="mt-4 w-full sm:w-auto">
-                <Trash2Icon className="mr-2 h-4 w-4" />
-                Delete My Account
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete your account,
-                your profile information, and any spaces you have created. Are you sure you
-                want to continue?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
-                Yes, delete my account
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="flex-1">
+                            <Trash2Icon className="mr-2 h-4 w-4" />
+                            Delete My Account
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your account,
+                            your profile information, and any spaces you have created. Are you sure you
+                            want to continue?
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
+                            Yes, delete my account
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
       </div>
     </Form>
   );
