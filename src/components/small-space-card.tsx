@@ -7,6 +7,8 @@ import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { isValid } from "date-fns";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+
 
 interface SmallSpaceCardProps {
   space: Space;
@@ -79,8 +81,7 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
     formattedTime = "Invalid Time";
   }
 
-  return (
-    <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className="block bg-background/50 hover:bg-background/80 transition-colors p-2 rounded-md text-xs group border border-border/20">
+  const CardContent = () => (
       <div className="flex flex-col text-foreground">
         <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
           <p className="font-bold text-sm whitespace-nowrap">{formattedTime}</p>
@@ -88,6 +89,21 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
         </div>
         <p className="font-semibold leading-tight transition-colors text-card-foreground">{space.name}</p>
       </div>
-    </Link>
   );
+
+  const cardClasses = "block bg-background/50 transition-colors p-2 rounded-md text-xs group border border-border/20";
+  
+  if (space.projectUrl) {
+    return (
+        <Link href={space.projectUrl} target="_blank" rel="noopener noreferrer" className={cn(cardClasses, "hover:bg-background/80")}>
+            <CardContent />
+        </Link>
+    );
+  }
+
+  return (
+    <div className={cardClasses}>
+        <CardContent />
+    </div>
+  )
 }
