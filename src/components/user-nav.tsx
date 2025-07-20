@@ -20,7 +20,7 @@ import { auth } from "@/lib/firebase";
 
 
 export function UserNav() {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
+  const { user, loading, isSuperAdmin } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -78,7 +78,7 @@ export function UserNav() {
               <span>My Account</span>
              </Link>
           </DropdownMenuItem>
-           {(isAdmin || isSuperAdmin) && (
+           {isSuperAdmin && (
               <DropdownMenuItem asChild>
                 <Link href="/admin">
                   <ShieldCheck className="mr-2 h-4 w-4" />

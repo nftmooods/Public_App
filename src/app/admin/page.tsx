@@ -13,10 +13,10 @@ import { AlertCircle } from 'lucide-react';
 
 
 export default function AdminPage() {
-  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
+  const { user, loading, isSuperAdmin } = useAuth();
   const router = useRouter();
 
-  const hasAccess = isAdmin || isSuperAdmin;
+  const hasAccess = isSuperAdmin;
 
   useEffect(() => {
     if (!loading && !user) {
