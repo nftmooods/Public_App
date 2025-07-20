@@ -11,6 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from 'next/link';
 import { Button } from './ui/button';
+import { CheckCircle2 } from 'lucide-react';
+
+// Liste statique temporaire des membres certifiés
+const certifiedMembers = ["L'équipe ApeChain", "build'ON"];
 
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
@@ -105,12 +109,18 @@ export function AdminDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
+                                    <TableHead>Certified</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {hosts.map((name, index) => (
                                     <TableRow key={index}>
                                         <TableCell className="font-medium">{name}</TableCell>
+                                        <TableCell>
+                                            {certifiedMembers.includes(name) && (
+                                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                            )}
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
