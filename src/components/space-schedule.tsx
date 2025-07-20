@@ -290,7 +290,7 @@ export function SpaceSchedule() {
     }
 
     return (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
              <AnimatePresence>
                 {filteredSpaces.length > 0 ? (
                     filteredSpaces.map((space) => (
