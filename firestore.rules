@@ -4,47 +4,53 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper function to check if the requesting user is a Super Admin
-    function isSuperAdmin(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.isSuperAdmin == true;
+    function isSuperAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isSuperAdmin == true;
     }
 
-    // Rules for the 'users' collection
+    // --- Users Collection ---
+    // Rules for accessing user profiles.
     match /users/{userId} {
-      // Anyone can create their own user document (on signup)
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Allow reading a profile if:
+      // 1. You are the owner of the profile.
+      // 2. You are a Super Admin.
+      allow get: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      
+      // Allow listing all users ONLY if you are a Super Admin.
+      allow list: if request.auth != null && isSuperAdmin();
 
-      // A user can read their own profile. A Super Admin can read any profile.
-      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
-      
-      // A user can update their own profile. A Super Admin can update any profile.
-      allow update: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
-      
-      // A user can delete their own profile. A Super Admin can delete any profile.
-      allow delete: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
+      // Allow writing to a profile if:
+      // 1. You are the owner (for self-updates).
+      // 2. You are a Super Admin (for managing roles like isHost, isCertified, etc.).
+      allow write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
     }
 
-    // Rules for the 'spaces' collection
+    // --- Spaces Collection ---
+    // Rules for events/spaces.
     match /spaces/{spaceId} {
-      // Any authenticated user can read spaces
-      allow read: if request.auth != null;
+      // Anyone can read events.
+      allow read: if true;
       
-      // Only authenticated users can create a space
+      // Any authenticated user can create a new space.
       allow create: if request.auth != null;
       
-      // Only the creator of the space or a Super Admin can update or delete it
-      allow update, delete: if request.auth != null && (resource.data.createdBy == request.auth.uid || isSuperAdmin(request.auth.uid));
+      // Allow update/delete if:
+      // 1. You are the creator of the space.
+      // 2. You are a Super Admin.
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.createdBy || isSuperAdmin());
     }
-    
-    // Rules for the 'favorites' collection
+
+    // --- Favorites Collection ---
+    // Rules for managing favorites.
     match /favorites/{favoriteId} {
-        // Any authenticated user can read all favorites (for counts)
-        allow read: if request.auth != null;
-
-        // A user can only create a favorite for themselves
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-
-        // A user can only delete their own favorite
-        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow reading for everyone to count likes.
+      allow read: if true;
+      
+      // Allow creating a favorite ONLY if you are the one creating it.
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      
+      // Allow deleting a favorite ONLY if you are the one who created it.
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
