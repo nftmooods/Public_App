@@ -79,7 +79,7 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
     <div className={cn(cardClasses)}>
         <div className="flex flex-col text-foreground">
           <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
-            <p className="text-muted-foreground text-xs whitespace-nowrap transition-all group-hover:font-medium group-hover:text-sm">{formattedTime}</p>
+            <p className="text-muted-foreground text-xs whitespace-nowrap transition-all group-hover:font-medium group-hover:text-sm group-hover:text-foreground">{formattedTime}</p>
           </div>
           <p className="font-semibold leading-tight transition-all text-primary group-hover:text-base">{space.name}</p>
         </div>
