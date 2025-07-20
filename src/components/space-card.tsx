@@ -207,8 +207,8 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </div>
           </div>
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
+      <CardFooter className="flex justify-between items-center gap-4">
+        <div className="flex items-center gap-1">
             <Button
                 variant="ghost"
                 size="icon"
@@ -219,9 +219,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             >
                 <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : ""}`} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share moment" className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
-                <Share2Icon className="w-5 h-5" />
-            </Button>
             {canEdit && (
                 <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
                     <Link href={`/edit-space/${space.id}`} aria-label="Edit moment">
@@ -230,18 +227,20 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 </Button>
             )}
         </div>
-        {space.projectUrl ? (
-          <Button asChild>
-            <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
-              Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
-            </a>
-          </Button>
-        ) : (
-          <Button variant="outline" disabled className="gap-2 text-primary-foreground">
-            Link not available
-            <Link2Off className="w-4 h-4" />
-          </Button>
-        )}
+        <div className="flex-grow">
+          {space.projectUrl ? (
+            <Button asChild className="w-full">
+              <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
+                Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" disabled className="w-full gap-2 text-primary-foreground">
+              Link not available
+              <Link2Off className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

@@ -178,11 +178,8 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
         </div>
 
         <DialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
-            <div className="flex justify-between items-center w-full">
+            <div className="flex justify-between items-center w-full gap-4">
                 <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Share moment" className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
-                        <Share2Icon className="w-5 h-5" />
-                    </Button>
                     {canEdit && (
                         <Button variant="ghost" size="icon" asChild className="text-card-foreground/60 hover:text-primary hover:bg-primary/10">
                             <Link href={`/edit-space/${space.id}`} aria-label="Edit moment">
@@ -191,18 +188,20 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
                         </Button>
                     )}
                 </div>
-                {space.projectUrl ? (
-                <Button asChild size="sm">
-                    <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
-                    Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
-                    </a>
-                </Button>
-                ) : (
-                <Button variant="outline" size="sm" disabled className="gap-2 text-primary-foreground">
-                    Link not available
-                    <Link2Off className="w-4 h-4" />
-                </Button>
-                )}
+                <div className="flex-grow">
+                  {space.projectUrl ? (
+                    <Button asChild size="lg" className="w-full">
+                      <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
+                        Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="lg" disabled className="w-full gap-2 text-primary-foreground">
+                      Link not available
+                      <Link2Off className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
             </div>
         </DialogFooter>
       </DialogContent>
