@@ -353,40 +353,44 @@ export function SpaceSchedule() {
             </TabsList>
             </Tabs>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex items-center space-x-2">
-                <Switch
-                id="favorites-only"
-                checked={showFavorites}
-                onCheckedChange={handleShowFavoritesChange}
-                aria-label="Show favorites only"
-                disabled={!user}
-                />
-                <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
-                Favorites only { !user && "(Login required)"}
-                </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-                <Switch
-                id="my-spaces-only"
-                checked={showMySpaces}
-                onCheckedChange={handleShowMySpacesChange}
-                aria-label="Show my moments only"
-                disabled={!user}
-                />
-                <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
-                My Moments { !user && "(Login required)"}
-                </Label>
-            </div>
-            <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select timezone" />
-                </SelectTrigger>
-                <SelectContent>
-                {cityTimezones.map(tz => (
-                    <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                ))}
-                </SelectContent>
-            </Select>
+              {(!isMobile || user) && (
+                <>
+                  <div className="flex items-center space-x-2">
+                      <Switch
+                      id="favorites-only"
+                      checked={showFavorites}
+                      onCheckedChange={handleShowFavoritesChange}
+                      aria-label="Show favorites only"
+                      disabled={!user}
+                      />
+                      <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
+                      Favorites only { !user && "(Login required)"}
+                      </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                      <Switch
+                      id="my-spaces-only"
+                      checked={showMySpaces}
+                      onCheckedChange={handleShowMySpacesChange}
+                      aria-label="Show my moments only"
+                      disabled={!user}
+                      />
+                      <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
+                      My Moments { !user && "(Login required)"}
+                      </Label>
+                  </div>
+                </>
+              )}
+              <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                  {cityTimezones.map(tz => (
+                      <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                  ))}
+                  </SelectContent>
+              </Select>
             </div>
         </div>
         <div className="relative">
