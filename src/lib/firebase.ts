@@ -79,12 +79,13 @@ export const getUserProfile = async (userId: string) => {
     const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
-      return userDocSnap.data() as { 
-          name: string; 
-          email: string; 
-          timezone?: string; 
-          host?: boolean; 
-          SuperAdmin?: boolean; 
+      const data = userDocSnap.data();
+      return { 
+          name: data.name, 
+          email: data.email, 
+          timezone: data.timezone, 
+          isHost: data.host, 
+          isSuperAdmin: data.SuperAdmin, 
       };
     } else {
       console.log("No such user document!");
