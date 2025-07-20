@@ -202,7 +202,7 @@ export function AdminDashboard() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
+                                    <TableHead>Host</TableHead>
                                     <TableHead className="text-right w-[120px]">Certified</TableHead>
                                 </TableRow>
                             </TableHeader>
