@@ -160,7 +160,9 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     });
   };
 
-  const canEdit = user && (user.uid === space.createdBy || user.isSuperAdmin);
+  const isCreator = user && user.uid === space.createdBy;
+  const isCoHost = user && space.coHostName && user.name === space.coHostName;
+  const canEdit = isCreator || isCoHost || (user && user.isSuperAdmin);
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">

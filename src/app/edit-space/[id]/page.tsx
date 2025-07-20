@@ -42,8 +42,11 @@ export default function EditSpacePage() {
           return;
         }
 
-        // Standard user permission check
-        if (!isSuperAdmin && spaceData.createdBy !== user.uid) {
+        // Extended permission check
+        const isCreator = spaceData.createdBy === user.uid;
+        const isCoHost = spaceData.coHostName && spaceData.coHostName === user.name;
+        
+        if (!isSuperAdmin && !isCreator && !isCoHost) {
           setError("You do not have permission to edit this moment.");
           return;
         }
