@@ -3,26 +3,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own user document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Spaces can be read by anyone.
-    // Any logged-in user can create a space.
-    // Only the creator of the space can update or delete it.
+    // Allow public read access to spaces
     match /spaces/{spaceId} {
       allow read: if true;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+      allow update, delete: if request.auth != null && (resource.data.createdBy == request.auth.uid || request.auth.token.admin == true);
     }
 
-    // Users can only manage their own favorites.
-    // FAVORITES: Allow read for everyone to count likes.
+    match /users/{userId} {
+      // Admins can read any user document
+      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
+      // Only the user can update or delete their own document
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      // Anyone authenticated can create a user document (on signup)
+      allow create: if request.auth != null;
+    }
+    
+    // Allow listing users only for admins
+    match /users/{userId} {
+       allow list: if request.auth != null && request.auth.token.admin == true;
+    }
+
+
     match /favorites/{favoriteId} {
-      allow read: if true; // CHANGED: Allow read for everyone to count likes
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+        allow read, create, delete: if request.auth != null;
     }
   }
 }
