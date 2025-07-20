@@ -12,7 +12,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { isValid, addHours } from "date-fns";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo } from "react";
 
 interface SpaceCardProps {
   space: Space;
@@ -64,7 +64,6 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLive, setIsLive] = useState(false);
 
   const { contentPlaceTag, contentTypeTags } = useMemo(() => {
     const tags = space.tags || [];
@@ -104,19 +103,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     eventEndDate = new Date(NaN);
   }
 
-  useEffect(() => {
-    const checkLiveStatus = () => {
-      const now = new Date();
-      const isCurrentlyLive = isValid(eventStartDate) && isValid(eventEndDate) && now >= eventStartDate && now <= eventEndDate;
-      setIsLive(isCurrentlyLive);
-    };
-
-    checkLiveStatus();
-    const interval = setInterval(checkLiveStatus, 60000); // Check every minute
-
-    return () => clearInterval(interval);
-  }, [eventStartDate, eventEndDate]);
-  
   if (!isValid(eventStartDate)) {
        return (
         <Card className="flex flex-col h-full bg-destructive/10 border-destructive/50">
@@ -182,11 +168,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
             <div className="flex flex-col items-end gap-2">
-                 {isLive && (
-                    <Badge className="bg-green-500 text-white animate-pulse">
-                        LIVE
-                    </Badge>
-                 )}
                  <Badge 
                     style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
                     className="whitespace-nowrap flex-shrink-0"

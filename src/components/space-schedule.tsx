@@ -13,9 +13,12 @@ import { useAuth } from "@/context/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { toDate } from 'date-fns-tz';
 import { 
   addDays, 
   getDay,
+  isValid,
+  addHours
 } from "date-fns";
 import { FullWeekView } from "./full-week-view";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -49,6 +52,29 @@ const getUpcomingDateForEvent = (dayOfWeek: number): Date => {
     return nextEventDate;
 };
 
+const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
+  if (!timeString || !isValid(baseDate)) {
+      return new Date(NaN);
+  }
+  
+  const [hours, minutes] = timeString.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) {
+    return new Date(NaN);
+  }
+
+  const dateStringWithTime = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}-${String(baseDate.getDate()).padStart(2, '0')}T${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:00`;
+
+  try {
+    const eventDateInOriginalTz = toDate(dateStringWithTime, { timeZone: space.timezone });
+    if (!isValid(eventDateInOriginalTz)) {
+        throw new Error("toDate resulted in an invalid date");
+    }
+    return eventDateInOriginalTz;
+  } catch (e) {
+    console.error(`Error creating date for timezone ${space.timezone} with string "${dateStringWithTime}"`, e);
+    return new Date(NaN);
+  }
+}
 
 const useSpaces = () => {
   const [spaces, setSpaces] = useState<Omit<Space, "dateTime" | "dayColor">[]>([]);
@@ -126,7 +152,7 @@ const useFavorites = (user: any) => {
 };
 
 export function SpaceSchedule() {
-  const [filter, setFilter] = useState<"week" | "today" | "tomorrow" | "full">("week");
+  const [filter, setFilter] = useState<"week" | "today" | "tomorrow" | "full" | "live">("week");
   const [showFavorites, setShowFavorites] = useState(false);
   const [showMySpaces, setShowMySpaces] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
@@ -144,12 +170,10 @@ export function SpaceSchedule() {
       setSelectedTimezone(user.timezone);
     } else if (typeof window !== 'undefined') {
         const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        // Check if the detected timezone is in our simplified list
         const exists = cityTimezones.some(tz => tz.value === detectedTimezone);
         if (exists) {
           setSelectedTimezone(detectedTimezone);
         } else {
-           // Fallback to a default if not found (e.g., UTC)
            setSelectedTimezone('UTC');
         }
     }
@@ -185,7 +209,6 @@ export function SpaceSchedule() {
     
     let spacesToFilter = spacesWithCalculatedDates;
 
-    // Search filter
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         spacesToFilter = spacesToFilter.filter(space => 
@@ -206,6 +229,21 @@ export function SpaceSchedule() {
     const todayDayOfWeek = getDay(today);
 
     switch (filter) {
+      case "live":
+        const now = new Date();
+        result = spacesToFilter.filter(space => {
+            const eventStartDate = getEventDateWithTime(space, space.startTime, space.dateTime!);
+            let eventEndDate: Date;
+             if (space.endTime) {
+                eventEndDate = getEventDateWithTime(space, space.endTime, space.dateTime!);
+            } else if (isValid(eventStartDate)) {
+                eventEndDate = addHours(eventStartDate, 1);
+            } else {
+                eventEndDate = new Date(NaN);
+            }
+            return isValid(eventStartDate) && isValid(eventEndDate) && now >= eventStartDate && now <= eventEndDate;
+        });
+        break;
       case "today":
         result = spacesToFilter.filter(space => space.dayOfWeek === todayDayOfWeek);
         break;
@@ -223,13 +261,11 @@ export function SpaceSchedule() {
     }
     
     return result.sort((a,b) => {
-        // Sort by day first (Monday = 1, Sunday = 7 for sorting)
         const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
         const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
         const dayDiff = dayA - dayB;
         if (dayDiff !== 0) return dayDiff;
         
-        // Then sort by start time
         return a.startTime.localeCompare(b.startTime);
     });
 
@@ -302,6 +338,7 @@ export function SpaceSchedule() {
                 <TabsTrigger value="week">This Week</TabsTrigger>
                 <TabsTrigger value="today">Today</TabsTrigger>
                 <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+                <TabsTrigger value="live">Live</TabsTrigger>
                 {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
             </TabsList>
             </Tabs>
