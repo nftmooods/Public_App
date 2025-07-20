@@ -54,7 +54,7 @@ export function FullWeekView({ spaces, displayTimezone }: FullWeekViewProps) {
               >
                   {dayNames[dayIndex]}
               </h2>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col">
                   {hasEvents ? (
                   spacesByDay[dayIndex].map(space => (
                       <div key={space.id} onClick={() => setSelectedSpace(space)} className="cursor-pointer">
