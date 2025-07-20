@@ -15,6 +15,23 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+const formatTime = (timeString: string | undefined): string => {
+    if (!timeString) return '-';
+    const [hoursStr, minutesStr] = timeString.split(':');
+    const hours = parseInt(hoursStr, 10);
+    const minutes = parseInt(minutesStr, 10);
+
+    if (isNaN(hours) || isNaN(minutes)) {
+        return timeString;
+    }
+
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
+    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+};
+
 export function HostDashboard() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
@@ -139,7 +156,7 @@ export function HostDashboard() {
                             <TableRow key={space.id}>
                                 <TableCell className="font-medium">{space.name}</TableCell>
                                 <TableCell>{dayNames[space.dayOfWeek]}</TableCell>
-                                <TableCell>{space.startTime}</TableCell>
+                                <TableCell>{formatTime(space.startTime)}</TableCell>
                                 <TableCell>{space.coHostName || '-'}</TableCell>
                                 <TableCell>
                                     <Checkbox
