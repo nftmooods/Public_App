@@ -2,38 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isSuperAdmin() {
-      // Check if the user making the request has the SuperAdmin field set to true in their user document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.SuperAdmin == true;
+    
+    // Checks if a user has the SuperAdmin field set to true in their user document.
+    function isSuperAdmin(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.SuperAdmin == true;
     }
 
-    // Rules for the 'users' collection
+    // Users can only read/write their own document. SuperAdmins can read/write any document.
     match /users/{userId} {
-      // Allow get: if the user is fetching their own document, OR if the user is a SuperAdmin.
-      allow get: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
-      
-      // Allow list: Only SuperAdmins can list all users.
-      allow list: if request.auth != null && isSuperAdmin();
-      
-      // Allow write (create, update): if the user is writing to their own document, OR if the user is a SuperAdmin.
-      allow write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      allow get: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
+      allow list: if request.auth != null && isSuperAdmin(request.auth.uid);
+      allow write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
     }
 
-    // Rules for the 'spaces' collection
+    // Spaces can be read by anyone.
+    // Logged-in users can create spaces.
+    // Only the creator or a SuperAdmin can update or delete a space.
     match /spaces/{spaceId} {
       allow read: if true;
       allow create: if request.auth != null;
-      
-      // Allow update/delete: if the user is the creator of the space, OR if the user is a SuperAdmin.
-      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.createdBy || isSuperAdmin());
+      allow update, delete: if request.auth != null && 
+                                (request.auth.uid == resource.data.createdBy || isSuperAdmin(request.auth.uid));
     }
 
-    // Rules for the 'favorites' collection
+    // Users can only manage their own favorites.
+    // Reading favorites is public to allow counting likes.
     match /favorites/{favoriteId} {
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
   }
 }
