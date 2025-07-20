@@ -36,6 +36,8 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   timezone: z.string().optional(),
+  walletAddress: z.string().optional(),
+  twitterHandle: z.string().optional(),
 });
 
 export function DashboardForm() {
@@ -51,6 +53,8 @@ export function DashboardForm() {
       name: user?.name || "",
       email: user?.email || "",
       timezone: user?.timezone || "",
+      walletAddress: user?.walletAddress || "",
+      twitterHandle: user?.twitterHandle || "",
     },
   });
 
@@ -60,6 +64,8 @@ export function DashboardForm() {
         name: user.name || "",
         email: user.email || "",
         timezone: user.timezone || "",
+        walletAddress: user.walletAddress || "",
+        twitterHandle: user.twitterHandle || "",
       });
     }
   }, [user, form]);
@@ -72,11 +78,11 @@ export function DashboardForm() {
     }
 
     setIsSaving(true);
-    const { name, email, timezone } = values;
+    const { name, email, timezone, walletAddress, twitterHandle } = values;
     const promises = [];
     let nameChanged = false;
     
-    const updates: { name?: string; timezone?: string } = {};
+    const updates: { name?: string; timezone?: string, walletAddress?: string, twitterHandle?: string } = {};
 
     // --- Update Name ---
     if (name !== user.name) {
@@ -89,6 +95,16 @@ export function DashboardForm() {
       updates.timezone = timezone;
     }
     
+    // --- Update Wallet Address ---
+    if (walletAddress !== user.walletAddress) {
+        updates.walletAddress = walletAddress;
+    }
+
+    // --- Update Twitter Handle ---
+    if (twitterHandle !== user.twitterHandle) {
+        updates.twitterHandle = twitterHandle;
+    }
+
     // --- Update Email ---
     if (email !== user.email) {
        promises.push(updateEmail(auth.currentUser, email));
@@ -99,7 +115,7 @@ export function DashboardForm() {
         promises.push(updateUserProfile(user.uid, updates));
     }
     
-    if (promises.length === 0 && !nameChanged && timezone === user.timezone) {
+    if (promises.length === 0 && !nameChanged && timezone === user.timezone && walletAddress === user.walletAddress && twitterHandle === user.twitterHandle) {
         toast({ title: "No Changes", description: "You haven't made any changes to your profile." });
         setIsSaving(false);
         return;
@@ -206,6 +222,32 @@ export function DashboardForm() {
               <FormLabel>Email Address</FormLabel>
               <FormControl>
                 <Input type="email" placeholder="your@email.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="twitterHandle"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Twitter Handle</FormLabel>
+              <FormControl>
+                <Input placeholder="@yourhandle" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="walletAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Wallet Address</FormLabel>
+              <FormControl>
+                <Input placeholder="0x..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

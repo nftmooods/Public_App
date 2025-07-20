@@ -33,4 +33,6 @@ export interface User {
   isHost: boolean;
   isCertified?: boolean; // Added for user certification
   timezone?: string;
+  walletAddress?: string;
+  twitterHandle?: string;
 }

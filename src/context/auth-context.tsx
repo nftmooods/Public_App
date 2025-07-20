@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isHost: isHostUser,
             isCertified: isCertifiedUser,
             timezone: userProfile?.timezone,
+            walletAddress: userProfile?.walletAddress,
+            twitterHandle: userProfile?.twitterHandle,
         });
     } else {
         // User is signed out

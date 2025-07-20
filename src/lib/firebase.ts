@@ -63,6 +63,8 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
                 host: false, // Default role
                 SuperAdmin: false, // Default role
                 isCertified: false, // Default certification status
+                walletAddress: "",
+                twitterHandle: "",
             });
         } catch (error) {
             console.error("Error creating user document", error);
@@ -88,6 +90,8 @@ export const getUserProfile = async (userId: string) => {
           isHost: data.host, 
           isSuperAdmin: data.SuperAdmin, 
           isCertified: data.isCertified,
+          walletAddress: data.walletAddress,
+          twitterHandle: data.twitterHandle,
       };
     } else {
       console.log("No such user document!");
@@ -103,19 +107,25 @@ export const getUserProfile = async (userId: string) => {
 /**
  * Updates a user's profile in Firestore and Firebase Auth.
  */
-export const updateUserProfile = async (userId: string, updates: { name?: string, timezone?: string }) => {
+export const updateUserProfile = async (userId: string, updates: { name?: string, timezone?: string, walletAddress?: string, twitterHandle?: string }) => {
     if (!userId) throw new Error("User ID is required to update profile.");
     
     const userDocRef = doc(db, "users", userId);
     const authUser = auth.currentUser;
 
     const firestoreUpdates: { [key: string]: any } = {};
-    if (updates.name) {
+    if (updates.name !== undefined) {
         firestoreUpdates.name = updates.name;
         firestoreUpdates.name_lowercase = updates.name.toLowerCase();
     }
-    if (updates.timezone) {
+    if (updates.timezone !== undefined) {
       firestoreUpdates.timezone = updates.timezone;
+    }
+     if (updates.walletAddress !== undefined) {
+      firestoreUpdates.walletAddress = updates.walletAddress;
+    }
+     if (updates.twitterHandle !== undefined) {
+      firestoreUpdates.twitterHandle = updates.twitterHandle;
     }
     
     const promises = [];
