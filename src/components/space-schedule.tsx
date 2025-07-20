@@ -7,6 +7,7 @@ import { SpaceCard } from "./space-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -129,6 +130,7 @@ export function SpaceSchedule() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showMySpaces, setShowMySpaces] = useState(false);
   const [selectedTimezone, setSelectedTimezone] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const isMobile = useIsMobile();
 
@@ -182,11 +184,21 @@ export function SpaceSchedule() {
     }));
     
     let spacesToFilter = spacesWithCalculatedDates;
+
+    // Search filter
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        spacesToFilter = spacesToFilter.filter(space => 
+            space.name.toLowerCase().includes(lowercasedQuery) ||
+            (space.authorName && space.authorName.toLowerCase().includes(lowercasedQuery)) ||
+            (space.coHostName && space.coHostName.toLowerCase().includes(lowercasedQuery))
+        );
+    }
     
     if (showFavorites) {
-        spacesToFilter = spacesWithCalculatedDates.filter(space => favorites.includes(space.id));
+        spacesToFilter = spacesToFilter.filter(space => favorites.includes(space.id));
     } else if (showMySpaces && user) {
-        spacesToFilter = spacesWithCalculatedDates.filter(space => space.createdBy === user.uid);
+        spacesToFilter = spacesToFilter.filter(space => space.createdBy === user.uid);
     }
 
     let result: Space[];
@@ -221,7 +233,7 @@ export function SpaceSchedule() {
         return a.startTime.localeCompare(b.startTime);
     });
 
-  }, [spaces, filter, showFavorites, showMySpaces, favorites, user]);
+  }, [spaces, filter, showFavorites, showMySpaces, favorites, user, searchQuery]);
   
   const effectiveTimezone = isMounted ? selectedTimezone : "UTC";
 
@@ -264,7 +276,7 @@ export function SpaceSchedule() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="col-span-full text-center py-12">
-                        <p className="text-muted-foreground">No moments scheduled for this period.</p>
+                        <p className="text-muted-foreground">No moments found for your criteria.</p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -282,51 +294,61 @@ export function SpaceSchedule() {
           Your central hub for community events and moments.
         </p>
       </div>
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
-          <TabsList>
-            <TabsTrigger value="week">This Week</TabsTrigger>
-            <TabsTrigger value="today">Today</TabsTrigger>
-            <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
-            {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
-          </TabsList>
-        </Tabs>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="favorites-only"
-              checked={showFavorites}
-              onCheckedChange={handleShowFavoritesChange}
-              aria-label="Show favorites only"
-              disabled={!user}
+      
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
+            <TabsList>
+                <TabsTrigger value="week">This Week</TabsTrigger>
+                <TabsTrigger value="today">Today</TabsTrigger>
+                <TabsTrigger value="tomorrow">Tomorrow</TabsTrigger>
+                {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
+            </TabsList>
+            </Tabs>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center space-x-2">
+                <Switch
+                id="favorites-only"
+                checked={showFavorites}
+                onCheckedChange={handleShowFavoritesChange}
+                aria-label="Show favorites only"
+                disabled={!user}
+                />
+                <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
+                Favorites only { !user && "(Login required)"}
+                </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+                <Switch
+                id="my-spaces-only"
+                checked={showMySpaces}
+                onCheckedChange={handleShowMySpacesChange}
+                aria-label="Show my moments only"
+                disabled={!user}
+                />
+                <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
+                My Moments { !user && "(Login required)"}
+                </Label>
+            </div>
+            <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                {cityTimezones.map(tz => (
+                    <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+            </div>
+        </div>
+        <div className="relative">
+            <Input
+            placeholder="Search by name, host, or co-host..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
             />
-            <Label htmlFor="favorites-only" className={!user ? "text-muted-foreground" : ""}>
-              Favorites only { !user && "(Login required)"}
-            </Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="my-spaces-only"
-              checked={showMySpaces}
-              onCheckedChange={handleShowMySpacesChange}
-              aria-label="Show my moments only"
-              disabled={!user}
-            />
-            <Label htmlFor="my-spaces-only" className={!user ? "text-muted-foreground" : ""}>
-              My Moments { !user && "(Login required)"}
-            </Label>
-          </div>
-          <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select timezone" />
-            </SelectTrigger>
-            <SelectContent>
-              {cityTimezones.map(tz => (
-                <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
