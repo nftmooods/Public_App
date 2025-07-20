@@ -195,6 +195,7 @@ export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime">
                 coHostName: data.coHostName,
                 createdBy: data.createdBy,
                 isActive: data.isActive,
+                isCertified: data.isCertified,
                 createdAt: (data.createdAt as Timestamp).toDate(),
             } as Omit<Space, "dateTime">;
         } else {
@@ -228,6 +229,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             coHostName: data.coHostName,
             createdBy: data.createdBy,
             isActive: data.isActive,
+            isCertified: data.isCertified,
             // Ensure Firestore Timestamps are converted to JS Date objects
             createdAt: (data.createdAt as Timestamp).toDate(),
         } as Omit<Space, "dateTime">;

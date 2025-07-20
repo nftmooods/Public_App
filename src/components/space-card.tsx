@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { isValid, addHours } from "date-fns";
 import { useMemo } from "react";
+import { CertifiedIcon } from "./icons";
 
 interface SpaceCardProps {
   space: Space;
@@ -62,7 +63,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 }
 
 export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
   const { contentPlaceTag, contentTypeTags } = useMemo(() => {
@@ -162,13 +163,16 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
 
   const isCreator = user && user.uid === space.createdBy;
   const isCoHost = user && space.coHostName && user.name === space.coHostName;
-  const canEdit = isCreator || isCoHost || (user && user.isSuperAdmin);
+  const canEdit = isCreator || isCoHost || isSuperAdmin;
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
-            <CardTitle className="font-headline text-xl">{space.name}</CardTitle>
+            <CardTitle className="font-headline text-xl flex items-center gap-2">
+              {space.name}
+              {space.isCertified && <CertifiedIcon className="w-5 h-5 flex-shrink-0" />}
+            </CardTitle>
             <div className="flex flex-col items-end gap-2">
                  <Badge 
                     style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}

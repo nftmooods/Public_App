@@ -16,6 +16,7 @@ export interface Space {
     createdBy: string; // The UID of the user who created the event.
     createdAt: Date;
     isActive?: boolean; // Controls visibility in the schedule
+    isCertified?: boolean; // Added for super admin certification
     // This will be dynamically calculated on the client
     dateTime?: Date; 
     dayColor?: string;

@@ -91,6 +91,7 @@ const formSchema = z.object({
   endTime: z.string().optional(),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
   isActive: z.boolean().default(true),
+  isCertified: z.boolean().default(false),
 });
 
 interface EditSpaceFormProps {
@@ -133,6 +134,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       endTime: space.endTime || "",
       timezone: space.timezone || "",
       isActive: space.isActive === undefined ? true : space.isActive,
+      isCertified: space.isCertified || false,
     },
   });
 
@@ -150,7 +152,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, authorName, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType, isActive } = values;
+      const { name, authorName, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType, isActive, isCertified } = values;
       const tags = [contentPlace, ...contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
@@ -167,6 +169,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       
       if (isSuperAdmin) {
           spaceUpdateData.authorName = authorName;
+          spaceUpdateData.isCertified = isCertified;
+          if (!isCertified) {
+            spaceUpdateData.isCertified = deleteField();
+          }
       }
 
       await updateSpace(space.id, spaceUpdateData);
@@ -462,6 +468,31 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                 </FormItem>
             )}
         />
+
+        {isSuperAdmin && (
+          <FormField
+              control={form.control}
+              name="isCertified"
+              render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-yellow-500/50 p-4 bg-yellow-500/10">
+                  <div className="space-y-0.5">
+                      <FormLabel className="text-base text-yellow-300">
+                      Certify Moment
+                      </FormLabel>
+                      <FormDescription className="text-yellow-400/70">
+                      Show a certified badge next to the moment name. (Super Admin only)
+                      </FormDescription>
+                  </div>
+                  <FormControl>
+                      <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      />
+                  </FormControl>
+                  </FormItem>
+              )}
+          />
+        )}
         
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2 pt-4">
             <AlertDialog>

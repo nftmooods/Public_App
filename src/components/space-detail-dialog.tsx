@@ -20,6 +20,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { CertifiedIcon } from "./icons";
 
 
 interface SpaceDetailDialogProps {
@@ -69,7 +70,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 }
 
 export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: SpaceDetailDialogProps) {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
   const handleShare = () => {
@@ -81,8 +82,11 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
         description: "The link to this moment has been copied to your clipboard.",
     });
   };
+  
+  const isCreator = user && space && user.uid === space.createdBy;
+  const isCoHost = user && space && space.coHostName && user.name === space.coHostName;
+  const canEdit = isCreator || isCoHost || isSuperAdmin;
 
-  const canEdit = user && space && (user.uid === space.createdBy || user.isSuperAdmin);
 
   const { contentPlaceTag, contentTypeTags, formattedDateTime } = useMemo(() => {
     if (!space || !space.dateTime || !isValid(space.dateTime)) {
@@ -136,7 +140,10 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
       <DialogContent className="bg-card text-card-foreground">
         <DialogHeader>
             <div className="flex justify-between items-start gap-4">
-                <DialogTitle className="font-headline text-2xl">{space.name}</DialogTitle>
+                <DialogTitle className="font-headline text-2xl flex items-center gap-2">
+                  {space.name}
+                  {space.isCertified && <CertifiedIcon className="w-6 h-6 flex-shrink-0" />}
+                </DialogTitle>
                 <Badge 
                     style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
                     className="whitespace-nowrap flex-shrink-0"
