@@ -247,7 +247,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <Input {...field} disabled={!isSuperAdmin} />
                 </FormControl>
                 <FormDescription>
-                    {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed."}
+                    {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed., contact nftmooods for a manual editing"}
                 </FormDescription>
                 <FormMessage />
                 </FormItem>
