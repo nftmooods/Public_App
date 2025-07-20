@@ -136,7 +136,7 @@ export const updateUserSpacesAuthorName = async (userId: string, newName: string
         const batch = writeBatch(db);
         
         querySnapshot.forEach((docSnap) => {
-            batch.update(docSnap.ref, { authorName: newName });
+            batch.update(docSnap.ref, { authorName: newName, hostName: newName });
         });
         
         await batch.commit();
@@ -207,6 +207,7 @@ export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime">
                 endTime: data.endTime,
                 timezone: data.timezone,
                 authorName: data.authorName,
+                hostName: data.hostName,
                 coHostName: data.coHostName,
                 createdBy: data.createdBy,
                 isActive: data.isActive,
@@ -241,6 +242,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             endTime: data.endTime,
             timezone: data.timezone,
             authorName: data.authorName,
+            hostName: data.hostName,
             coHostName: data.coHostName,
             createdBy: data.createdBy,
             isActive: data.isActive,
@@ -265,6 +267,9 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
   }
   if (!dataToSave.projectUrl) {
     delete (dataToSave as Partial<typeof dataToSave>).projectUrl;
+  }
+   if (!dataToSave.hostName) {
+    delete (dataToSave as Partial<typeof dataToSave>).hostName;
   }
   const newSpaceRef = await addDoc(spacesCol, dataToSave);
   return newSpaceRef.id;

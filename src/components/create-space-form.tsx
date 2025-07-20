@@ -132,6 +132,7 @@ export function CreateSpaceForm() {
               startTime,
               timezone,
               authorName: user.name!, // Always use the authenticated user's name
+              hostName: user.name!, // Also set hostName
               createdBy: user.uid,   // Always use the authenticated user's UID
           };
           if (projectUrl) {
