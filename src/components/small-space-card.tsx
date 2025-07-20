@@ -73,7 +73,7 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
     formattedTime = "Invalid Time";
   }
   
-  const cardClasses = "block transition-colors p-2 text-xs group border-b border-border/20 hover:bg-background/80";
+  const cardClasses = "block transition-colors p-2 text-xs group border-b border-border/20 hover:bg-muted/40";
   
   return (
     <div className={cn(cardClasses)}>
