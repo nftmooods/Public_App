@@ -85,7 +85,7 @@ const formSchema = z.object({
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string())
     .refine((value) => value.length >= 1, { message: "You have to select at least one content type." })
-    .refine((value) => value.length <= 2, { message: "You can select a maximum of two content types." }),
+    .refine((value) => value.length <= 3, { message: "You can select a maximum of three content types." }),
   dayOfWeek: z.string().min(1, { message: "Please select a day." }),
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
