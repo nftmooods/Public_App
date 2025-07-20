@@ -153,7 +153,7 @@ export function AdminDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Event Name</TableHead>
-                                    <TableHead>Host</TableHead>
+                                    <TableHead>Author</TableHead>
                                     <TableHead>Created At</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
