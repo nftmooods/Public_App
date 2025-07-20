@@ -1,4 +1,3 @@
-
 // src/lib/types.ts
 
 // The Space interface uses a day of the week and time for recurring weekly events.
@@ -31,5 +30,6 @@ export interface User {
   photoURL?: string | null;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  isHost?: boolean;
   timezone?: string;
 }

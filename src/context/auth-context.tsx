@@ -11,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isHost: boolean;
   forceReload: () => Promise<void>;
 }
 
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isHost, setIsHost] = useState(false);
 
   const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
      if (firebaseUser) {
@@ -29,10 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Force refresh of the token to get the latest claims
         const tokenResult = await firebaseUser.getIdTokenResult(true);
         const isAdminClaim = !!tokenResult.claims.admin;
-        const isSuperAdminUser = firebaseUser.email === 'martin.lisen@gmail.com';
+        
+        // Use fields from Firestore profile
+        const isSuperAdminUser = !!userProfile?.SuperAdmin;
+        const isHostUser = !!userProfile?.host;
 
         setIsAdmin(isAdminClaim);
         setIsSuperAdmin(isSuperAdminUser);
+        setIsHost(isHostUser);
         setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -40,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             photoURL: firebaseUser.photoURL,
             isAdmin: isAdminClaim,
             isSuperAdmin: isSuperAdminUser,
+            isHost: isHostUser,
             timezone: userProfile?.timezone,
         });
     } else {
@@ -47,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsAdmin(false);
         setIsSuperAdmin(false);
+        setIsHost(false);
     }
     setLoading(false);
   }, []);
@@ -65,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [fetchUser]);
 
-  const value = { user, loading, isAdmin, isSuperAdmin, forceReload };
+  const value = { user, loading, isAdmin, isSuperAdmin, isHost, forceReload };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
