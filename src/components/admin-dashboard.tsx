@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getSpaces, updateSpaceHostName, updateSpaceAuthorName, getAllUsers, updateUserRoles } from '@/lib/firebase';
+import { getSpaces, updateSpace, deleteSpace, getAllUsers, updateUserRoles } from '@/lib/firebase';
 import type { Space, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,18 +14,29 @@ import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type EditableNameState = {
     name: string;
-    isSaving: boolean;
 };
 
 type EditableNames = {
     authorName: EditableNameState;
     hostName: EditableNameState;
+    isSaving: boolean;
 };
 
 type EditableRoles = Record<string, { isHost: boolean; isSuperAdmin: boolean; isCertified: boolean; }>;
@@ -66,8 +77,9 @@ export function AdminDashboard() {
             
             const initialEditableState = spacesWithDates.reduce((acc, space) => {
                 acc[space.id] = {
-                    authorName: { name: space.authorName || '', isSaving: false },
-                    hostName: { name: space.hostName || '', isSaving: false },
+                    authorName: { name: space.authorName || '' },
+                    hostName: { name: space.hostName || '' },
+                    isSaving: false,
                 };
                 return acc;
             }, {} as Record<string, EditableNames>);
@@ -161,46 +173,54 @@ export function AdminDashboard() {
         }
     };
 
-    const handleSaveName = async (spaceId: string, field: 'authorName' | 'hostName') => {
+    const handleSaveSpaceChanges = async (spaceId: string) => {
         const originalSpace = spaces.find(s => s.id === spaceId);
-        const { name: newName } = editableNames[spaceId][field];
-        const originalName = originalSpace ? originalSpace[field] : '';
+        if (!originalSpace) return;
+        
+        const { authorName, hostName } = editableNames[spaceId];
+        const updates: Partial<Space> = {};
 
-        if (!originalSpace || !newName || originalName === newName) {
-            return; // No change or invalid data
+        if (authorName.name !== originalSpace.authorName) {
+            updates.authorName = authorName.name;
+        }
+        if (hostName.name !== originalSpace.hostName) {
+            updates.hostName = hostName.name;
         }
 
-        setEditableNames(prev => ({ 
-            ...prev, 
-            [spaceId]: { ...prev[spaceId], [field]: { ...prev[spaceId][field], isSaving: true } } 
-        }));
+        if (Object.keys(updates).length === 0) {
+            toast({ title: "No changes to save.", variant: "default" });
+            return;
+        }
+
+        setEditableNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: true } }));
 
         try {
-            if (field === 'authorName') {
-                await updateSpaceAuthorName(spaceId, newName);
-            } else {
-                await updateSpaceHostName(spaceId, newName);
-            }
-
-            toast({ title: "Success", description: `${field} for "${originalSpace.name}" updated to "${newName}".` });
-            
-            // Update local state to reflect the change
+            await updateSpace(spaceId, updates);
+            toast({ title: "Success", description: `Changes for "${originalSpace.name}" have been saved.` });
             setSpaces(prevSpaces => prevSpaces.map(s => 
-                s.id === spaceId ? { ...s, [field]: newName } : s
+                s.id === spaceId ? { ...s, ...updates } : s
             ));
         } catch (error) {
-            console.error(`Failed to update ${field}:`, error);
-            toast({ title: "Error", description: `Could not update ${field}.`, variant: "destructive" });
-            // Revert changes on error
-            handleNameChange(spaceId, field, originalName || '');
+            console.error("Failed to save space changes:", error);
+            toast({ title: "Error", description: "Could not save changes.", variant: "destructive" });
+            handleNameChange(spaceId, 'authorName', originalSpace.authorName || '');
+            handleNameChange(spaceId, 'hostName', originalSpace.hostName || '');
         } finally {
-             setEditableNames(prev => ({ 
-                ...prev, 
-                [spaceId]: { ...prev[spaceId], [field]: { ...prev[spaceId][field], isSaving: false } } 
-            }));
+            setEditableNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: false } }));
         }
     };
     
+    const handleDeleteSpace = async (spaceId: string) => {
+        try {
+            await deleteSpace(spaceId);
+            toast({ title: "Event Deleted", description: "The event has been successfully removed." });
+            setSpaces(prev => prev.filter(s => s.id !== spaceId));
+        } catch (error) {
+            console.error("Failed to delete space:", error);
+            toast({ title: "Error", description: "Could not delete the event.", variant: "destructive" });
+        }
+    };
+
     const filteredUsers = useMemo(() => {
         if (!searchQuery) return users;
         return users.filter(user =>
@@ -325,22 +345,22 @@ export function AdminDashboard() {
                             </TableHeader>
                             <TableBody>
                                 {filteredSpaces.map((space) => {
-                                    const authorState = editableNames[space.id]?.authorName;
-                                    const hostState = editableNames[space.id]?.hostName;
-                                    const namesAreDifferent = authorState?.name !== hostState?.name;
+                                    const editState = editableNames[space.id];
+                                    if (!editState) return null; // Should not happen
+                                    
+                                    const { authorName, hostName, isSaving } = editState;
+                                    const namesAreDifferent = authorName?.name !== hostName?.name;
+                                    const isChanged = authorName?.name !== space.authorName || hostName?.name !== space.hostName;
 
                                     return (
                                         <TableRow key={space.id}>
                                             <TableCell className="font-medium">{space.name}</TableCell>
                                             <TableCell>
                                                 <Input 
-                                                    value={authorState?.name || ''}
+                                                    value={authorName?.name || ''}
                                                     onChange={(e) => handleNameChange(space.id, 'authorName', e.target.value)}
-                                                    className={cn(
-                                                        "h-8",
-                                                        namesAreDifferent && "bg-muted border-foreground/30"
-                                                    )}
-                                                    disabled={authorState?.isSaving || hostState?.isSaving}
+                                                    className={cn("h-8", namesAreDifferent && "bg-muted border-foreground/30")}
+                                                    disabled={isSaving}
                                                 />
                                             </TableCell>
                                             <TableCell className="px-1 align-middle">
@@ -350,7 +370,7 @@ export function AdminDashboard() {
                                                         size="icon" 
                                                         className="h-6 w-6"
                                                         onClick={() => copyAuthorToHost(space.id)}
-                                                        disabled={authorState?.isSaving || hostState?.isSaving}
+                                                        disabled={isSaving}
                                                         title="Copy Author to Host"
                                                     >
                                                         <ArrowRight className="h-4 w-4" />
@@ -360,7 +380,7 @@ export function AdminDashboard() {
                                                         size="icon" 
                                                         className="h-6 w-6"
                                                         onClick={() => copyHostToAuthor(space.id)}
-                                                        disabled={authorState?.isSaving || hostState?.isSaving}
+                                                        disabled={isSaving}
                                                         title="Copy Host to Author"
                                                     >
                                                         <ArrowLeft className="h-4 w-4" />
@@ -369,31 +389,45 @@ export function AdminDashboard() {
                                             </TableCell>
                                              <TableCell>
                                                 <Input 
-                                                    value={hostState?.name || ''}
+                                                    value={hostName?.name || ''}
                                                     onChange={(e) => handleNameChange(space.id, 'hostName', e.target.value)}
-                                                    className={cn(
-                                                        "h-8",
-                                                        namesAreDifferent && "bg-muted border-foreground/30"
-                                                    )}
-                                                    disabled={authorState?.isSaving || hostState?.isSaving}
+                                                    className={cn("h-8", namesAreDifferent && "bg-muted border-foreground/30")}
+                                                    disabled={isSaving}
                                                 />
                                             </TableCell>
                                             <TableCell>{format(space.createdAt, 'PP')}</TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => handleSaveName(space.id, 'authorName')}
-                                                    disabled={authorState?.isSaving || authorState?.name === space.authorName}
+                                                    onClick={() => handleSaveSpaceChanges(space.id)}
+                                                    disabled={isSaving || !isChanged}
                                                 >
-                                                    {authorState?.isSaving ? 'Saving...' : 'Save Author'}
+                                                    {isSaving ? 'Saving...' : 'Save'}
                                                 </Button>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleSaveName(space.id, 'hostName')}
-                                                    disabled={hostState?.isSaving || hostState?.name === space.hostName}
-                                                >
-                                                    {hostState?.isSaving ? 'Saving...' : 'Save Host'}
-                                                </Button>
+                                                <AlertDialog>
+                                                  <AlertDialogTrigger asChild>
+                                                     <Button variant="destructive" size="sm" disabled={isSaving}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                  </AlertDialogTrigger>
+                                                  <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                      <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete the event
+                                                        "{space.name}".
+                                                      </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                      <AlertDialogAction
+                                                        onClick={() => handleDeleteSpace(space.id)}
+                                                        className="bg-destructive hover:bg-destructive/90">
+                                                        Yes, delete event
+                                                      </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                  </AlertDialogContent>
+                                                </AlertDialog>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -406,3 +440,5 @@ export function AdminDashboard() {
         </Card>
     );
 }
+
+    
