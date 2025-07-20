@@ -73,6 +73,11 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     return { contentPlaceTag, contentTypeTags };
   }, [space.tags]);
   
+  const allTags = useMemo(() => {
+    return [contentPlaceTag, ...contentTypeTags].filter(Boolean) as string[];
+  }, [contentPlaceTag, contentTypeTags]);
+
+
   if (!space.dateTime || !isValid(space.dateTime)) {
     return (
         <Card className="flex flex-col h-full bg-destructive/10 border-destructive/50">
@@ -188,10 +193,9 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </Alert>
         </div>
         <div className="bg-input rounded-md px-2 py-1 flex items-center mt-1">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
-              {contentPlaceTag && <span>{contentPlaceTag}</span>}
-              {contentTypeTags.map(tag => (
-                  <span key={tag}>{tag}</span>
+            <div className="flex flex-wrap items-center divide-x divide-muted-foreground/30 text-sm text-muted-foreground font-medium">
+              {allTags.map((tag, index) => (
+                  <span key={index} className="px-2 first:pl-0 last:pr-0">{tag}</span>
               ))}
             </div>
           </div>
