@@ -177,7 +177,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col">
+      <CardContent className="flex-grow flex flex-col gap-1">
         <div className="relative">
              <Badge 
                 style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
@@ -192,13 +192,13 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 </AlertDescription>
             </Alert>
         </div>
-        <div className="bg-input rounded-md px-2 py-1 flex items-center mt-1">
-            <div className="flex flex-wrap items-center divide-x divide-muted-foreground/30 text-sm text-muted-foreground font-medium">
+        <div className="bg-card rounded-md px-2 py-1 flex items-center">
+            <div className="flex flex-wrap items-center divide-x divide-card-foreground/30 text-sm text-card-foreground font-medium">
               {allTags.map((tag, index) => (
                   <span key={index} className="px-2 first:pl-0 last:pr-0">{tag}</span>
               ))}
             </div>
-          </div>
+        </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-4">
         <div className="flex items-center gap-1">
