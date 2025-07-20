@@ -26,19 +26,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
      if (firebaseUser) {
-        const userProfile = await getUserProfile(firebaseUser.uid);
-        
-        // Force refresh of the token to get the latest claims if you still need them.
-        // For this approach, we rely on the Firestore document.
-        const tokenResult = await firebaseUser.getIdTokenResult(true);
-        const isAdminClaim = !!tokenResult.claims.admin;
+        // Fetch Firestore profile and Auth token claims in parallel
+        const [userProfile, tokenResult] = await Promise.all([
+            getUserProfile(firebaseUser.uid),
+            firebaseUser.getIdTokenResult(true) // Force refresh for latest claims
+        ]);
 
-        // Correctly read from the userProfile object, which should match Firestore fields.
-        const isSuperAdminUser = userProfile?.SuperAdmin ?? false;
+        const isSuperAdminClaim = !!tokenResult.claims.SuperAdmin;
+        const isAdminClaim = !!tokenResult.claims.admin; // Keep for legacy if needed
+
         const isHostUser = userProfile?.host ?? false;
 
-        setIsAdmin(isAdminClaim); // Keep for compatibility if needed
-        setIsSuperAdmin(isSuperAdminUser);
+        setIsAdmin(isAdminClaim);
+        setIsSuperAdmin(isSuperAdminClaim);
         setIsHost(isHostUser);
         
         setUser({
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: userProfile?.name || firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
             isAdmin: isAdminClaim,
-            isSuperAdmin: isSuperAdminUser,
+            isSuperAdmin: isSuperAdminClaim,
             isHost: isHostUser,
             timezone: userProfile?.timezone,
         });

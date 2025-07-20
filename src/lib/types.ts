@@ -29,7 +29,7 @@ export interface User {
   name: string | null;
   photoURL?: string | null;
   isAdmin?: boolean; // Maintained for claim-based logic if needed elsewhere
-  isSuperAdmin: boolean; // From Firestore document
+  isSuperAdmin: boolean; // From Auth custom claim
   isHost: boolean; // From Firestore document
   timezone?: string;
 }
