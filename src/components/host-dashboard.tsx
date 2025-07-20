@@ -80,8 +80,8 @@ export function HostDashboard() {
         try {
             await updateSpace(spaceId, { isActive: newStatus });
             toast({
-                title: "Status Updated",
-                description: "The event status has been successfully updated.",
+                title: "Visibility Updated",
+                description: "The event visibility has been successfully updated.",
             });
         } catch (error) {
             console.error("Failed to update status:", error);
@@ -89,7 +89,7 @@ export function HostDashboard() {
             setSpaces(originalSpaces);
             toast({
                 title: "Update Failed",
-                description: "Could not update the event status.",
+                description: "Could not update the event visibility.",
                 variant: "destructive",
             });
         }
@@ -147,7 +147,7 @@ export function HostDashboard() {
                             <TableHead>Day</TableHead>
                             <TableHead>Start Time</TableHead>
                             <TableHead>Co-host</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead>Visibility</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -162,7 +162,7 @@ export function HostDashboard() {
                                     <Checkbox
                                         checked={space.isActive === undefined ? true : space.isActive}
                                         onCheckedChange={(checked) => handleStatusChange(space.id, !!checked)}
-                                        aria-label={`Set status for ${space.name}`}
+                                        aria-label={`Set visibility for ${space.name}`}
                                     />
                                 </TableCell>
                                 <TableCell className="text-right">
