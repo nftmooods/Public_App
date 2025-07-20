@@ -75,13 +75,12 @@ export function AdminDashboard() {
         fetchData();
     }, [isSuperAdmin]);
     
-    const uniqueHosts = useMemo(() => {
-        const hostSet = new Set<string>();
+    const uniqueAuthors = useMemo(() => {
+        const authorSet = new Set<string>();
         spaces.forEach(space => {
-            if (space.hostName) hostSet.add(space.hostName);
-            if (space.coHostName) hostSet.add(space.coHostName);
+            if (space.authorName) authorSet.add(space.authorName);
         });
-        return Array.from(hostSet).sort((a, b) => a.localeCompare(b));
+        return Array.from(authorSet).sort((a, b) => a.localeCompare(b));
     }, [spaces]);
 
     const handleNameChange = (spaceId: string, field: 'authorName' | 'hostName', newName: string) => {
@@ -148,12 +147,12 @@ export function AdminDashboard() {
         }
     };
     
-    const filteredHosts = useMemo(() => {
-        if (!searchQuery) return uniqueHosts;
-        return uniqueHosts.filter(host =>
-            host.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredAuthors = useMemo(() => {
+        if (!searchQuery) return uniqueAuthors;
+        return uniqueAuthors.filter(author =>
+            author.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [uniqueHosts, searchQuery]);
+    }, [uniqueAuthors, searchQuery]);
 
     const filteredSpaces = useMemo(() => {
         if (!searchQuery) return spaces;
@@ -193,17 +192,17 @@ export function AdminDashboard() {
             </Button>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Super Admin Dashboard</CardTitle>
-                <CardDescription>Manage hosts and events across the platform.</CardDescription>
+                <CardDescription>Manage authors and events across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="events">
                     <div className="flex justify-between items-center mb-4">
                         <TabsList>
-                            <TabsTrigger value="members">Hosts & Co-hosts</TabsTrigger>
+                            <TabsTrigger value="members">Authors</TabsTrigger>
                             <TabsTrigger value="events">All Events</TabsTrigger>
                         </TabsList>
                          <Input
-                            placeholder="Search hosts or events..."
+                            placeholder="Search authors or events..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full max-w-sm"
@@ -213,12 +212,12 @@ export function AdminDashboard() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Host</TableHead>
+                                    <TableHead>Author</TableHead>
                                     <TableHead className="text-right w-[120px]">Certified</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredHosts.map((name) => (
+                                {filteredAuthors.map((name) => (
                                     <TableRow key={name}>
                                         <TableCell className="font-medium">{name}</TableCell>
                                         <TableCell className="text-right">
@@ -324,3 +323,5 @@ export function AdminDashboard() {
         </Card>
     );
 }
+
+    
