@@ -36,8 +36,9 @@ export function AdminDashboard() {
             // Extract unique hosts and co-hosts
             const hostSet = new Set<string>();
             fetchedSpaces.forEach(space => {
-                if (space.authorName) {
-                    hostSet.add(space.authorName);
+                const host = space.hostName || space.authorName;
+                if (host) {
+                    hostSet.add(host);
                 }
                 if (space.coHostName) {
                     hostSet.add(space.coHostName);

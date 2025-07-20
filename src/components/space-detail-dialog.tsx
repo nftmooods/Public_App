@@ -137,7 +137,7 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
             </div>
             <DialogDescription className="text-card-foreground/80 leading-tight flex flex-col pt-2">
                  <span>
-                    <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
+                    <span className="font-semibold">Host:</span> {space.hostName || space.authorName || 'Anonymous'}
                 </span>
                 <span>
                     <span className="font-semibold">Co-host:</span> {space.coHostName || ''}

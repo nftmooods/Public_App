@@ -126,7 +126,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     defaultValues: {
       name: space.name || "",
       authorName: space.authorName || "",
-      hostName: space.hostName || "",
+      hostName: space.hostName || space.authorName || "",
       coHostName: space.coHostName || "",
       projectUrl: space.projectUrl || "",
       contentPlace: initialContentPlace,
@@ -176,7 +176,12 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           if (!isCertified) {
             spaceUpdateData.isCertified = deleteField();
           }
+      } else {
+        // If not super admin, ensure hostName is not changed directly
+        // but can be updated if authorName is the source and it changes
+        // This part of logic seems to be admin-only, so we might not need an else branch
       }
+
 
       await updateSpace(space.id, spaceUpdateData);
 
@@ -232,40 +237,40 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="authorName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Author Name</FormLabel>
-              <FormControl>
-                  <Input {...field} disabled={!isSuperAdmin} />
-              </FormControl>
-              <FormDescription>
-                {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed."}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         {isSuperAdmin && (
-          <FormField
+            <FormField
             control={form.control}
-            name="hostName"
+            name="authorName"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Host Name</FormLabel>
+                <FormItem>
+                <FormLabel>Author Name (Legacy)</FormLabel>
                 <FormControl>
                     <Input {...field} />
                 </FormControl>
                 <FormDescription>
-                  This is the new host field.
+                    The original author field. Change with caution.
                 </FormDescription>
                 <FormMessage />
-              </FormItem>
+                </FormItem>
             )}
-          />
+            />
         )}
+        <FormField
+            control={form.control}
+            name="hostName"
+            render={({ field }) => (
+            <FormItem>
+                <FormLabel>Host Name</FormLabel>
+                <FormControl>
+                    <Input {...field} disabled={!isSuperAdmin} />
+                </FormControl>
+                 <FormDescription>
+                    {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed."}
+                </FormDescription>
+                <FormMessage />
+            </FormItem>
+            )}
+        />
         <FormField
           control={form.control}
           name="coHostName"
