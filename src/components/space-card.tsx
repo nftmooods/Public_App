@@ -161,13 +161,13 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
   const canEdit = isCreator || isCoHost || isSuperAdmin;
 
   return (
-    <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
-      <CardHeader className="relative">
+    <Card className="relative flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
+      {space.isCertified && <CertifiedIcon className="absolute top-[-10px] right-[-10px] z-10" />}
+      <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl flex items-center gap-2">
               {space.name}
             </CardTitle>
-            {space.isCertified && <CertifiedIcon className="w-8 h-8 flex-shrink-0 absolute top-2 right-2" />}
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
             <span>
