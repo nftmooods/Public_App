@@ -348,7 +348,7 @@ export function AdminDashboard() {
                                     <TableHead>Author</TableHead>
                                     <TableHead className="w-[40px] p-0"></TableHead>
                                     <TableHead>Host</TableHead>
-                                    <TableHead className="w-[80px] text-center">Active</TableHead>
+                                    <TableHead className="w-[60px] text-center">Active</TableHead>
                                     <TableHead className="text-right w-[150px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
