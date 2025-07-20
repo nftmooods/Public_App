@@ -296,7 +296,7 @@ export function SpaceSchedule() {
 
     return (
       <ScrollArea className="flex-1 pr-4 -mr-4">
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
              <AnimatePresence>
                 {filteredSpaces.length > 0 ? (
                     filteredSpaces.map((space) => (
@@ -342,7 +342,7 @@ export function SpaceSchedule() {
       </div>
       
       <div className="space-y-4 py-4 flex-shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
                 <Tabs value={filter} onValueChange={(value) => setFilter(value as any)}>
                     <TabsList>
@@ -353,19 +353,33 @@ export function SpaceSchedule() {
                         {!isMobile && <TabsTrigger value="full">Full View</TabsTrigger>}
                     </TabsList>
                 </Tabs>
-                <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {cityTimezones.map(tz => (
-                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <div className="md:hidden">
+                    <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Select timezone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {cityTimezones.map(tz => (
+                                <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
             
             <div className="flex items-center gap-4">
+              <div className="hidden md:block">
+                  <Select value={effectiveTimezone} onValueChange={setSelectedTimezone} disabled={!isMounted}>
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                          <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {cityTimezones.map(tz => (
+                              <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              </div>
               {(!isMobile || user) && (
                 <>
                   <div className="flex items-center space-x-2">
