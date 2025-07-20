@@ -182,13 +182,6 @@ export const updateHostNameForUser = async (uid: string, newName: string) => {
 
     // Commit all changes
     await batch.commit();
-
-    // Also update the Auth display name
-    // This is a separate operation as it can't be batched.
-    const user = await getAuth().getUser(uid);
-    if (user) {
-        await updateProfile(user, { displayName: newName });
-    }
 };
 
 
@@ -345,9 +338,17 @@ export const updateSpaceHostName = async (spaceId: string, newHostName: string) 
     const spaceDoc = doc(db, "spaces", spaceId);
     await updateDoc(spaceDoc, {
         hostName: newHostName,
-        authorName: newHostName // Also update legacy field for consistency
     });
 };
+
+// Update just the author name for a specific space
+export const updateSpaceAuthorName = async (spaceId: string, newAuthorName: string) => {
+    const spaceDoc = doc(db, "spaces", spaceId);
+    await updateDoc(spaceDoc, {
+        authorName: newAuthorName,
+    });
+};
+
 
 // Delete a space
 export const deleteSpace = async (spaceId: string) => {

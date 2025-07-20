@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getSpaces, updateSpaceHostName } from '@/lib/firebase';
+import { getSpaces, updateSpaceHostName, updateSpaceAuthorName } from '@/lib/firebase';
 import type { Space } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +15,15 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 
+type EditableNameState = {
+    name: string;
+    isSaving: boolean;
+};
+
+type EditableNames = {
+    authorName: EditableNameState;
+    hostName: EditableNameState;
+};
 
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
@@ -22,8 +31,8 @@ export function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
-    // State for editable host names in the "All Events" tab
-    const [editableHostNames, setEditableHostNames] = useState<Record<string, { name: string; isSaving: boolean }>>({});
+    // State for editable names
+    const [editableNames, setEditableNames] = useState<Record<string, EditableNames>>({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -43,10 +52,13 @@ export function AdminDashboard() {
                 
                 // Initialize editable host names state
                 const initialEditableState = (spacesWithDates as Space[]).reduce((acc, space) => {
-                    acc[space.id] = { name: space.hostName || space.authorName || '', isSaving: false };
+                    acc[space.id] = {
+                        authorName: { name: space.authorName || '', isSaving: false },
+                        hostName: { name: space.hostName || '', isSaving: false },
+                    };
                     return acc;
-                }, {} as Record<string, { name: string; isSaving: boolean }>);
-                setEditableHostNames(initialEditableState);
+                }, {} as Record<string, EditableNames>);
+                setEditableNames(initialEditableState);
 
             } catch (error) {
                 console.error("Failed to fetch spaces:", error);
@@ -67,38 +79,53 @@ export function AdminDashboard() {
         return Array.from(hostSet).sort((a, b) => a.localeCompare(b));
     }, [spaces]);
 
-    const handleHostNameChange = (spaceId: string, newName: string) => {
-        setEditableHostNames(prev => ({
+    const handleNameChange = (spaceId: string, field: 'authorName' | 'hostName', newName: string) => {
+        setEditableNames(prev => ({
             ...prev,
-            [spaceId]: { ...prev[spaceId], name: newName }
+            [spaceId]: {
+                ...prev[spaceId],
+                [field]: { ...prev[spaceId][field], name: newName }
+            }
         }));
     };
 
-    const handleSaveHostName = async (spaceId: string) => {
+    const handleSaveName = async (spaceId: string, field: 'authorName' | 'hostName') => {
         const originalSpace = spaces.find(s => s.id === spaceId);
-        const { name: newHostName } = editableHostNames[spaceId];
+        const { name: newName } = editableNames[spaceId][field];
+        const originalName = originalSpace ? originalSpace[field] : '';
 
-        if (!originalSpace || !newHostName || (originalSpace.hostName || originalSpace.authorName) === newHostName) {
+        if (!originalSpace || !newName || originalName === newName) {
             return; // No change or invalid data
         }
 
-        setEditableHostNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: true } }));
+        setEditableNames(prev => ({ 
+            ...prev, 
+            [spaceId]: { ...prev[spaceId], [field]: { ...prev[spaceId][field], isSaving: true } } 
+        }));
 
         try {
-            await updateSpaceHostName(spaceId, newHostName);
-            toast({ title: "Success", description: `Host name for "${originalSpace.name}" updated to "${newHostName}".` });
+            if (field === 'authorName') {
+                await updateSpaceAuthorName(spaceId, newName);
+            } else {
+                await updateSpaceHostName(spaceId, newName);
+            }
+
+            toast({ title: "Success", description: `${field} for "${originalSpace.name}" updated to "${newName}".` });
             
             // Update local state to reflect the change
             setSpaces(prevSpaces => prevSpaces.map(s => 
-                s.id === spaceId ? { ...s, hostName: newHostName, authorName: newHostName } : s
+                s.id === spaceId ? { ...s, [field]: newName } : s
             ));
         } catch (error) {
-            console.error("Failed to update host name:", error);
-            toast({ title: "Error", description: "Could not update host name.", variant: "destructive" });
+            console.error(`Failed to update ${field}:`, error);
+            toast({ title: "Error", description: `Could not update ${field}.`, variant: "destructive" });
             // Revert changes on error
-            handleHostNameChange(spaceId, originalSpace.hostName || originalSpace.authorName || '');
+            handleNameChange(spaceId, field, originalName || '');
         } finally {
-            setEditableHostNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: false } }));
+             setEditableNames(prev => ({ 
+                ...prev, 
+                [spaceId]: { ...prev[spaceId], [field]: { ...prev[spaceId][field], isSaving: false } } 
+            }));
         }
     };
 
@@ -117,7 +144,7 @@ export function AdminDashboard() {
     }
 
     return (
-        <Card className="w-full max-w-4xl">
+        <Card className="w-full max-w-6xl">
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Super Admin Dashboard</CardTitle>
                 <CardDescription>Manage hosts and events across the platform.</CardDescription>
@@ -154,33 +181,55 @@ export function AdminDashboard() {
                                 <TableRow>
                                     <TableHead>Event Name</TableHead>
                                     <TableHead>Author</TableHead>
+                                    <TableHead>Host</TableHead>
                                     <TableHead>Created At</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right w-[220px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {spaces.map((space) => (
-                                    <TableRow key={space.id}>
-                                        <TableCell className="font-medium">{space.name}</TableCell>
-                                        <TableCell>
-                                            <Input 
-                                                value={editableHostNames[space.id]?.name || ''}
-                                                onChange={(e) => handleHostNameChange(space.id, e.target.value)}
-                                                className="h-8"
-                                            />
-                                        </TableCell>
-                                        <TableCell>{format(space.createdAt, 'PP')}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleSaveHostName(space.id)}
-                                                disabled={editableHostNames[space.id]?.isSaving || editableHostNames[space.id]?.name === (space.hostName || space.authorName)}
-                                            >
-                                                {editableHostNames[space.id]?.isSaving ? 'Saving...' : 'Save'}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {spaces.map((space) => {
+                                    const authorState = editableNames[space.id]?.authorName;
+                                    const hostState = editableNames[space.id]?.hostName;
+
+                                    return (
+                                        <TableRow key={space.id}>
+                                            <TableCell className="font-medium">{space.name}</TableCell>
+                                            <TableCell>
+                                                <Input 
+                                                    value={authorState?.name || ''}
+                                                    onChange={(e) => handleNameChange(space.id, 'authorName', e.target.value)}
+                                                    className="h-8"
+                                                    disabled={authorState?.isSaving || hostState?.isSaving}
+                                                />
+                                            </TableCell>
+                                             <TableCell>
+                                                <Input 
+                                                    value={hostState?.name || ''}
+                                                    onChange={(e) => handleNameChange(space.id, 'hostName', e.target.value)}
+                                                    className="h-8"
+                                                    disabled={authorState?.isSaving || hostState?.isSaving}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{format(space.createdAt, 'PP')}</TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleSaveName(space.id, 'authorName')}
+                                                    disabled={authorState?.isSaving || authorState?.name === space.authorName}
+                                                >
+                                                    {authorState?.isSaving ? 'Saving...' : 'Save Author'}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleSaveName(space.id, 'hostName')}
+                                                    disabled={hostState?.isSaving || hostState?.name === space.hostName}
+                                                >
+                                                    {hostState?.isSaving ? 'Saving...' : 'Save Host'}
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TabsContent>
