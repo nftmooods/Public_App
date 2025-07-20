@@ -221,7 +221,7 @@ export function AdminDashboard() {
                                     <TableRow key={name}>
                                         <TableCell className="font-medium">{name}</TableCell>
                                         <TableCell className="text-right">
-                                           <Checkbox disabled />
+                                           <Checkbox />
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -324,4 +324,5 @@ export function AdminDashboard() {
     );
 }
 
+    
     
