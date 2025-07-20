@@ -29,13 +29,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-type EditableNameState = {
-    name: string;
-};
-
-type EditableNames = {
-    authorName: EditableNameState;
-    hostName: EditableNameState;
+type EditableSpaceState = {
+    authorName: string;
+    hostName: string;
+    isActive: boolean;
     isSaving: boolean;
 };
 
@@ -52,7 +49,7 @@ export function AdminDashboard() {
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState("members"); // Control active tab state
 
-    const [editableNames, setEditableNames] = useState<Record<string, EditableNames>>({});
+    const [editableSpaces, setEditableSpaces] = useState<Record<string, EditableSpaceState>>({});
     const [editableRoles, setEditableRoles] = useState<EditableRoles>({});
     const [isSavingRoles, setIsSavingRoles] = useState(false);
 
@@ -77,13 +74,14 @@ export function AdminDashboard() {
             
             const initialEditableState = spacesWithDates.reduce((acc, space) => {
                 acc[space.id] = {
-                    authorName: { name: space.authorName || '' },
-                    hostName: { name: space.hostName || '' },
+                    authorName: space.authorName || '',
+                    hostName: space.hostName || '',
+                    isActive: space.isActive === undefined ? true : space.isActive,
                     isSaving: false,
                 };
                 return acc;
-            }, {} as Record<string, EditableNames>);
-            setEditableNames(initialEditableState);
+            }, {} as Record<string, EditableSpaceState>);
+            setEditableSpaces(initialEditableState);
 
              const initialRolesState = fetchedUsers.reduce((acc, user) => {
                 acc[user.uid] = { 
@@ -149,27 +147,27 @@ export function AdminDashboard() {
     };
 
 
-    const handleNameChange = (spaceId: string, field: 'authorName' | 'hostName', newName: string) => {
-        setEditableNames(prev => ({
+    const handleSpaceFieldChange = (spaceId: string, field: keyof Omit<EditableSpaceState, 'isSaving'>, value: string | boolean) => {
+        setEditableSpaces(prev => ({
             ...prev,
             [spaceId]: {
                 ...prev[spaceId],
-                [field]: { ...prev[spaceId][field], name: newName }
+                [field]: value
             }
         }));
     };
 
     const copyAuthorToHost = (spaceId: string) => {
-        const authorName = editableNames[spaceId]?.authorName?.name;
+        const authorName = editableSpaces[spaceId]?.authorName;
         if (authorName) {
-            handleNameChange(spaceId, 'hostName', authorName);
+            handleSpaceFieldChange(spaceId, 'hostName', authorName);
         }
     };
 
     const copyHostToAuthor = (spaceId: string) => {
-        const hostName = editableNames[spaceId]?.hostName?.name;
+        const hostName = editableSpaces[spaceId]?.hostName;
         if (hostName) {
-            handleNameChange(spaceId, 'authorName', hostName);
+            handleSpaceFieldChange(spaceId, 'authorName', hostName);
         }
     };
 
@@ -177,14 +175,17 @@ export function AdminDashboard() {
         const originalSpace = spaces.find(s => s.id === spaceId);
         if (!originalSpace) return;
         
-        const { authorName, hostName } = editableNames[spaceId];
+        const { authorName, hostName, isActive } = editableSpaces[spaceId];
         const updates: Partial<Space> = {};
 
-        if (authorName.name !== originalSpace.authorName) {
-            updates.authorName = authorName.name;
+        if (authorName !== originalSpace.authorName) {
+            updates.authorName = authorName;
         }
-        if (hostName.name !== originalSpace.hostName) {
-            updates.hostName = hostName.name;
+        if (hostName !== originalSpace.hostName) {
+            updates.hostName = hostName;
+        }
+        if (isActive !== (originalSpace.isActive === undefined ? true : originalSpace.isActive)) {
+            updates.isActive = isActive;
         }
 
         if (Object.keys(updates).length === 0) {
@@ -192,7 +193,7 @@ export function AdminDashboard() {
             return;
         }
 
-        setEditableNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: true } }));
+        setEditableSpaces(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: true } }));
 
         try {
             await updateSpace(spaceId, updates);
@@ -203,10 +204,18 @@ export function AdminDashboard() {
         } catch (error) {
             console.error("Failed to save space changes:", error);
             toast({ title: "Error", description: "Could not save changes.", variant: "destructive" });
-            handleNameChange(spaceId, 'authorName', originalSpace.authorName || '');
-            handleNameChange(spaceId, 'hostName', originalSpace.hostName || '');
+            // Revert changes on failure
+            setEditableSpaces(prev => ({
+                ...prev,
+                [spaceId]: {
+                    ...prev[spaceId],
+                    authorName: originalSpace.authorName || '',
+                    hostName: originalSpace.hostName || '',
+                    isActive: originalSpace.isActive === undefined ? true : originalSpace.isActive,
+                }
+            }));
         } finally {
-            setEditableNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: false } }));
+            setEditableSpaces(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: false } }));
         }
     };
     
@@ -339,26 +348,27 @@ export function AdminDashboard() {
                                     <TableHead>Author</TableHead>
                                     <TableHead className="w-[40px] p-0"></TableHead>
                                     <TableHead>Host</TableHead>
-                                    <TableHead>Created At</TableHead>
+                                    <TableHead className="w-[80px] text-center">Active</TableHead>
                                     <TableHead className="text-right w-[220px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredSpaces.map((space) => {
-                                    const editState = editableNames[space.id];
+                                    const editState = editableSpaces[space.id];
                                     if (!editState) return null; // Should not happen
                                     
-                                    const { authorName, hostName, isSaving } = editState;
-                                    const namesAreDifferent = authorName?.name !== hostName?.name;
-                                    const isChanged = authorName?.name !== space.authorName || hostName?.name !== space.hostName;
+                                    const { authorName, hostName, isActive, isSaving } = editState;
+                                    const namesAreDifferent = authorName !== hostName;
+                                    const isOriginalActive = space.isActive === undefined ? true : space.isActive;
+                                    const isChanged = authorName !== space.authorName || hostName !== space.hostName || isActive !== isOriginalActive;
 
                                     return (
                                         <TableRow key={space.id}>
                                             <TableCell className="font-medium">{space.name}</TableCell>
                                             <TableCell>
                                                 <Input 
-                                                    value={authorName?.name || ''}
-                                                    onChange={(e) => handleNameChange(space.id, 'authorName', e.target.value)}
+                                                    value={authorName || ''}
+                                                    onChange={(e) => handleSpaceFieldChange(space.id, 'authorName', e.target.value)}
                                                     className={cn("h-8", namesAreDifferent && "bg-muted border-foreground/30")}
                                                     disabled={isSaving}
                                                 />
@@ -389,13 +399,20 @@ export function AdminDashboard() {
                                             </TableCell>
                                              <TableCell>
                                                 <Input 
-                                                    value={hostName?.name || ''}
-                                                    onChange={(e) => handleNameChange(space.id, 'hostName', e.target.value)}
+                                                    value={hostName || ''}
+                                                    onChange={(e) => handleSpaceFieldChange(space.id, 'hostName', e.target.value)}
                                                     className={cn("h-8", namesAreDifferent && "bg-muted border-foreground/30")}
                                                     disabled={isSaving}
                                                 />
                                             </TableCell>
-                                            <TableCell>{format(space.createdAt, 'PP')}</TableCell>
+                                            <TableCell className="text-center">
+                                                <Checkbox
+                                                    checked={isActive}
+                                                    onCheckedChange={(checked) => handleSpaceFieldChange(space.id, 'isActive', !!checked)}
+                                                    disabled={isSaving}
+                                                    aria-label={`Set active status for ${space.name}`}
+                                                />
+                                            </TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 <Button
                                                     size="sm"
