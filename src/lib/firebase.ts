@@ -340,6 +340,15 @@ export const updateSpace = async (spaceId: string, updatedData: Partial<Omit<Spa
   await updateDoc(spaceDoc, dataToUpdate);
 };
 
+// Update just the host name for a specific space
+export const updateSpaceHostName = async (spaceId: string, newHostName: string) => {
+    const spaceDoc = doc(db, "spaces", spaceId);
+    await updateDoc(spaceDoc, {
+        hostName: newHostName,
+        authorName: newHostName // Also update legacy field for consistency
+    });
+};
+
 // Delete a space
 export const deleteSpace = async (spaceId: string) => {
   const spaceDoc = doc(db, "spaces", spaceId);

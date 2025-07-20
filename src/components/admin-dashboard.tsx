@@ -1,25 +1,29 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getAllUsers, updateHostNameForUser } from '@/lib/firebase';
-import type { User } from '@/lib/types';
+import { getSpaces, updateSpaceHostName } from '@/lib/firebase';
+import type { Space } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from './ui/checkbox';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
+
 
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
-    const [users, setUsers] = useState<User[]>([]);
+    const [spaces, setSpaces] = useState<Space[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
 
-    const [editableUsers, setEditableUsers] = useState<Record<string, { name: string; isSaving: boolean }>>({});
+    // State for editable host names in the "All Events" tab
+    const [editableHostNames, setEditableHostNames] = useState<Record<string, { name: string; isSaving: boolean }>>({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -29,56 +33,72 @@ export function AdminDashboard() {
             }
             setLoading(true);
             try {
-                const fetchedUsers = await getAllUsers();
-                setUsers(fetchedUsers);
+                const fetchedSpaces = await getSpaces();
+                 // Ensure dateTime is a Date object if it's not already
+                const spacesWithDates = fetchedSpaces.map(s => ({
+                    ...s,
+                    createdAt: s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt)
+                }));
+                setSpaces(spacesWithDates as Space[]);
                 
-                const initialEditableState = fetchedUsers.reduce((acc, user) => {
-                    acc[user.uid] = { name: user.name || '', isSaving: false };
+                // Initialize editable host names state
+                const initialEditableState = (spacesWithDates as Space[]).reduce((acc, space) => {
+                    acc[space.id] = { name: space.hostName || space.authorName || '', isSaving: false };
                     return acc;
                 }, {} as Record<string, { name: string; isSaving: boolean }>);
-                setEditableUsers(initialEditableState);
+                setEditableHostNames(initialEditableState);
+
             } catch (error) {
-                console.error("Failed to fetch users:", error);
-                toast({ title: "Error", description: "Could not fetch users.", variant: "destructive" });
+                console.error("Failed to fetch spaces:", error);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [isSuperAdmin, toast]);
+    }, [isSuperAdmin]);
     
-    const handleNameChange = (uid: string, newName: string) => {
-        setEditableUsers(prev => ({
+    const uniqueHosts = useMemo(() => {
+        const hostSet = new Set<string>();
+        spaces.forEach(space => {
+            if (space.hostName) hostSet.add(space.hostName);
+            if (space.coHostName) hostSet.add(space.coHostName);
+        });
+        return Array.from(hostSet).sort((a, b) => a.localeCompare(b));
+    }, [spaces]);
+
+    const handleHostNameChange = (spaceId: string, newName: string) => {
+        setEditableHostNames(prev => ({
             ...prev,
-            [uid]: { ...prev[uid], name: newName }
+            [spaceId]: { ...prev[spaceId], name: newName }
         }));
     };
 
-    const handleSaveName = async (uid: string) => {
-        const originalUser = users.find(u => u.uid === uid);
-        const { name: newName } = editableUsers[uid];
+    const handleSaveHostName = async (spaceId: string) => {
+        const originalSpace = spaces.find(s => s.id === spaceId);
+        const { name: newHostName } = editableHostNames[spaceId];
 
-        if (!originalUser || !newName || originalUser.name === newName) {
+        if (!originalSpace || !newHostName || (originalSpace.hostName || originalSpace.authorName) === newHostName) {
             return; // No change or invalid data
         }
 
-        setEditableUsers(prev => ({ ...prev, [uid]: { ...prev[uid], isSaving: true } }));
+        setEditableHostNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: true } }));
 
         try {
-            await updateHostNameForUser(uid, newName);
-            toast({ title: "Success", description: `Host name updated to "${newName}".` });
+            await updateSpaceHostName(spaceId, newHostName);
+            toast({ title: "Success", description: `Host name for "${originalSpace.name}" updated to "${newHostName}".` });
             
             // Update local state to reflect the change
-            setUsers(prevUsers => prevUsers.map(u => u.uid === uid ? { ...u, name: newName } : u));
-
+            setSpaces(prevSpaces => prevSpaces.map(s => 
+                s.id === spaceId ? { ...s, hostName: newHostName, authorName: newHostName } : s
+            ));
         } catch (error) {
             console.error("Failed to update host name:", error);
             toast({ title: "Error", description: "Could not update host name.", variant: "destructive" });
             // Revert changes on error
-            handleNameChange(uid, originalUser.name || '');
+            handleHostNameChange(spaceId, originalSpace.hostName || originalSpace.authorName || '');
         } finally {
-            setEditableUsers(prev => ({ ...prev, [uid]: { ...prev[uid], isSaving: false } }));
+            setEditableHostNames(prev => ({ ...prev, [spaceId]: { ...prev[spaceId], isSaving: false } }));
         }
     };
 
@@ -100,50 +120,71 @@ export function AdminDashboard() {
         <Card className="w-full max-w-4xl">
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Super Admin Dashboard</CardTitle>
-                <CardDescription>Manage hosts and co-hosts across the platform.</CardDescription>
+                <CardDescription>Manage hosts and events across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Host Name</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Certified</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((user) => (
-                            <TableRow key={user.uid}>
-                                <TableCell className="font-medium">
-                                    <Input
-                                        value={editableUsers[user.uid]?.name || ''}
-                                        onChange={(e) => handleNameChange(user.uid, e.target.value)}
-                                        className="h-8"
-                                    />
-                                </TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                    <Checkbox
-                                        checked={!!user.isCertified}
-                                        // onCheckedChange={(isChecked) => handleCertificationChange(user.uid, !!isChecked)} 
-                                        aria-label={`Certify ${user.name}`}
-                                        disabled // Re-enable when certification logic is fully implemented
-                                    />
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button 
-                                        size="sm"
-                                        onClick={() => handleSaveName(user.uid)}
-                                        disabled={editableUsers[user.uid]?.isSaving || editableUsers[user.uid]?.name === user.name}
-                                    >
-                                        {editableUsers[user.uid]?.isSaving ? 'Saving...' : 'Save'}
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <Tabs defaultValue="events">
+                    <TabsList>
+                        <TabsTrigger value="members">Hosts & Co-hosts</TabsTrigger>
+                        <TabsTrigger value="events">All Events</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="members">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead className="text-right w-[120px]">Certified</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {uniqueHosts.map((name) => (
+                                    <TableRow key={name}>
+                                        <TableCell className="font-medium">{name}</TableCell>
+                                        <TableCell className="text-right">
+                                           <Checkbox disabled />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TabsContent>
+                    <TabsContent value="events">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Event Name</TableHead>
+                                    <TableHead>Host</TableHead>
+                                    <TableHead>Created At</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {spaces.map((space) => (
+                                    <TableRow key={space.id}>
+                                        <TableCell className="font-medium">{space.name}</TableCell>
+                                        <TableCell>
+                                            <Input 
+                                                value={editableHostNames[space.id]?.name || ''}
+                                                onChange={(e) => handleHostNameChange(space.id, e.target.value)}
+                                                className="h-8"
+                                            />
+                                        </TableCell>
+                                        <TableCell>{format(space.createdAt, 'PP')}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleSaveHostName(space.id)}
+                                                disabled={editableHostNames[space.id]?.isSaving || editableHostNames[space.id]?.name === (space.hostName || space.authorName)}
+                                            >
+                                                {editableHostNames[space.id]?.isSaving ? 'Saving...' : 'Save'}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TabsContent>
+                </Tabs>
             </CardContent>
         </Card>
     );
