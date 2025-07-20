@@ -98,6 +98,7 @@ export function AdminDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Event Name</TableHead>
+                                    <TableHead>Host</TableHead>
                                     <TableHead>Author</TableHead>
                                     <TableHead>Actions</TableHead>
                                 </TableRow>
@@ -106,6 +107,7 @@ export function AdminDashboard() {
                                 {spaces.map((space) => (
                                     <TableRow key={space.id}>
                                         <TableCell className="font-medium">{space.name}</TableCell>
+                                        <TableCell>{space.hostName}</TableCell>
                                         <TableCell>{space.authorName}</TableCell>
                                         <TableCell>
                                             <Button asChild variant="outline" size="sm">
