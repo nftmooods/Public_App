@@ -69,10 +69,12 @@ export function AdminDashboard() {
                 ...s,
                 createdAt: s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt)
             })) as Space[];
-            setSpaces(spacesWithDates);
+
+            const sortedSpaces = spacesWithDates.sort((a, b) => a.name.localeCompare(b.name));
+            setSpaces(sortedSpaces);
             setUsers(fetchedUsers);
             
-            const initialEditableState = spacesWithDates.reduce((acc, space) => {
+            const initialEditableState = sortedSpaces.reduce((acc, space) => {
                 acc[space.id] = {
                     authorName: space.authorName || '',
                     hostName: space.hostName || '',
@@ -457,5 +459,7 @@ export function AdminDashboard() {
         </Card>
     );
 }
+
+    
 
     
