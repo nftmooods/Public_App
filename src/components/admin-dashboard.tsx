@@ -213,15 +213,19 @@ export function AdminDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Author</TableHead>
-                                    <TableHead className="text-right w-[120px]">Certified</TableHead>
+                                    <TableHead className="text-center w-[120px]">Certified</TableHead>
+                                    <TableHead className="text-right w-[120px]">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filteredAuthors.map((name) => (
                                     <TableRow key={name}>
                                         <TableCell className="font-medium">{name}</TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-center">
                                            <Checkbox />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button size="sm">Save</Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
