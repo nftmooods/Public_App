@@ -15,9 +15,13 @@ export const ApeIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export const CertifiedIcon = (props: React.HTMLAttributes<HTMLDivElement>) => (
     <div
-      className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#4285f4] text-xs shadow-[0_2px_4px_rgba(66,133,244,0.3)]"
+      className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#0054FA]"
       {...props}
     >
-      <span style={{ fontSize: '10px' }}>🍌</span>
+      <div
+        className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#4285f4] text-xs shadow-[0_2px_4px_rgba(66,133,244,0.3)]"
+      >
+        <span style={{ fontSize: '10px' }}>🍌</span>
+      </div>
     </div>
 );
