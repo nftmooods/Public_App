@@ -229,7 +229,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         {space.projectUrl ? (
           <Button asChild>
             <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
-              Project Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
+              Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
             </a>
           </Button>
         ) : (
