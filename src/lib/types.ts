@@ -15,6 +15,7 @@ export interface Space {
     coHostName?: string; // Optional name for a co-host
     createdBy: string; // The UID of the user who created the event.
     createdAt: Date;
+    isActive?: boolean; // Controls visibility in the schedule
     // This will be dynamically calculated on the client
     dateTime?: Date; 
     dayColor?: string;

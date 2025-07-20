@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2Icon } from "lucide-react";
 import { timezones as cityTimezones } from "@/lib/timezones";
+import { Switch } from "@/components/ui/switch";
 
 
 const daysOfWeek = [
@@ -89,6 +90,7 @@ const formSchema = z.object({
   startTime: z.string().min(1, { message: "Please select a start time." }),
   endTime: z.string().optional(),
   timezone: z.string().min(1, { message: "Please select a timezone." }),
+  isActive: z.boolean().default(true),
 });
 
 interface EditSpaceFormProps {
@@ -130,6 +132,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       startTime: space.startTime || "",
       endTime: space.endTime || "",
       timezone: space.timezone || "",
+      isActive: space.isActive === undefined ? true : space.isActive,
     },
   });
 
@@ -147,7 +150,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, authorName, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const { name, authorName, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType, isActive } = values;
       const tags = [contentPlace, ...contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
@@ -156,6 +159,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           dayOfWeek: parseInt(dayOfWeek, 10),
           startTime,
           timezone,
+          isActive,
           projectUrl: projectUrl ? projectUrl : deleteField(),
           endTime: endTime ? endTime : deleteField(),
           coHostName: coHostName ? coHostName : deleteField(),
@@ -435,6 +439,29 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                 </FormItem>
             )}
             />
+
+        <FormField
+            control={form.control}
+            name="isActive"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-background/50">
+                <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                    Show in Calendar
+                    </FormLabel>
+                    <FormDescription>
+                    If turned off, this moment will be hidden from the public schedule.
+                    </FormDescription>
+                </div>
+                <FormControl>
+                    <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    />
+                </FormControl>
+                </FormItem>
+            )}
+        />
         
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2 pt-4">
             <AlertDialog>

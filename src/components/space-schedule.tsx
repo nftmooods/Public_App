@@ -201,7 +201,10 @@ export function SpaceSchedule() {
 
   const filteredSpaces = useMemo(() => {
     
-    const spacesWithCalculatedDates: Space[] = spaces.map(s => ({
+    // Filter for active spaces first
+    const activeSpaces = spaces.filter(s => s.isActive === undefined || s.isActive === true);
+
+    const spacesWithCalculatedDates: Space[] = activeSpaces.map(s => ({
         ...s,
         dateTime: getUpcomingDateForEvent(s.dayOfWeek),
         dayColor: dayColors[s.dayOfWeek] || "#718096"

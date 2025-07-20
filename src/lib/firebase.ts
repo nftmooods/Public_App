@@ -194,6 +194,7 @@ export const getSpace = async (spaceId: string): Promise<Omit<Space, "dateTime">
                 authorName: data.authorName,
                 coHostName: data.coHostName,
                 createdBy: data.createdBy,
+                isActive: data.isActive,
                 createdAt: (data.createdAt as Timestamp).toDate(),
             } as Omit<Space, "dateTime">;
         } else {
@@ -226,6 +227,7 @@ export const getSpaces = async (): Promise<Omit<Space, "dateTime">[]> => {
             authorName: data.authorName,
             coHostName: data.coHostName,
             createdBy: data.createdBy,
+            isActive: data.isActive,
             // Ensure Firestore Timestamps are converted to JS Date objects
             createdAt: (data.createdAt as Timestamp).toDate(),
         } as Omit<Space, "dateTime">;
@@ -238,6 +240,7 @@ export const addSpace = async (spaceData: Omit<Space, 'id' | 'createdAt' | 'date
   const spacesCol = collection(db, "spaces");
   const dataToSave = {
       ...spaceData,
+      isActive: true, // Default to active
       createdAt: serverTimestamp()
   };
    if (!dataToSave.coHostName) {
