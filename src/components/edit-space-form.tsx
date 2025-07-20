@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { updateSpace, deleteSpace } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
-import type { Space } from "@/lib/types";
+import type { Space, User } from "@/lib/types";
 import { deleteField } from "firebase/firestore";
 import {
   AlertDialog,
@@ -80,7 +80,7 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   coHostName: z.string().optional(),
   projectUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
-  authorName: z.string(),
+  createdBy: z.string(), // Now we use createdBy (user ID) to handle author changes
   contentPlace: z.string({ required_error: "You must select a content place." }),
   contentType: z.array(z.string())
     .refine((value) => value.length >= 1, { message: "You have to select at least one content type." })
@@ -93,12 +93,13 @@ const formSchema = z.object({
 
 interface EditSpaceFormProps {
     space: Omit<Space, 'dateTime'>;
+    users: User[]; // All users, for super admin
 }
 
-export function EditSpaceForm({ space }: EditSpaceFormProps) {
+export function EditSpaceForm({ space, users }: EditSpaceFormProps) {
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth(); 
+  const { user, isSuperAdmin } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { initialContentPlace, initialContentType } = useMemo(() => {
@@ -123,7 +124,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
       name: space.name || "",
       coHostName: space.coHostName || "",
       projectUrl: space.projectUrl || "",
-      authorName: space.authorName || "",
+      createdBy: space.createdBy || "",
       contentPlace: initialContentPlace,
       contentType: initialContentType,
       dayOfWeek: String(space.dayOfWeek),
@@ -139,7 +140,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
         return;
     }
 
-    if (user.uid !== space.createdBy) {
+    if (!isSuperAdmin && user.uid !== space.createdBy) {
          toast({ title: "Permission Denied", description: "You can only edit events that you have created.", variant: "destructive" });
         return;
     }
@@ -147,7 +148,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
     setIsSubmitting(true);
 
     try {
-      const { name, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType } = values;
+      const { name, coHostName, projectUrl, dayOfWeek, startTime, endTime, timezone, contentPlace, contentType, createdBy } = values;
       const tags = [contentPlace, ...contentType];
 
       const spaceUpdateData: {[key:string]: any} = {
@@ -160,6 +161,15 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           endTime: endTime ? endTime : deleteField(),
           coHostName: coHostName ? coHostName : deleteField(),
       };
+      
+      // If super admin changed the author
+      if (isSuperAdmin && createdBy !== space.createdBy) {
+          const newAuthor = users.find(u => u.uid === createdBy);
+          if (newAuthor) {
+              spaceUpdateData.createdBy = newAuthor.uid;
+              spaceUpdateData.authorName = newAuthor.name;
+          }
+      }
 
       await updateSpace(space.id, spaceUpdateData);
 
@@ -241,22 +251,43 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="authorName"
-          render={({ field }) => (
+        {isSuperAdmin ? (
+             <FormField
+                control={form.control}
+                name="createdBy"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Author</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select an author" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {users.map(u => (
+                                <SelectItem key={u.uid} value={u.uid}>{u.name} ({u.email})</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>
+                            Super Admins can reassign events to different authors.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+        ) : (
             <FormItem>
-              <FormLabel>Author</FormLabel>
-              <FormControl>
-                <Input {...field} disabled />
-              </FormControl>
-               <FormDescription>
-                The author of an event cannot be changed.
-              </FormDescription>
-              <FormMessage />
+                <FormLabel>Author</FormLabel>
+                <FormControl>
+                    <Input value={space.authorName} disabled />
+                </FormControl>
+                <FormDescription>
+                    The author of an event cannot be changed.
+                </FormDescription>
             </FormItem>
-          )}
-        />
+        )}
         
         <div className="space-y-4">
             <FormField

@@ -8,56 +8,66 @@ import { EditSpaceForm } from '@/components/edit-space-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSpace } from '@/lib/firebase';
-import type { Space } from '@/lib/types';
+import { getSpace, getAllUsers } from '@/lib/firebase';
+import type { Space, User } from '@/lib/types';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 export default function EditSpacePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isSuperAdmin } = useAuth();
   const router = useRouter();
   const params = useParams();
   const spaceId = params.id as string;
 
   const [space, setSpace] = useState<Omit<Space, 'dateTime'> | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return; // Wait for auth state to be resolved
+    if (authLoading) return;
 
     if (!user) {
       router.replace('/login');
       return;
     }
 
-    if (spaceId && user) {
-      const fetchSpaceData = async () => {
-        try {
-          setLoading(true);
-          const spaceData = await getSpace(spaceId);
-          if (!spaceData) {
-            setError("The requested moment could not be found.");
-            return;
-          }
-          if (spaceData.createdBy !== user.uid) {
-            setError("You do not have permission to edit this moment.");
-            // Optionally redirect
-            // router.replace('/');
-            return;
-          }
-          setSpace(spaceData);
-        } catch (err) {
-          setError("An error occurred while fetching moment details.");
-          console.error(err);
-        } finally {
-          setLoading(false);
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const spaceData = await getSpace(spaceId);
+        
+        if (!spaceData) {
+          setError("The requested moment could not be found.");
+          return;
         }
-      };
-      fetchSpaceData();
-    }
-  }, [spaceId, user, authLoading, router]);
+
+        // Standard user permission check
+        if (!isSuperAdmin && spaceData.createdBy !== user.uid) {
+          setError("You do not have permission to edit this moment.");
+          return;
+        }
+
+        setSpace(spaceData);
+
+        // Fetch all users only if the current user is a super admin
+        if (isSuperAdmin) {
+          const allUsers = await getAllUsers();
+          setUsers(allUsers);
+        }
+
+      } catch (err) {
+        setError("An error occurred while fetching moment details.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInitialData();
+
+  }, [spaceId, user, authLoading, isSuperAdmin, router]);
 
   const renderContent = () => {
     if (loading || authLoading) {
@@ -115,7 +125,7 @@ export default function EditSpacePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <EditSpaceForm space={space} />
+                    <EditSpaceForm space={space} users={users} />
                 </CardContent>
             </Card>
         )
