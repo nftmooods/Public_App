@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getSpaces, updateSpaceHostName, updateSpaceAuthorName } from '@/lib/firebase';
-import type { Space } from '@/lib/types';
+import { getSpaces, updateSpaceHostName, updateSpaceAuthorName, getAllUsers, updateUserRoles } from '@/lib/firebase';
+import type { Space, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -28,60 +28,101 @@ type EditableNames = {
     hostName: EditableNameState;
 };
 
+type EditableRoles = Record<string, { isHost: boolean; isSuperAdmin: boolean }>;
+
+
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
     const router = useRouter();
     const [spaces, setSpaces] = useState<Space[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
 
-    // State for editable names
     const [editableNames, setEditableNames] = useState<Record<string, EditableNames>>({});
+    const [editableRoles, setEditableRoles] = useState<EditableRoles>({});
+    const [isSavingRoles, setIsSavingRoles] = useState(false);
+
+    const fetchData = useCallback(async () => {
+        if (!isSuperAdmin) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const [fetchedSpaces, fetchedUsers] = await Promise.all([
+                getSpaces(),
+                getAllUsers()
+            ]);
+
+            const spacesWithDates = fetchedSpaces.map(s => ({
+                ...s,
+                createdAt: s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt)
+            })) as Space[];
+            setSpaces(spacesWithDates);
+            setUsers(fetchedUsers);
+            
+            const initialEditableState = spacesWithDates.reduce((acc, space) => {
+                acc[space.id] = {
+                    authorName: { name: space.authorName || '', isSaving: false },
+                    hostName: { name: space.hostName || '', isSaving: false },
+                };
+                return acc;
+            }, {} as Record<string, EditableNames>);
+            setEditableNames(initialEditableState);
+
+             const initialRolesState = fetchedUsers.reduce((acc, user) => {
+                acc[user.uid] = { isHost: user.isHost, isSuperAdmin: user.isSuperAdmin };
+                return acc;
+            }, {} as EditableRoles);
+            setEditableRoles(initialRolesState);
+
+
+        } catch (error) {
+            console.error("Failed to fetch admin data:", error);
+            toast({ title: "Error", description: "Could not fetch admin data.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    }, [isSuperAdmin, toast]);
+
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!isSuperAdmin) {
-                setLoading(false);
-                return;
-            }
-            setLoading(true);
-            try {
-                const fetchedSpaces = await getSpaces();
-                 // Ensure dateTime is a Date object if it's not already
-                const spacesWithDates = fetchedSpaces.map(s => ({
-                    ...s,
-                    createdAt: s.createdAt instanceof Date ? s.createdAt : new Date(s.createdAt)
-                }));
-                setSpaces(spacesWithDates as Space[]);
-                
-                // Initialize editable host names state
-                const initialEditableState = (spacesWithDates as Space[]).reduce((acc, space) => {
-                    acc[space.id] = {
-                        authorName: { name: space.authorName || '', isSaving: false },
-                        hostName: { name: space.hostName || '', isSaving: false },
-                    };
-                    return acc;
-                }, {} as Record<string, EditableNames>);
-                setEditableNames(initialEditableState);
-
-            } catch (error) {
-                console.error("Failed to fetch spaces:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
-    }, [isSuperAdmin]);
+    }, [fetchData]);
     
-    const uniqueAuthors = useMemo(() => {
-        const authorSet = new Set<string>();
-        spaces.forEach(space => {
-            if (space.authorName) authorSet.add(space.authorName);
+    
+    const handleRoleChange = (userId: string, role: 'isHost' | 'isSuperAdmin', value: boolean) => {
+        setEditableRoles(prev => ({
+            ...prev,
+            [userId]: { ...prev[userId], [role]: value }
+        }));
+    };
+
+    const handleSaveRoles = async () => {
+        setIsSavingRoles(true);
+        const promises = users.map(user => {
+            const originalRoles = { isHost: user.isHost, isSuperAdmin: user.isSuperAdmin };
+            const newRoles = editableRoles[user.uid];
+            if (originalRoles.isHost !== newRoles.isHost || originalRoles.isSuperAdmin !== newRoles.isSuperAdmin) {
+                return updateUserRoles(user.uid, { host: newRoles.isHost, SuperAdmin: newRoles.isSuperAdmin });
+            }
+            return Promise.resolve();
         });
-        return Array.from(authorSet).sort((a, b) => a.localeCompare(b));
-    }, [spaces]);
+
+        try {
+            await Promise.all(promises);
+            toast({ title: "Success", description: "User roles have been updated." });
+            await fetchData(); // Re-fetch data to confirm changes
+        } catch (error) {
+            console.error("Failed to save roles:", error);
+            toast({ title: "Error", description: "Could not save user roles.", variant: "destructive" });
+        } finally {
+            setIsSavingRoles(false);
+        }
+    };
+
 
     const handleNameChange = (spaceId: string, field: 'authorName' | 'hostName', newName: string) => {
         setEditableNames(prev => ({
@@ -147,12 +188,13 @@ export function AdminDashboard() {
         }
     };
     
-    const filteredAuthors = useMemo(() => {
-        if (!searchQuery) return uniqueAuthors;
-        return uniqueAuthors.filter(author =>
-            author.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredUsers = useMemo(() => {
+        if (!searchQuery) return users;
+        return users.filter(user =>
+            user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.email?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [uniqueAuthors, searchQuery]);
+    }, [users, searchQuery]);
 
     const filteredSpaces = useMemo(() => {
         if (!searchQuery) return spaces;
@@ -209,23 +251,39 @@ export function AdminDashboard() {
                         />
                     </div>
                     <TabsContent value="members">
+                         <div className="flex justify-end mb-4">
+                            <Button onClick={handleSaveRoles} disabled={isSavingRoles}>
+                                {isSavingRoles ? 'Saving...' : 'Save All Role Changes'}
+                            </Button>
+                        </div>
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Author</TableHead>
-                                    <TableHead className="text-center w-[120px]">Certified</TableHead>
-                                    <TableHead className="text-right w-[120px]">Actions</TableHead>
+                                    <TableHead className="w-[100px] text-center">Host</TableHead>
+                                    <TableHead className="w-[100px] text-center">Super Admin</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredAuthors.map((name) => (
-                                    <TableRow key={name}>
-                                        <TableCell className="font-medium">{name}</TableCell>
-                                        <TableCell className="text-center">
-                                           <Checkbox />
+                                {filteredUsers.map((user) => (
+                                    <TableRow key={user.uid}>
+                                        <TableCell className="font-medium">
+                                            <div>{user.name}</div>
+                                            <div className="text-xs text-muted-foreground">{user.email}</div>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button size="sm">Save</Button>
+                                        <TableCell className="text-center">
+                                            <Checkbox
+                                                checked={editableRoles[user.uid]?.isHost ?? false}
+                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isHost', !!checked)}
+                                                aria-label={`Set host status for ${user.name}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Checkbox
+                                                checked={editableRoles[user.uid]?.isSuperAdmin ?? false}
+                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isSuperAdmin', !!checked)}
+                                                aria-label={`Set super admin for ${user.name}`}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))}

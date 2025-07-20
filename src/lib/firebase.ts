@@ -60,8 +60,8 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
                 name_lowercase: name.toLowerCase(),
                 email,
                 createdAt: serverTimestamp(),
-                isHost: false, // Default role
-                isSuperAdmin: false, // Default role
+                host: false, // Default role
+                SuperAdmin: false, // Default role
             });
         } catch (error) {
             console.error("Error creating user document", error);
@@ -83,8 +83,8 @@ export const getUserProfile = async (userId: string) => {
           name: string; 
           email: string; 
           timezone?: string; 
-          isHost?: boolean; 
-          isSuperAdmin?: boolean; 
+          host?: boolean; 
+          SuperAdmin?: boolean; 
       };
     } else {
       console.log("No such user document!");
@@ -227,8 +227,8 @@ export const getAllUsers = async (): Promise<User[]> => {
             uid: snap.id,
             name: data.name,
             email: data.email,
-            isHost: !!data.isHost,
-            isSuperAdmin: !!data.isSuperAdmin,
+            isHost: !!data.host,
+            isSuperAdmin: !!data.SuperAdmin,
             // Fallback for older data that might not have these fields
         } as User;
     });
@@ -238,7 +238,7 @@ export const getAllUsers = async (): Promise<User[]> => {
 /**
  * Updates a user's roles in Firestore.
  */
-export const updateUserRoles = async (userId: string, roles: { isHost?: boolean; isSuperAdmin?: boolean }) => {
+export const updateUserRoles = async (userId: string, roles: { host?: boolean; SuperAdmin?: boolean }) => {
     if (!userId) throw new Error("User ID is required to update roles.");
     const userDocRef = doc(db, "users", userId);
     await updateDoc(userDocRef, roles);

@@ -2,35 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Checks if a user has the SuperAdmin field set to true in their user document.
-    function isSuperAdmin(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.SuperAdmin == true;
+
+    // SuperAdmin Catch-all: Permet l'accès complet (lecture/écriture) à tout document
+    // si l'utilisateur connecté a la custom claim SuperAdmin: true.
+    // Cette règle est évaluée en premier.
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.SuperAdmin == true;
     }
 
-    // Users can only read/write their own document. SuperAdmins can read/write any document.
+    // Règles plus spécifiques (s'appliquent si l'utilisateur n'est PAS un SuperAdmin)
+
+    // Users: read/write own, SuperAdmins get/list/write all
     match /users/{userId} {
-      allow get: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
-      allow list: if request.auth != null && isSuperAdmin(request.auth.uid);
-      allow write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
+      // Les SuperAdmins sont couverts par la règle catch-all pour get/list/write.
+      // Ces règles s'appliquent aux utilisateurs connectés NON SuperAdmins.
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list: if false; // Non-SuperAdmins ne peuvent pas lister tous les users
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Spaces can be read by anyone.
-    // Logged-in users can create spaces.
-    // Only the creator or a SuperAdmin can update or delete a space.
+    // Spaces: read all, create if logged in, update/delete if creator OR SuperAdmin
     match /spaces/{spaceId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && 
-                                (request.auth.uid == resource.data.createdBy || isSuperAdmin(request.auth.uid));
+      // Les SuperAdmins sont couverts par la règle catch-all pour read/create/update/delete.
+      // Ces règles s'appliquent aux utilisateurs non SuperAdmins.
+      allow read: if true; // Tout le monde peut lire
+      allow create: if request.auth != null; // Tout connecté peut créer
+      // L'auteur peut modifier/supprimer. Les SuperAdmins aussi via la règle catch-all.
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
     }
 
-    // Users can only manage their own favorites.
-    // Reading favorites is public to allow counting likes.
+    // Favorites: read all, manage own
     match /favorites/{favoriteId} {
-      allow read: if true;
-      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Les SuperAdmins sont couverts par la règle catch-all pour read/delete/create.
+      // Ces règles s'appliquent aux utilisateurs non SuperAdmins.
+      allow read: if true; // Tout le monde peut lire pour compter les likes
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId; // Seul le propriétaire peut supprimer
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId; // Seul le propriétaire peut créer
     }
   }
 }

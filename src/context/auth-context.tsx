@@ -33,8 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const tokenResult = await firebaseUser.getIdTokenResult(true);
         const isAdminClaim = !!tokenResult.claims.admin;
 
-        const isSuperAdminUser = userProfile?.isSuperAdmin ?? false;
-        const isHostUser = userProfile?.isHost ?? false;
+        // Correctly read from the userProfile object, which should match Firestore fields.
+        const isSuperAdminUser = userProfile?.SuperAdmin ?? false;
+        const isHostUser = userProfile?.host ?? false;
 
         setIsAdmin(isAdminClaim); // Keep for compatibility if needed
         setIsSuperAdmin(isSuperAdminUser);
