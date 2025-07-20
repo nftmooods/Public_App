@@ -173,11 +173,9 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <span>
                 <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
             </span>
-            {space.coHostName && (
-                <span>
-                    <span className="font-semibold">Co-host:</span> {space.coHostName}
-                </span>
-            )}
+            <span>
+                <span className="font-semibold">Co-host:</span> {space.coHostName || ''}
+            </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
