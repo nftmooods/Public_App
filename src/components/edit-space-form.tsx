@@ -104,6 +104,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   const router = useRouter();
   const { user, isSuperAdmin } = useAuth(); 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const isCreator = user?.uid === space.createdBy;
+  const canEditHostName = isSuperAdmin || isCreator;
+
 
   const { initialContentPlace, initialContentType } = useMemo(() => {
     const contentPlaceValues = contentPlaceTags.map(t => t.value);
@@ -169,17 +173,16 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
           coHostName: coHostName ? coHostName : deleteField(),
       };
       
+      if (canEditHostName) {
+        spaceUpdateData.hostName = hostName ? hostName : authorName;
+      }
+      
       if (isSuperAdmin) {
           spaceUpdateData.authorName = authorName;
-          spaceUpdateData.hostName = hostName ? hostName : authorName; // Ensure hostName is set
           spaceUpdateData.isCertified = isCertified;
           if (!isCertified) {
             spaceUpdateData.isCertified = deleteField();
           }
-      } else {
-        // If not super admin, ensure hostName is not changed directly
-        // but can be updated if authorName is the source and it changes
-        // This part of logic seems to be admin-only, so we might not need an else branch
       }
 
 
@@ -261,7 +264,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                         <Input {...field} disabled={!isSuperAdmin} />
                     </FormControl>
                     <FormDescription className="text-xs text-card-foreground/60">
-                        {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed., contact nftmooods for a manual editing"}
+                        {isSuperAdmin ? "You can change the author name." : "Only a Super Admin can change the author."}
                     </FormDescription>
                     <FormMessage />
                     </FormItem>
@@ -274,10 +277,10 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                 <FormItem>
                     <FormLabel>Host Name</FormLabel>
                     <FormControl>
-                        <Input {...field} disabled={!isSuperAdmin} />
+                        <Input {...field} disabled={!canEditHostName} />
                     </FormControl>
                     <FormDescription className="text-xs text-card-foreground/60">
-                        {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed, contact nftmooods for a manual editing"}
+                         {canEditHostName ? "You can change the host name." : "Only the creator or an admin can change the host."}
                     </FormDescription>
                     <FormMessage />
                 </FormItem>
