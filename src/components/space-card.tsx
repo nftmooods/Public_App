@@ -174,7 +174,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                  >
                     {formattedDateTime.day}
                 </Badge>
-                {contentPlaceTag && <Badge variant={"secondary"} className="whitespace-nowrap flex-shrink-0">{contentPlaceTag}</Badge>}
+                {contentPlaceTag && <span className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">{contentPlaceTag}</span>}
             </div>
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col">
