@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -78,7 +79,15 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
               <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Password</FormLabel>
+                    <Link
+                        href="/forgot-password"
+                        className="text-sm font-medium text-primary hover:underline underline-offset-4"
+                        >
+                        Forgot Password?
+                    </Link>
+                  </div>
                   <FormControl>
                   <Input type="password" placeholder="Your password" {...field} />
                   </FormControl>
