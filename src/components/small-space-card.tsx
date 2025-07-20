@@ -73,15 +73,15 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
     formattedTime = "Invalid Time";
   }
   
-  const cardClasses = "block transition-colors p-2 text-xs group border-b border-border/20 hover:bg-muted/40";
+  const cardClasses = "block transition-all p-2 text-xs group border-b border-border/20 hover:bg-muted/40";
   
   return (
     <div className={cn(cardClasses)}>
         <div className="flex flex-col text-foreground">
           <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
-            <p className="text-muted-foreground text-xs whitespace-nowrap">{formattedTime}</p>
+            <p className="text-muted-foreground text-xs whitespace-nowrap transition-all group-hover:font-medium group-hover:text-sm">{formattedTime}</p>
           </div>
-          <p className="font-semibold leading-tight transition-colors text-primary">{space.name}</p>
+          <p className="font-semibold leading-tight transition-all text-primary group-hover:text-base">{space.name}</p>
         </div>
     </div>
   )
