@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getSpaces, getAllUsers } from '@/lib/firebase';
-import type { Space, User } from '@/lib/types';
+import { getSpaces } from '@/lib/firebase';
+import type { Space } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +15,7 @@ import { Button } from './ui/button';
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
     const [spaces, setSpaces] = useState<Omit<Space, 'dateTime'>[]>([]);
-    const [users, setUsers] = useState<Omit<User, 'uid'>[]>([]);
+    const [hosts, setHosts] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -25,12 +25,23 @@ export function AdminDashboard() {
                 return;
             }
             setLoading(true);
-            const [fetchedSpaces, fetchedUsers] = await Promise.all([
-                getSpaces(),
-                getAllUsers()
-            ]);
+            const fetchedSpaces = await getSpaces();
             setSpaces(fetchedSpaces);
-            setUsers(fetchedUsers);
+
+            // Extract unique hosts and co-hosts
+            const hostSet = new Set<string>();
+            fetchedSpaces.forEach(space => {
+                if (space.authorName) {
+                    hostSet.add(space.authorName);
+                }
+                if (space.coHostName) {
+                    hostSet.add(space.coHostName);
+                }
+            });
+            
+            const sortedHosts = Array.from(hostSet).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+            setHosts(sortedHosts);
+            
             setLoading(false);
         };
 
@@ -63,7 +74,7 @@ export function AdminDashboard() {
                 <Tabs defaultValue="events">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="events">All Events ({spaces.length})</TabsTrigger>
-                        <TabsTrigger value="members">All Members ({users.length})</TabsTrigger>
+                        <TabsTrigger value="members">Hosts & Co-hosts ({hosts.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="events" className="mt-4">
                         <Table>
@@ -94,14 +105,12 @@ export function AdminDashboard() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Name</TableHead>
-                                    <TableHead>Email</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {users.map((member, index) => (
+                                {hosts.map((name, index) => (
                                     <TableRow key={index}>
-                                        <TableCell className="font-medium">{member.name}</TableCell>
-                                        <TableCell>{member.email}</TableCell>
+                                        <TableCell className="font-medium">{name}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
