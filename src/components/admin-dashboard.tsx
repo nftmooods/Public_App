@@ -31,6 +31,7 @@ export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
 
     // State for editable names
@@ -144,6 +145,24 @@ export function AdminDashboard() {
             }));
         }
     };
+    
+    const filteredHosts = useMemo(() => {
+        if (!searchQuery) return uniqueHosts;
+        return uniqueHosts.filter(host =>
+            host.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [uniqueHosts, searchQuery]);
+
+    const filteredSpaces = useMemo(() => {
+        if (!searchQuery) return spaces;
+        const lowercasedQuery = searchQuery.toLowerCase();
+        return spaces.filter(space =>
+            space.name.toLowerCase().includes(lowercasedQuery) ||
+            (space.authorName && space.authorName.toLowerCase().includes(lowercasedQuery)) ||
+            (space.hostName && space.hostName.toLowerCase().includes(lowercasedQuery))
+        );
+    }, [spaces, searchQuery]);
+
 
     if (loading) {
         return (
@@ -166,6 +185,14 @@ export function AdminDashboard() {
                 <CardDescription>Manage hosts and events across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
+                <div className="mb-4">
+                    <Input
+                        placeholder="Search hosts or events..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full max-w-sm"
+                    />
+                </div>
                 <Tabs defaultValue="events">
                     <TabsList>
                         <TabsTrigger value="members">Hosts & Co-hosts</TabsTrigger>
@@ -180,7 +207,7 @@ export function AdminDashboard() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {uniqueHosts.map((name) => (
+                                {filteredHosts.map((name) => (
                                     <TableRow key={name}>
                                         <TableCell className="font-medium">{name}</TableCell>
                                         <TableCell className="text-right">
@@ -204,7 +231,7 @@ export function AdminDashboard() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {spaces.map((space) => {
+                                {filteredSpaces.map((space) => {
                                     const authorState = editableNames[space.id]?.authorName;
                                     const hostState = editableNames[space.id]?.hostName;
                                     const namesAreDifferent = authorState?.name !== hostState?.name;
