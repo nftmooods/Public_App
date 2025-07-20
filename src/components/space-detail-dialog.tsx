@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLinkIcon, Link2Off, PencilIcon, Share2Icon, HeartIcon } from "lucide-react";
+import { ExternalLinkIcon, Link2Off, PencilIcon, HeartIcon } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
@@ -72,16 +72,6 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: SpaceDetailDialogProps) {
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
-
-  const handleShare = () => {
-    if (!space) return;
-    const shareUrl = `${window.location.origin}/space/${space.id}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-        title: "Link Copied!",
-        description: "The link to this moment has been copied to your clipboard.",
-    });
-  };
   
   const isCreator = user && space && user.uid === space.createdBy;
   const isCoHost = user && space && space.coHostName && user.name === space.coHostName;
@@ -144,12 +134,6 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
                   {space.name}
                   {space.isCertified && <CertifiedIcon className="w-6 h-6 flex-shrink-0" />}
                 </DialogTitle>
-                <Badge 
-                    style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
-                    className="whitespace-nowrap flex-shrink-0"
-                 >
-                    {formattedDateTime.day}
-                </Badge>
             </div>
             <DialogDescription className="text-card-foreground/80 leading-tight flex flex-col pt-2">
                  <span>
@@ -162,12 +146,20 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
         </DialogHeader>
         
         <div className="space-y-4 py-4">
-            <Alert className="bg-background/10 border-border/30 text-card-foreground">
-                <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
-                <AlertDescription className="text-card-foreground/80">
-                    Timezone: {formattedDateTime.timezone}
-                </AlertDescription>
-            </Alert>
+            <div className="relative">
+                <Badge 
+                    style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
+                    className="whitespace-nowrap absolute -top-2 right-2 z-10"
+                >
+                    {formattedDateTime.day}
+                </Badge>
+                <Alert className="bg-background/10 border-border/30 text-card-foreground overflow-hidden">
+                    <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
+                    <AlertDescription className="text-card-foreground/80">
+                        Timezone: {formattedDateTime.timezone}
+                    </AlertDescription>
+                </Alert>
+            </div>
 
              <div className="flex flex-wrap items-center gap-2">
                 {contentPlaceTag && <Badge variant="secondary">{contentPlaceTag}</Badge>}

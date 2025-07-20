@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon, AlertCircle, Link2Off } from "lucide-react";
+import { ExternalLinkIcon, HeartIcon, PencilIcon, Link2Off } from "lucide-react";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { useAuth } from "@/context/auth-context";
@@ -81,7 +81,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </CardHeader>
             <CardContent>
                 <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Invalid Date</AlertTitle>
                     <AlertDescription>
                         There was a problem calculating the date for this event.
@@ -112,7 +111,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </CardHeader>
             <CardContent>
                 <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Invalid Time</AlertTitle>
                     <AlertDescription>
                         Could not calculate a valid time for this event.
@@ -152,15 +150,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
     }
   }
 
-  const handleShare = () => {
-    const shareUrl = `${window.location.origin}/space/${space.id}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast({
-        title: "Link Copied!",
-        description: "The link to this moment has been copied to your clipboard.",
-    });
-  };
-
   const isCreator = user && user.uid === space.createdBy;
   const isCoHost = user && space.coHostName && user.name === space.coHostName;
   const canEdit = isCreator || isCoHost || isSuperAdmin;
@@ -173,14 +162,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
               {space.name}
               {space.isCertified && <CertifiedIcon className="w-5 h-5 flex-shrink-0" />}
             </CardTitle>
-            <div className="flex flex-col items-end gap-2 text-right">
-                <Badge 
-                    style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
-                    className="whitespace-nowrap flex-shrink-0"
-                >
-                    {formattedDateTime.day}
-                </Badge>
-            </div>
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
             <span>
@@ -192,12 +173,20 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-1">
-        <Alert className="bg-background/10 border-border/30 text-card-foreground">
-            <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
-            <AlertDescription className="text-card-foreground/80">
-              Timezone: {formattedDateTime.timezone}
-            </AlertDescription>
-        </Alert>
+        <div className="relative">
+             <Badge 
+                style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
+                className="whitespace-nowrap absolute -top-2 right-2 z-10"
+            >
+                {formattedDateTime.day}
+            </Badge>
+            <Alert className="bg-background/10 border-border/30 text-card-foreground overflow-hidden">
+                <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
+                <AlertDescription className="text-card-foreground/80">
+                Timezone: {formattedDateTime.timezone}
+                </AlertDescription>
+            </Alert>
+        </div>
         <div className="bg-input rounded-md p-2 min-h-[36px] flex items-center">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
               {contentPlaceTag && <span>{contentPlaceTag}</span>}
