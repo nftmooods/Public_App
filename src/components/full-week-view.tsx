@@ -43,7 +43,7 @@ export function FullWeekView({ spaces, displayTimezone }: FullWeekViewProps) {
         return (
             <div 
             key={dayIndex} 
-            className="bg-card text-card-foreground rounded-lg p-4 flex flex-col gap-3 min-h-[200px]"
+            className="bg-card text-card-foreground rounded-lg p-2 flex flex-col gap-2 min-h-[200px]"
             >
             <h2 
                 className="text-center font-headline text-xl font-bold p-2 rounded"
