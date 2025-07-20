@@ -247,7 +247,7 @@ export function DashboardForm() {
             <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                     type="button" 
-                    variant="outline" 
+                    variant="secondary" 
                     onClick={handleSendResetEmail} 
                     disabled={isSendingReset}
                     className="flex-1"
