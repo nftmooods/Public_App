@@ -187,7 +187,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <Alert className="bg-background/10 border-border/30 text-card-foreground flex flex-row justify-between items-center gap-2">
+        <Alert className="bg-background/10 border-border/30 text-card-foreground flex flex-row justify-between items-start gap-2">
             <div>
               <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
               <AlertDescription className="text-card-foreground/80">
