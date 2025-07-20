@@ -173,17 +173,17 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
               {space.name}
               {space.isCertified && <CertifiedIcon className="w-5 h-5 flex-shrink-0" />}
             </CardTitle>
-            <div className="flex flex-col items-end gap-2">
-                 <Badge 
+            <div className="flex flex-col items-end gap-2 text-right">
+                <Badge 
                     style={{ backgroundColor: space.dayColor, color: '#002787', borderColor: 'transparent' }}
                     className="whitespace-nowrap flex-shrink-0"
-                 >
+                >
                     {formattedDateTime.day}
                 </Badge>
-                {contentPlaceTag && <span className="text-sm text-muted-foreground whitespace-nowrap flex-shrink-0">{contentPlaceTag}</span>}
+                {contentPlaceTag && <span className="text-sm text-muted-foreground whitespace-nowrap">{contentPlaceTag}</span>}
             </div>
         </div>
-        <CardDescription className="text-card-foreground/80 leading-tight flex flex-col">
+        <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
             <span>
                 <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
             </span>
@@ -192,7 +192,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-2">
+      <CardContent className="flex-grow flex flex-col gap-4">
         <Alert className="bg-background/10 border-border/30 text-card-foreground">
             <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
             <AlertDescription className="text-card-foreground/80">
@@ -200,14 +200,16 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </AlertDescription>
         </Alert>
         {contentTypeTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {contentTypeTags.map(tag => (
-                <Badge key={tag} variant={"secondary"} className="whitespace-nowrap">{tag}</Badge>
-            ))}
+          <div className="bg-input rounded-md p-2 min-h-[40px] flex items-center">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
+              {contentTypeTags.map(tag => (
+                  <span key={tag}>{tag}</span>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
+      <CardFooter className="flex justify-between items-center">
         <div className="flex items-center gap-2">
             <Button
                 variant="ghost"
