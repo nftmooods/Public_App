@@ -57,15 +57,6 @@ export default function AdminPage() {
 
     return (
         <div className="w-full max-w-6xl relative">
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => router.back()}
-                className="absolute top-4 right-4"
-             >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
             <AdminDashboard />
         </div>
     );

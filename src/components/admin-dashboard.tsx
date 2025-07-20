@@ -16,6 +16,7 @@ import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 type EditableNameState = {
     name: string;
@@ -29,6 +30,7 @@ type EditableNames = {
 
 export function AdminDashboard() {
     const { isSuperAdmin } = useAuth();
+    const router = useRouter();
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -179,7 +181,16 @@ export function AdminDashboard() {
     }
 
     return (
-        <Card className="w-full">
+        <Card className="w-full relative">
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.back()}
+                className="absolute top-4 right-4 z-10"
+             >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Super Admin Dashboard</CardTitle>
                 <CardDescription>Manage hosts and events across the platform.</CardDescription>
