@@ -14,7 +14,7 @@ import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 type EditableNameState = {
     name: string;
@@ -94,6 +94,13 @@ export function AdminDashboard() {
         const authorName = editableNames[spaceId]?.authorName?.name;
         if (authorName) {
             handleNameChange(spaceId, 'hostName', authorName);
+        }
+    };
+
+    const copyHostToAuthor = (spaceId: string) => {
+        const hostName = editableNames[spaceId]?.hostName?.name;
+        if (hostName) {
+            handleNameChange(spaceId, 'authorName', hostName);
         }
     };
 
@@ -189,7 +196,7 @@ export function AdminDashboard() {
                                 <TableRow>
                                     <TableHead>Event Name</TableHead>
                                     <TableHead>Author</TableHead>
-                                    <TableHead className="w-[20px] p-0"></TableHead>
+                                    <TableHead className="w-[40px] p-0"></TableHead>
                                     <TableHead>Host</TableHead>
                                     <TableHead>Created At</TableHead>
                                     <TableHead className="text-right w-[220px]">Actions</TableHead>
@@ -211,16 +218,29 @@ export function AdminDashboard() {
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
                                             </TableCell>
-                                            <TableCell className="px-1">
-                                                <Button 
-                                                  variant="ghost"
-                                                  size="icon" 
-                                                  className="h-8 w-8"
-                                                  onClick={() => copyAuthorToHost(space.id)}
-                                                  disabled={authorState?.isSaving || hostState?.isSaving}
-                                                >
-                                                  =
-                                                </Button>
+                                            <TableCell className="px-1 align-middle">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <Button 
+                                                        variant="ghost"
+                                                        size="icon" 
+                                                        className="h-6 w-6"
+                                                        onClick={() => copyAuthorToHost(space.id)}
+                                                        disabled={authorState?.isSaving || hostState?.isSaving}
+                                                        title="Copy Author to Host"
+                                                    >
+                                                        <ArrowRight className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button 
+                                                        variant="ghost"
+                                                        size="icon" 
+                                                        className="h-6 w-6"
+                                                        onClick={() => copyHostToAuthor(space.id)}
+                                                        disabled={authorState?.isSaving || hostState?.isSaving}
+                                                        title="Copy Host to Author"
+                                                    >
+                                                        <ArrowLeft className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                              <TableCell>
                                                 <Input 
