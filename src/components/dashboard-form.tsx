@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, deleteUserAccount, updateUserSpacesAuthorName } from "@/lib/firebase";
+import { updateUserProfile, deleteUserAccount, updateUserSpacesHostName } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { auth } from "@/lib/firebase";
 import {
@@ -108,7 +108,7 @@ export function DashboardForm() {
       await Promise.all(promises);
 
       if (nameChanged) {
-          await updateUserSpacesAuthorName(user.uid, name);
+          await updateUserSpacesHostName(user.uid, name);
       }
       
       toast({
