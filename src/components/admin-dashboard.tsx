@@ -14,6 +14,7 @@ import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { ArrowRight } from 'lucide-react';
 
 type EditableNameState = {
     name: string;
@@ -87,6 +88,13 @@ export function AdminDashboard() {
                 [field]: { ...prev[spaceId][field], name: newName }
             }
         }));
+    };
+
+    const copyAuthorToHost = (spaceId: string) => {
+        const authorName = editableNames[spaceId]?.authorName?.name;
+        if (authorName) {
+            handleNameChange(spaceId, 'hostName', authorName);
+        }
     };
 
     const handleSaveName = async (spaceId: string, field: 'authorName' | 'hostName') => {
@@ -181,6 +189,7 @@ export function AdminDashboard() {
                                 <TableRow>
                                     <TableHead>Event Name</TableHead>
                                     <TableHead>Author</TableHead>
+                                    <TableHead className="w-[20px] p-0"></TableHead>
                                     <TableHead>Host</TableHead>
                                     <TableHead>Created At</TableHead>
                                     <TableHead className="text-right w-[220px]">Actions</TableHead>
@@ -201,6 +210,17 @@ export function AdminDashboard() {
                                                     className="h-8"
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
+                                            </TableCell>
+                                            <TableCell className="px-1">
+                                                <Button 
+                                                  variant="ghost"
+                                                  size="icon" 
+                                                  className="h-8 w-8"
+                                                  onClick={() => copyAuthorToHost(space.id)}
+                                                  disabled={authorState?.isSaving || hostState?.isSaving}
+                                                >
+                                                  =
+                                                </Button>
                                             </TableCell>
                                              <TableCell>
                                                 <Input 
