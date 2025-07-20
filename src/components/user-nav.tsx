@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, ShieldCheck } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 
 export function UserNav() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -78,6 +78,14 @@ export function UserNav() {
               <span>My Account</span>
              </Link>
           </DropdownMenuItem>
+           {(isAdmin || isSuperAdmin) && (
+              <DropdownMenuItem asChild>
+                <Link href="/admin">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

@@ -170,6 +170,21 @@ export const deleteUserAccount = async () => {
   // and would require a more complex cleanup, possibly with a Cloud Function.
 };
 
+/**
+ * Retrieves all users from Firestore.
+ */
+export const getAllUsers = async (): Promise<Omit<User, 'uid'>[]> => {
+    const usersCol = collection(db, "users");
+    const usersSnapshot = await getDocs(query(usersCol, orderBy("name_lowercase")));
+    const userList = usersSnapshot.docs.map((snap) => {
+        const data = snap.data();
+        return {
+            name: data.name,
+            email: data.email,
+        } as Omit<User, 'uid'>;
+    });
+    return userList;
+}
 
 
 // --- Space Functions ---
