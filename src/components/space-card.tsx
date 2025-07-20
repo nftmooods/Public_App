@@ -187,27 +187,27 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <span>
                 <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
             </span>
-            <span>
-                <span className="font-semibold">Co-host:</span> {space.coHostName || ''}
-            </span>
+            {space.coHostName && (
+                <span>
+                    <span className="font-semibold">Co-host:</span> {space.coHostName}
+                </span>
+            )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <Alert className="bg-background/10 border-border/30 text-card-foreground flex flex-row justify-between items-start gap-2">
-            <div>
-              <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
-              <AlertDescription className="text-card-foreground/80">
-                Timezone: {formattedDateTime.timezone}
-              </AlertDescription>
-            </div>
-            {contentTypeTags.length > 0 && (
-              <div className="flex flex-col items-end gap-1">
-                {contentTypeTags.map(tag => (
-                    <Badge key={tag} variant={"secondary"} className="whitespace-nowrap">{tag}</Badge>
-                ))}
-              </div>
-            )}
+      <CardContent className="flex-grow flex flex-col gap-2">
+        <Alert className="bg-background/10 border-border/30 text-card-foreground">
+            <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
+            <AlertDescription className="text-card-foreground/80">
+              Timezone: {formattedDateTime.timezone}
+            </AlertDescription>
         </Alert>
+        {contentTypeTags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {contentTypeTags.map(tag => (
+                <Badge key={tag} variant={"secondary"} className="whitespace-nowrap">{tag}</Badge>
+            ))}
+          </div>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between">
         <div className="flex items-center gap-2">
