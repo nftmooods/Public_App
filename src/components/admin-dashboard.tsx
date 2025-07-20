@@ -39,6 +39,7 @@ export function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const { toast } = useToast();
+    const [activeTab, setActiveTab] = useState("members"); // Control active tab state
 
     const [editableNames, setEditableNames] = useState<Record<string, EditableNames>>({});
     const [editableRoles, setEditableRoles] = useState<EditableRoles>({});
@@ -249,7 +250,7 @@ export function AdminDashboard() {
                 <CardDescription>Manage authors and events across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="events">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <div className="flex justify-between items-center mb-4">
                         <TabsList>
                             <TabsTrigger value="members">Authors</TabsTrigger>
