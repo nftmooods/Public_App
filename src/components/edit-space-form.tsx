@@ -224,79 +224,81 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Moment Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Community Weekly Update" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-            control={form.control}
-            name="authorName"
-            render={({ field }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
                 <FormItem>
-                <FormLabel>Author Name</FormLabel>
-                <FormControl>
-                    <Input {...field} disabled={!isSuperAdmin} />
-                </FormControl>
-                <FormDescription className="text-xs text-card-foreground/60">
-                    {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed., contact nftmooods for a manual editing"}
-                </FormDescription>
-                <FormMessage />
+                  <FormLabel>Moment Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Community Weekly Update" {...field} />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
-            )}
+              )}
             />
-        <FormField
-            control={form.control}
-            name="hostName"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Host Name</FormLabel>
-                <FormControl>
-                    <Input {...field} disabled={!isSuperAdmin} />
-                </FormControl>
-                 <FormDescription className="text-xs text-card-foreground/60">
-                    {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed, contact nftmooods for a manual editing"}
-                </FormDescription>
-                <FormMessage />
-            </FormItem>
-            )}
-        />
-        <FormField
-          control={form.control}
-          name="coHostName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Co-host Name (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Another community member" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="projectUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>URL (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="https://x.com/yourproject" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="projectUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://x.com/yourproject" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+                control={form.control}
+                name="authorName"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Author Name</FormLabel>
+                    <FormControl>
+                        <Input {...field} disabled={!isSuperAdmin} />
+                    </FormControl>
+                    <FormDescription className="text-xs text-card-foreground/60">
+                        {isSuperAdmin ? "You can change the author name." : "The author of an event cannot be changed., contact nftmooods for a manual editing"}
+                    </FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            <FormField
+                control={form.control}
+                name="hostName"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Host Name</FormLabel>
+                    <FormControl>
+                        <Input {...field} disabled={!isSuperAdmin} />
+                    </FormControl>
+                    <FormDescription className="text-xs text-card-foreground/60">
+                        {isSuperAdmin ? "You can change the host name." : "The host of an event cannot be changed, contact nftmooods for a manual editing"}
+                    </FormDescription>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+            <FormField
+              control={form.control}
+              name="coHostName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Co-host Name (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Another community member" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
         
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <FormField
               control={form.control}
               name="contentPlace"
@@ -371,30 +373,53 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
             />
         </div>
         
-        <FormField
-            control={form.control}
-            name="dayOfWeek"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Day of the Week</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a day" />
-                    </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                    {daysOfWeek.map(day => (
-                        <SelectItem key={day.id} value={day.id}>{day.label}</SelectItem>
-                    ))}
-                    </SelectContent>
-                </Select>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <FormField
+                control={form.control}
+                name="dayOfWeek"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Day of the Week</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a day" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {daysOfWeek.map(day => (
+                            <SelectItem key={day.id} value={day.id}>{day.label}</SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <FormField
+                control={form.control}
+                name="timezone"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Timezone</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select your city/timezone" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {cityTimezones.map(tz => (
+                                <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+                />
+            
             <FormField
               control={form.control}
               name="startTime"
@@ -444,32 +469,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
               )}
             />
         </div>
-         <FormField
-            control={form.control}
-            name="timezone"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Timezone</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select your city/timezone" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {cityTimezones.map(tz => (
-                            <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                     <FormDescription>
-                        Select the city that best represents your timezone.
-                    </FormDescription>
-                    <FormMessage />
-                </FormItem>
-            )}
-            />
-
+       
         <FormField
             control={form.control}
             name="isActive"
