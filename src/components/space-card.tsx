@@ -167,7 +167,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             <CardTitle className="font-headline text-xl flex items-center gap-2">
               {space.name}
             </CardTitle>
-            {space.isCertified && <CertifiedIcon className="w-8 h-8 flex-shrink-0" />}
+            {space.isCertified && <CertifiedIcon className="w-8 h-8 flex-shrink-0 absolute top-2 right-2" />}
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
             <span>
@@ -203,11 +203,6 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-4">
         <div className="flex items-center gap-1 relative">
-            {favoriteCount > 0 && (
-                <span className="absolute -top-4 left-1 text-xs font-bold text-red-500">
-                    +{favoriteCount}
-                </span>
-            )}
             <Button
                 variant="ghost"
                 size="icon"
@@ -216,6 +211,11 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 aria-label="Toggle favorite"
                 className="text-card-foreground/60 hover:text-red-500 hover:bg-red-500/10"
             >
+                {favoriteCount > 0 && (
+                    <span className="absolute -top-1.5 text-xs font-bold text-red-500">
+                        +{favoriteCount}
+                    </span>
+                )}
                 <HeartIcon className={`w-5 h-5 transition-colors ${isFavorite ? "text-red-500 fill-current" : ""}`} />
             </Button>
             {canEdit && (

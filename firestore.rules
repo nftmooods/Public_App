@@ -2,43 +2,27 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Default deny all - this is a good security practice
-    match /{document=**} {
-      allow read, write: if false;
+
+    // Users can only read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // --- SPACES ---
-    // Allow public read access to all spaces for everyone
+
+    // Spaces can be read by anyone.
+    // Any logged-in user can create a space.
+    // Only the creator of the space can update or delete it.
     match /spaces/{spaceId} {
       allow read: if true;
-      
-      // Allow creation only for authenticated users
       allow create: if request.auth != null;
-      
-      // Allow updates/deletes only by the creator or an admin
-      allow update, delete: if request.auth != null && 
-                              (resource.data.createdBy == request.auth.uid || 
-                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true);
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
     }
 
-    // --- USERS ---
-    // Users can only interact with their own document
-    // Admins can read any user document
-    match /users/{userId} {
-      allow read: if request.auth != null && 
-                    (request.auth.uid == userId || 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true);
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- FAVORITES ---
-    // Favorites can be read by anyone (for counts)
-    // but only created/deleted by the owner
+    // Users can only manage their own favorites.
+    // FAVORITES: Allow read for everyone to count likes.
     match /favorites/{favoriteId} {
-        allow read: if true;
-        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if true; // CHANGED: Allow read for everyone to count likes
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
   }
 }
