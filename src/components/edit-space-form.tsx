@@ -479,9 +479,7 @@ export function EditSpaceForm({ space }: EditSpaceFormProps) {
                     <FormLabel className="text-base">
                     Show in Calendar
                     </FormLabel>
-                    <FormDescription>
-                    If turned off, this moment will be hidden from the public schedule.
-                    </FormDescription>
+                    
                 </div>
                 <FormControl>
                     <Switch
