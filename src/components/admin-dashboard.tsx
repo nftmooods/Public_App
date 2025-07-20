@@ -185,19 +185,19 @@ export function AdminDashboard() {
                 <CardDescription>Manage hosts and events across the platform.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="mb-4">
-                    <Input
-                        placeholder="Search hosts or events..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full max-w-sm"
-                    />
-                </div>
                 <Tabs defaultValue="events">
-                    <TabsList>
-                        <TabsTrigger value="members">Hosts & Co-hosts</TabsTrigger>
-                        <TabsTrigger value="events">All Events</TabsTrigger>
-                    </TabsList>
+                    <div className="flex justify-between items-center mb-4">
+                        <TabsList>
+                            <TabsTrigger value="members">Hosts & Co-hosts</TabsTrigger>
+                            <TabsTrigger value="events">All Events</TabsTrigger>
+                        </TabsList>
+                         <Input
+                            placeholder="Search hosts or events..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full max-w-sm"
+                        />
+                    </div>
                     <TabsContent value="members">
                         <Table>
                             <TableHeader>
