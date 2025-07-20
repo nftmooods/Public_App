@@ -192,7 +192,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-4">
+      <CardContent className="flex-grow flex flex-col gap-2">
         <Alert className="bg-background/10 border-border/30 text-card-foreground">
             <AlertTitle className="text-2xl font-bold">{formattedDateTime.timeRange}</AlertTitle>
             <AlertDescription className="text-card-foreground/80">
@@ -200,7 +200,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </AlertDescription>
         </Alert>
         {contentTypeTags.length > 0 && (
-          <div className="bg-input rounded-md p-2 min-h-[40px] flex items-center">
+          <div className="bg-input rounded-md p-2 min-h-[36px] flex items-center">
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-medium">
               {contentTypeTags.map(tag => (
                   <span key={tag}>{tag}</span>
