@@ -20,6 +20,7 @@ interface SpaceCardProps {
   isFavorite: boolean;
   onToggleFavorite: (spaceId: string) => void;
   displayTimezone: string;
+  favoriteCount: number;
 }
 
 const contentPlaceTagsValues = ["SPACE", "STREAM", "DISCORD VC"];
@@ -62,7 +63,7 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
   }
 }
 
-export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone }: SpaceCardProps) {
+export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone, favoriteCount }: SpaceCardProps) {
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -165,14 +166,14 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl flex items-center gap-2">
               {space.name}
-              {space.isCertified && <CertifiedIcon className="w-5 h-5 flex-shrink-0" />}
             </CardTitle>
+            {space.isCertified && <CertifiedIcon className="w-8 h-8 flex-shrink-0" />}
         </div>
         <CardDescription className="text-card-foreground/80 leading-tight flex flex-col pt-1">
             <span>
                 <span className="font-semibold">Host:</span> {space.authorName || 'Anonymous'}
             </span>
-            <span>
+             <span>
                 <span className="font-semibold">Co-host:</span> {space.coHostName || ''}
             </span>
         </CardDescription>
@@ -201,7 +202,12 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
         </div>
       </CardContent>
       <CardFooter className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 relative">
+            {favoriteCount > 0 && (
+                <span className="absolute -top-4 left-1 text-xs font-bold text-red-500">
+                    +{favoriteCount}
+                </span>
+            )}
             <Button
                 variant="ghost"
                 size="icon"

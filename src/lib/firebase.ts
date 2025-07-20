@@ -310,5 +310,21 @@ export const getFavorites = async (userId: string) => {
   return favoriteList;
 };
 
+// Get a count of favorites for all spaces
+export const getFavoriteCounts = async (): Promise<Record<string, number>> => {
+  const favoritesCol = collection(db, "favorites");
+  const favoriteSnapshot = await getDocs(favoritesCol);
+  
+  const counts: Record<string, number> = {};
+  favoriteSnapshot.forEach(doc => {
+    const data = doc.data();
+    if (data.spaceId) {
+      counts[data.spaceId] = (counts[data.spaceId] || 0) + 1;
+    }
+  });
+  
+  return counts;
+};
+
 
 export { app, db, auth };

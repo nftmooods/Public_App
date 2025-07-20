@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getSpaces, getFavorites, addFavorite, removeFavorite } from "@/lib/firebase";
+import { getSpaces, getFavorites, addFavorite, removeFavorite, getFavoriteCounts } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { toDate } from 'date-fns-tz';
 import { 
@@ -105,21 +105,27 @@ const useSpaces = () => {
 const useFavorites = (user: any) => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteDocs, setFavoriteDocs] = useState<any[]>([]);
+  const [favoriteCounts, setFavoriteCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user?.uid) {
-      const fetchFavorites = async () => {
+  const fetchAllFavoritesData = useCallback(async () => {
+      // Fetch user-specific favorites
+      if (user?.uid) {
         const userFavorites = await getFavorites(user.uid);
         setFavoriteDocs(userFavorites);
         setFavorites(userFavorites.map(fav => fav.spaceId));
-      };
-      fetchFavorites();
-    } else {
-      setFavorites([]);
-      setFavoriteDocs([]);
-    }
-  }, [user]);
+      } else {
+        setFavorites([]);
+        setFavoriteDocs([]);
+      }
+      // Fetch all favorite counts
+      const counts = await getFavoriteCounts();
+      setFavoriteCounts(counts);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    fetchAllFavoritesData();
+  }, [fetchAllFavoritesData]);
 
   const toggleFavorite = useCallback(async (spaceId: string) => {
     if (!user) {
@@ -133,23 +139,20 @@ const useFavorites = (user: any) => {
         const favoriteDoc = favoriteDocs.find(doc => doc.spaceId === spaceId);
         if (favoriteDoc) {
           await removeFavorite(favoriteDoc.id);
-          setFavorites(prev => prev.filter(id => id !== spaceId));
-          setFavoriteDocs(prev => prev.filter(doc => doc.spaceId !== spaceId));
-          toast({ title: "Removed from favorites." });
         }
       } else {
-        const newFavoriteId = await addFavorite(user.uid, spaceId);
-        setFavorites(prev => [...prev, spaceId]);
-        setFavoriteDocs(prev => [...prev, { id: newFavoriteId, userId: user.uid, spaceId }]);
-        toast({ title: "Added to favorites!" });
+        await addFavorite(user.uid, spaceId);
       }
+      // Refresh all favorite data after toggling
+      await fetchAllFavoritesData();
+      toast({ title: isFavorite ? "Removed from favorites." : "Added to favorites!" });
     } catch (error) {
       console.error(`Error updating favorites for space ${spaceId}:`, error);
       toast({ title: "Error", description: "Could not update favorites.", variant: "destructive" });
     }
-  }, [user, favorites, favoriteDocs, toast]);
+  }, [user, favorites, favoriteDocs, toast, fetchAllFavoritesData]);
 
-  return { favorites, toggleFavorite };
+  return { favorites, toggleFavorite, favoriteCounts };
 };
 
 export function SpaceSchedule() {
@@ -163,7 +166,7 @@ export function SpaceSchedule() {
 
   const { user } = useAuth();
   const { spaces, loading } = useSpaces();
-  const { favorites, toggleFavorite } = useFavorites(user);
+  const { favorites, toggleFavorite, favoriteCounts } = useFavorites(user);
   
   useEffect(() => {
     setIsMounted(true);
@@ -296,7 +299,7 @@ export function SpaceSchedule() {
 
     return (
       <ScrollArea className="flex-1 pr-4 -mr-4">
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
              <AnimatePresence>
                 {filteredSpaces.length > 0 ? (
                     filteredSpaces.map((space) => (
@@ -313,6 +316,7 @@ export function SpaceSchedule() {
                         isFavorite={favorites.includes(space.id)}
                         onToggleFavorite={() => toggleFavorite(space.id)}
                         displayTimezone={effectiveTimezone}
+                        favoriteCount={favoriteCounts[space.id] || 0}
                         />
                     </motion.div>
                     ))
