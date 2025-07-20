@@ -3,13 +3,12 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { getSpaces } from '@/lib/firebase';
+import { getSpaces, updateSpace } from '@/lib/firebase';
 import type { Space } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from 'date-fns';
-import { Badge } from './ui/badge';
+import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +31,6 @@ export function HostDashboard() {
         setLoading(true);
         try {
             const allSpaces = await getSpaces();
-            // Filter spaces created by the current user
             const hostSpaces = allSpaces.filter(space => space.createdBy === user.uid);
             
             const spacesWithDates = hostSpaces.map(s => ({
@@ -57,6 +55,29 @@ export function HostDashboard() {
         }
     }, [authLoading, fetchHostData]);
     
+    const handleStatusChange = async (spaceId: string, newStatus: boolean) => {
+        const originalSpaces = [...spaces];
+        // Optimistically update UI
+        setSpaces(prevSpaces => prevSpaces.map(s => s.id === spaceId ? { ...s, isActive: newStatus } : s));
+
+        try {
+            await updateSpace(spaceId, { isActive: newStatus });
+            toast({
+                title: "Status Updated",
+                description: "The event status has been successfully updated.",
+            });
+        } catch (error) {
+            console.error("Failed to update status:", error);
+            // Revert UI on error
+            setSpaces(originalSpaces);
+            toast({
+                title: "Update Failed",
+                description: "Could not update the event status.",
+                variant: "destructive",
+            });
+        }
+    };
+
     const filteredSpaces = useMemo(() => {
         if (!searchQuery) return spaces;
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -107,7 +128,8 @@ export function HostDashboard() {
                         <TableRow>
                             <TableHead>Event Name</TableHead>
                             <TableHead>Day</TableHead>
-                            <TableHead>Time</TableHead>
+                            <TableHead>Start Time</TableHead>
+                            <TableHead>Co-host</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -118,10 +140,13 @@ export function HostDashboard() {
                                 <TableCell className="font-medium">{space.name}</TableCell>
                                 <TableCell>{dayNames[space.dayOfWeek]}</TableCell>
                                 <TableCell>{space.startTime}</TableCell>
+                                <TableCell>{space.coHostName || '-'}</TableCell>
                                 <TableCell>
-                                    <Badge variant={space.isActive === false ? 'destructive' : 'secondary'}>
-                                        {space.isActive === false ? 'Inactive' : 'Active'}
-                                    </Badge>
+                                    <Checkbox
+                                        checked={space.isActive === undefined ? true : space.isActive}
+                                        onCheckedChange={(checked) => handleStatusChange(space.id, !!checked)}
+                                        aria-label={`Set status for ${space.name}`}
+                                    />
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" onClick={() => router.push(`/edit-space/${space.id}`)}>
@@ -133,7 +158,7 @@ export function HostDashboard() {
                         ))}
                          {filteredSpaces.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                     You have not created any events yet.
                                 </TableCell>
                             </TableRow>
