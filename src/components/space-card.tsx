@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon, AlertCircle } from "lucide-react";
+import { ExternalLinkIcon, HeartIcon, Share2Icon, PencilIcon, AlertCircle, Link2Off } from "lucide-react";
 import type { Space } from "@/lib/types";
 import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { useAuth } from "@/context/auth-context";
@@ -220,11 +220,18 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
                 </Button>
             )}
         </div>
-        <Button asChild>
-          <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
-            Project Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
-          </a>
-        </Button>
+        {space.projectUrl ? (
+          <Button asChild>
+            <a href={space.projectUrl} target="_blank" rel="noopener noreferrer">
+              Project Link <ExternalLinkIcon className="ml-2 w-4 h-4" />
+            </a>
+          </Button>
+        ) : (
+          <Button variant="outline" disabled className="gap-2">
+            Link not available
+            <Link2Off className="w-4 h-4" />
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
