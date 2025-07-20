@@ -15,6 +15,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type EditableNameState = {
     name: string;
@@ -206,6 +207,7 @@ export function AdminDashboard() {
                                 {spaces.map((space) => {
                                     const authorState = editableNames[space.id]?.authorName;
                                     const hostState = editableNames[space.id]?.hostName;
+                                    const namesAreDifferent = authorState?.name !== hostState?.name;
 
                                     return (
                                         <TableRow key={space.id}>
@@ -214,7 +216,10 @@ export function AdminDashboard() {
                                                 <Input 
                                                     value={authorState?.name || ''}
                                                     onChange={(e) => handleNameChange(space.id, 'authorName', e.target.value)}
-                                                    className="h-8"
+                                                    className={cn(
+                                                        "h-8",
+                                                        namesAreDifferent && "bg-yellow-500/10 border-yellow-500/50"
+                                                    )}
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
                                             </TableCell>
@@ -246,7 +251,10 @@ export function AdminDashboard() {
                                                 <Input 
                                                     value={hostState?.name || ''}
                                                     onChange={(e) => handleNameChange(space.id, 'hostName', e.target.value)}
-                                                    className="h-8"
+                                                    className={cn(
+                                                        "h-8",
+                                                        namesAreDifferent && "bg-yellow-500/10 border-yellow-500/50"
+                                                    )}
                                                     disabled={authorState?.isSaving || hostState?.isSaving}
                                                 />
                                             </TableCell>
