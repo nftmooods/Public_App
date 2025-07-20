@@ -162,7 +162,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
 
   return (
     <Card className="flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card text-card-foreground">
-      <CardHeader>
+      <CardHeader className="relative">
         <div className="flex justify-between items-start gap-4">
             <CardTitle className="font-headline text-xl flex items-center gap-2">
               {space.name}

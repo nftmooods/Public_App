@@ -128,12 +128,12 @@ export function SpaceDetailDialog({ space, isOpen, onClose, displayTimezone }: S
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-card text-card-foreground">
-        <DialogHeader>
+        <DialogHeader className="relative">
             <div className="flex justify-between items-start gap-4">
                 <DialogTitle className="font-headline text-2xl flex items-center gap-2">
                   {space.name}
-                  {space.isCertified && <CertifiedIcon className="w-6 h-6 flex-shrink-0" />}
                 </DialogTitle>
+                {space.isCertified && <CertifiedIcon className="w-6 h-6 flex-shrink-0 absolute top-0 right-0" />}
             </div>
             <DialogDescription className="text-card-foreground/80 leading-tight flex flex-col pt-2">
                  <span>
