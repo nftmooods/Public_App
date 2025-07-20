@@ -14,8 +14,6 @@ interface SmallSpaceCardProps {
   displayTimezone: string;
 }
 
-const contentPlaceTagsValues = ["SPACE", "STREAM", "DISCORD VC"];
-
 const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date): Date => {
   if (!timeString || !isValid(baseDate)) {
       return new Date(NaN);
@@ -41,11 +39,6 @@ const getEventDateWithTime = (space: Space, timeString: string, baseDate: Date):
 }
 
 export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) {
-
-  const contentPlaceTag = useMemo(() => {
-    const tags = space.tags || [];
-    return tags.find(tag => contentPlaceTagsValues.includes(tag)) || null;
-  }, [space.tags]);
 
   if (!space.dateTime || !isValid(space.dateTime)) {
     return (
@@ -83,11 +76,10 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
   const cardClasses = "block bg-background/50 transition-colors p-2 rounded-md text-xs group border border-border/20 hover:bg-background/80";
   
   return (
-    <div className={cn(cardClasses, space.projectUrl ? "" : "")}>
+    <div className={cn(cardClasses)}>
         <div className="flex flex-col text-foreground">
           <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
             <p className="font-bold text-sm whitespace-nowrap">{formattedTime}</p>
-            {contentPlaceTag && <Badge variant="secondary" className="text-xs">{contentPlaceTag}</Badge>}
           </div>
           <p className="font-semibold leading-tight transition-colors text-card-foreground">{space.name}</p>
         </div>
