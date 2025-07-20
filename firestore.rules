@@ -1,39 +1,50 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection:
-    // - Authenticated users can create their own profile.
-    // - Users can read and update their own profile.
-    // - Admins (with custom claim { admin: true }) can update any profile.
+
+    // Helper function to check if the requesting user is a Super Admin
+    function isSuperAdmin(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.isSuperAdmin == true;
+    }
+
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read;
+      // Anyone can create their own user document (on signup)
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
-      allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
+
+      // A user can read their own profile. A Super Admin can read any profile.
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
+      
+      // A user can update their own profile. A Super Admin can update any profile.
+      allow update: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
+      
+      // A user can delete their own profile. A Super Admin can delete any profile.
+      allow delete: if request.auth != null && (request.auth.uid == userId || isSuperAdmin(request.auth.uid));
     }
 
-    // Spaces collection:
-    // - All users (authenticated or not) can read spaces.
-    // - Authenticated users can create spaces.
-    // - The creator of a space, a co-host, or an admin can update or delete it.
+    // Rules for the 'spaces' collection
     match /spaces/{spaceId} {
-      allow read;
+      // Any authenticated user can read spaces
+      allow read: if request.auth != null;
+      
+      // Only authenticated users can create a space
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (
-                                  resource.data.createdBy == request.auth.uid ||
-                                  (resource.data.coHostName != null && resource.data.coHostName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name) ||
-                                  request.auth.token.admin == true
-                                );
+      
+      // Only the creator of the space or a Super Admin can update or delete it
+      allow update, delete: if request.auth != null && (resource.data.createdBy == request.auth.uid || isSuperAdmin(request.auth.uid));
     }
-
-    // Favorites collection:
-    // - Authenticated users can create (favorite) their own entries.
-    // - Users can read and delete their own favorite entries.
+    
+    // Rules for the 'favorites' collection
     match /favorites/{favoriteId} {
-      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        // Any authenticated user can read all favorites (for counts)
+        allow read: if request.auth != null;
+
+        // A user can only create a favorite for themselves
+        allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+
+        // A user can only delete their own favorite
+        allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
   }
 }

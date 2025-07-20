@@ -60,6 +60,8 @@ export const createUserProfileDocument = async (userAuth: import('firebase/auth'
                 name_lowercase: name.toLowerCase(),
                 email,
                 createdAt: serverTimestamp(),
+                isHost: false, // Default role
+                isSuperAdmin: false, // Default role
             });
         } catch (error) {
             console.error("Error creating user document", error);
@@ -77,7 +79,13 @@ export const getUserProfile = async (userId: string) => {
     const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
     if (userDocSnap.exists()) {
-      return userDocSnap.data() as { name: string; email: string; timezone?: string; host?: boolean; SuperAdmin?: boolean; };
+      return userDocSnap.data() as { 
+          name: string; 
+          email: string; 
+          timezone?: string; 
+          isHost?: boolean; 
+          isSuperAdmin?: boolean; 
+      };
     } else {
       console.log("No such user document!");
       return null;
@@ -104,7 +112,7 @@ export const updateUserProfile = async (userId: string, updates: { name?: string
         firestoreUpdates.name_lowercase = updates.name.toLowerCase();
     }
     if (updates.timezone) {
-        firestoreUpdates.timezone = updates.timezone;
+        firestoreUpdates.timezone = timezone;
     }
 
     const promises = [];
@@ -219,11 +227,22 @@ export const getAllUsers = async (): Promise<User[]> => {
             uid: snap.id,
             name: data.name,
             email: data.email,
-            isCertified: data.isCertified || false,
+            isHost: !!data.isHost,
+            isSuperAdmin: !!data.isSuperAdmin,
+            // Fallback for older data that might not have these fields
         } as User;
     });
     return userList;
 }
+
+/**
+ * Updates a user's roles in Firestore.
+ */
+export const updateUserRoles = async (userId: string, roles: { isHost?: boolean; isSuperAdmin?: boolean }) => {
+    if (!userId) throw new Error("User ID is required to update roles.");
+    const userDocRef = doc(db, "users", userId);
+    await updateDoc(userDocRef, roles);
+};
 
 
 // --- Space Functions ---

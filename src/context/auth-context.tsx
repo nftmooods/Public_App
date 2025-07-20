@@ -20,25 +20,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // Can be deprecated if not used elsewhere
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isHost, setIsHost] = useState(false);
 
   const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
      if (firebaseUser) {
-        // User is signed in
         const userProfile = await getUserProfile(firebaseUser.uid);
-        // Force refresh of the token to get the latest claims
+        
+        // Force refresh of the token to get the latest claims if you still need them.
+        // For this approach, we rely on the Firestore document.
         const tokenResult = await firebaseUser.getIdTokenResult(true);
         const isAdminClaim = !!tokenResult.claims.admin;
-        
-        // Use fields from Firestore profile
-        const isSuperAdminUser = !!userProfile?.SuperAdmin;
-        const isHostUser = !!userProfile?.host;
 
-        setIsAdmin(isAdminClaim);
+        const isSuperAdminUser = userProfile?.isSuperAdmin ?? false;
+        const isHostUser = userProfile?.isHost ?? false;
+
+        setIsAdmin(isAdminClaim); // Keep for compatibility if needed
         setIsSuperAdmin(isSuperAdminUser);
         setIsHost(isHostUser);
+        
         setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -69,7 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, fetchUser);
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [fetchUser]);
 

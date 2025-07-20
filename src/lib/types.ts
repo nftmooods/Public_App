@@ -28,8 +28,8 @@ export interface User {
   email: string | null;
   name: string | null;
   photoURL?: string | null;
-  isAdmin?: boolean;
-  isSuperAdmin?: boolean;
-  isHost?: boolean;
+  isAdmin?: boolean; // Maintained for claim-based logic if needed elsewhere
+  isSuperAdmin: boolean; // From Firestore document
+  isHost: boolean; // From Firestore document
   timezone?: string;
 }
