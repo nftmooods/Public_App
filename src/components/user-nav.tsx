@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
-import { LogOut, User as UserIcon, ShieldCheck, Crown, Star } from "lucide-react";
+import { LogOut, User as UserIcon, ShieldCheck, Crown, Star, LayoutDashboard } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 
@@ -83,6 +83,14 @@ export function UserNav() {
               <span>My Account</span>
              </Link>
           </DropdownMenuItem>
+           {isHost && !isSuperAdmin && (
+              <DropdownMenuItem asChild>
+                <Link href="/host-dashboard">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span>Host Dashboard</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
            {isSuperAdmin && (
               <DropdownMenuItem asChild>
                 <Link href="/admin">
