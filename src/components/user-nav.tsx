@@ -15,12 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/auth-context";
 import Link from "next/link";
-import { LogOut, User as UserIcon, ShieldCheck } from "lucide-react";
+import { LogOut, User as UserIcon, ShieldCheck, Crown, Star } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 
 export function UserNav() {
-  const { user, loading, isSuperAdmin } = useAuth();
+  const { user, loading, isSuperAdmin, isHost } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -51,6 +51,8 @@ export function UserNav() {
     return initials.toUpperCase() || "U";
   }
 
+  const userRole = isSuperAdmin ? "Super Admin" : isHost ? "Host" : "User";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -67,6 +69,9 @@ export function UserNav() {
             <p className="text-sm font-medium leading-none">{user.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
+            </p>
+             <p className="text-xs leading-none text-primary pt-1 font-semibold">
+                {userRole}
             </p>
           </div>
         </DropdownMenuLabel>
