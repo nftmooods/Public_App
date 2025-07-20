@@ -81,7 +81,7 @@ export function SmallSpaceCard({ space, displayTimezone }: SmallSpaceCardProps) 
           <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
             <p className="font-bold text-sm whitespace-nowrap">{formattedTime}</p>
           </div>
-          <p className="font-semibold leading-tight transition-colors text-card-foreground group-hover:text-primary">{space.name}</p>
+          <p className="font-semibold leading-tight transition-colors text-primary">{space.name}</p>
         </div>
     </div>
   )
