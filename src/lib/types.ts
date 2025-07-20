@@ -27,5 +27,6 @@ export interface User {
   name: string | null;
   photoURL?: string | null;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   timezone?: string;
 }

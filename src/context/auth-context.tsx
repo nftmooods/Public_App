@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   forceReload: () => Promise<void>;
 }
 
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const fetchUser = useCallback(async (firebaseUser: FirebaseUser | null) => {
      if (firebaseUser) {
@@ -27,20 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Force refresh of the token to get the latest claims
         const tokenResult = await firebaseUser.getIdTokenResult(true);
         const isAdminClaim = !!tokenResult.claims.admin;
+        const isSuperAdminUser = firebaseUser.email === 'martin.lisen@gmail.com';
 
         setIsAdmin(isAdminClaim);
+        setIsSuperAdmin(isSuperAdminUser);
         setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             name: userProfile?.name || firebaseUser.displayName,
             photoURL: firebaseUser.photoURL,
             isAdmin: isAdminClaim,
+            isSuperAdmin: isSuperAdminUser,
             timezone: userProfile?.timezone,
         });
     } else {
         // User is signed out
         setUser(null);
         setIsAdmin(false);
+        setIsSuperAdmin(false);
     }
     setLoading(false);
   }, []);
@@ -59,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [fetchUser]);
 
-  const value = { user, loading, isAdmin, forceReload };
+  const value = { user, loading, isAdmin, isSuperAdmin, forceReload };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
