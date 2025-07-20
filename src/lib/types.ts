@@ -1,3 +1,4 @@
+
 // src/lib/types.ts
 
 // The Space interface uses a day of the week and time for recurring weekly events.
@@ -28,7 +29,6 @@ export interface User {
   email: string | null;
   name: string | null;
   photoURL?: string | null;
-  isAdmin?: boolean; // Maintained for claim-based logic if needed elsewhere
   isSuperAdmin: boolean; // From Auth custom claim
   isHost: boolean; // From Firestore document
   timezone?: string;
