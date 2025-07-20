@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { updateEmail } from "firebase/auth";
+import { updateEmail, sendPasswordResetEmail } from "firebase/auth";
 import { Trash2Icon } from "lucide-react";
 
 
@@ -43,6 +43,7 @@ export function DashboardForm() {
   const router = useRouter();
   const { user, forceReload } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -137,6 +138,27 @@ export function DashboardForm() {
     }
   }
 
+  async function handleSendResetEmail() {
+    if (!user || !user.email) return;
+    setIsSendingReset(true);
+    try {
+        await sendPasswordResetEmail(auth, user.email);
+        toast({
+            title: "Email Sent",
+            description: "A password reset link has been sent to your email address."
+        });
+    } catch (error) {
+        console.error("Failed to send password reset email:", error);
+        toast({
+            title: "Error",
+            description: "Could not send password reset email. Please try again later.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsSendingReset(false);
+    }
+  }
+
    async function handleDeleteAccount() {
     if (!user) return;
     try {
@@ -216,6 +238,23 @@ export function DashboardForm() {
             {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </form>
+       
+       <div className="mt-8 border-t border-border/20 pt-6">
+        <h3 className="text-lg font-semibold">Password & Security</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+            Click the button to receive an email to reset your password.
+        </p>
+         <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleSendResetEmail} 
+            disabled={isSendingReset}
+            className="mt-4 w-full sm:w-auto"
+        >
+          {isSendingReset ? 'Sending...' : 'Send Password Reset Email'}
+        </Button>
+      </div>
+
        <div className="mt-8 border-t border-destructive/20 pt-6">
         <h3 className="text-lg font-semibold text-destructive">Danger Zone</h3>
         <p className="text-sm text-muted-foreground mt-1">
