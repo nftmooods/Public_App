@@ -1,24 +1,39 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /spaces/{spaceId} {
-      allow read; // Anyone can read spaces
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth.uid == resource.data.createdBy || request.auth.token.admin == true;
+    // Users collection:
+    // - Authenticated users can create their own profile.
+    // - Users can read and update their own profile.
+    // - Admins (with custom claim { admin: true }) can update any profile.
+    match /users/{userId} {
+      allow read;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
+      allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.token.admin == true);
     }
 
-    match /users/{userId} {
-      // Admins can list the entire collection
-      allow list: if request.auth.token.admin == true;
-      // Users can get their own doc, admins can get any doc.
-      allow get: if request.auth.uid == userId || request.auth.token.admin == true;
-      allow update, delete: if request.auth.uid == userId || request.auth.token.admin == true;
+    // Spaces collection:
+    // - All users (authenticated or not) can read spaces.
+    // - Authenticated users can create spaces.
+    // - The creator of a space, a co-host, or an admin can update or delete it.
+    match /spaces/{spaceId} {
+      allow read;
       allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+                                  resource.data.createdBy == request.auth.uid ||
+                                  (resource.data.coHostName != null && resource.data.coHostName == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.name) ||
+                                  request.auth.token.admin == true
+                                );
     }
-    
+
+    // Favorites collection:
+    // - Authenticated users can create (favorite) their own entries.
+    // - Users can read and delete their own favorite entries.
     match /favorites/{favoriteId} {
-      allow read, create, delete: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow read, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
   }
 }
