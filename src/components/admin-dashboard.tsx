@@ -179,7 +179,7 @@ export function AdminDashboard() {
     }
 
     return (
-        <Card className="w-full max-w-6xl">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">Super Admin Dashboard</CardTitle>
                 <CardDescription>Manage hosts and events across the platform.</CardDescription>

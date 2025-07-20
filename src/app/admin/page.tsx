@@ -9,7 +9,8 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 
 export default function AdminPage() {
@@ -27,7 +28,7 @@ export default function AdminPage() {
   const renderContent = () => {
     if (loading || !user) {
         return (
-            <div className="w-full max-w-4xl space-y-4">
+            <div className="w-full max-w-6xl space-y-4">
                 <Skeleton className="h-10 w-1/3" />
                 <Skeleton className="h-6 w-1/2" />
                 <Skeleton className="h-96 w-full" />
@@ -54,7 +55,20 @@ export default function AdminPage() {
         );
     }
 
-    return <AdminDashboard />;
+    return (
+        <div className="w-full max-w-6xl relative">
+             <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.back()}
+                className="absolute top-4 right-4"
+             >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
+            <AdminDashboard />
+        </div>
+    );
   }
 
 
