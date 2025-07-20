@@ -227,7 +227,7 @@ export function SpaceCard({ space, isFavorite, onToggleFavorite, displayTimezone
             </a>
           </Button>
         ) : (
-          <Button variant="outline" disabled className="gap-2">
+          <Button variant="outline" disabled className="gap-2 text-primary-foreground">
             Link not available
             <Link2Off className="w-4 h-4" />
           </Button>
