@@ -274,8 +274,8 @@ export function AdminDashboard() {
                                 <TableRow>
                                     <TableHead>Author</TableHead>
                                     <TableHead className="w-[100px] text-center">Host</TableHead>
-                                    <TableHead className="w-[100px] text-center">Super Admin</TableHead>
                                     <TableHead className="w-[100px] text-center">Certified</TableHead>
+                                    <TableHead className="w-[100px] text-center">Super Admin</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -294,16 +294,16 @@ export function AdminDashboard() {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <Checkbox
-                                                checked={editableRoles[user.uid]?.isSuperAdmin ?? false}
-                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isSuperAdmin', !!checked)}
-                                                aria-label={`Set super admin for ${user.name}`}
+                                                checked={editableRoles[user.uid]?.isCertified ?? false}
+                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isCertified', !!checked)}
+                                                aria-label={`Set certified status for ${user.name}`}
                                             />
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <Checkbox
-                                                checked={editableRoles[user.uid]?.isCertified ?? false}
-                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isCertified', !!checked)}
-                                                aria-label={`Set certified status for ${user.name}`}
+                                                checked={editableRoles[user.uid]?.isSuperAdmin ?? false}
+                                                onCheckedChange={(checked) => handleRoleChange(user.uid, 'isSuperAdmin', !!checked)}
+                                                aria-label={`Set super admin for ${user.name}`}
                                             />
                                         </TableCell>
                                     </TableRow>
