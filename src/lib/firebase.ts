@@ -88,29 +88,6 @@ export const getUserProfile = async (userId: string) => {
   }
 };
 
-/**
- * Retrieves all users from Firestore.
- */
-export const getAllUsers = async (): Promise<User[]> => {
-    try {
-        const usersCol = collection(db, "users");
-        const q = query(usersCol, orderBy("name_lowercase", "asc"));
-        const userSnapshot = await getDocs(q);
-        const userList = userSnapshot.docs.map((snap) => {
-            const data = snap.data();
-            return {
-                uid: snap.id,
-                name: data.name,
-                email: data.email,
-            } as User;
-        });
-        return userList;
-    } catch (error) {
-        console.error("Error fetching all users:", error);
-        return [];
-    }
-};
-
 
 /**
  * Updates a user's profile in Firestore and Firebase Auth.

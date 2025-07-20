@@ -8,8 +8,8 @@ import { EditSpaceForm } from '@/components/edit-space-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getSpace, getAllUsers } from '@/lib/firebase';
-import type { Space, User } from '@/lib/types';
+import { getSpace } from '@/lib/firebase';
+import type { Space } from '@/lib/types';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ export default function EditSpacePage() {
   const spaceId = params.id as string;
 
   const [space, setSpace] = useState<Omit<Space, 'dateTime'> | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,12 +49,6 @@ export default function EditSpacePage() {
         }
 
         setSpace(spaceData);
-
-        // Fetch all users only if the current user is a super admin
-        if (isSuperAdmin) {
-          const allUsers = await getAllUsers();
-          setUsers(allUsers);
-        }
 
       } catch (err) {
         setError("An error occurred while fetching moment details.");
@@ -125,7 +118,7 @@ export default function EditSpacePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <EditSpaceForm space={space} users={users} />
+                    <EditSpaceForm space={space} />
                 </CardContent>
             </Card>
         )
