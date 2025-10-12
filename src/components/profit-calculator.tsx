@@ -93,11 +93,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: undefined,
-      tokens: undefined,
-      tokenPrice: undefined,
+      investment: '' as unknown as number,
+      tokens: '' as unknown as number,
+      tokenPrice: '' as unknown as number,
       multiplier: "2",
-      customMultiplier: undefined,
+      customMultiplier: '' as unknown as number,
     },
   });
   
@@ -130,10 +130,16 @@ export function ProfitCalculator() {
     fetchEthPrice();
     const interval = setInterval(fetchEthPrice, 60000);
 
-    const savedHistory = localStorage.getItem("vibestrHistory");
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
+    // Using try-catch for localStorage access to avoid crashes in SSR or restricted envs
+    try {
+      const savedHistory = localStorage.getItem("vibestrHistory");
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.warn("Could not load history from localStorage:", error);
     }
+    
 
     return () => clearInterval(interval);
   }, [toast]);
@@ -194,16 +200,26 @@ export function ProfitCalculator() {
 
     const updatedHistory = [newHistoryItem, ...history];
     setHistory(updatedHistory);
-    localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
-    toast({ title: "Success!", description: "Trade has been saved to your history." });
-    setActiveTab("history");
+    try {
+      localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
+      toast({ title: "Success!", description: "Trade has been saved to your history." });
+      setActiveTab("history");
+    } catch (error) {
+      console.error("Failed to save history to localStorage", error);
+      toast({ title: "Error", description: "Could not save trade to history.", variant: "destructive"});
+    }
   };
 
   const deletePurchase = (id: number) => {
     const updatedHistory = history.filter(item => item.id !== id);
     setHistory(updatedHistory);
-    localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
-    toast({ title: "Deleted", description: "Purchase removed from history." });
+    try {
+      localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
+      toast({ title: "Deleted", description: "Purchase removed from history." });
+    } catch (error) {
+      console.error("Failed to update history in localStorage", error);
+      toast({ title: "Error", description: "Could not delete trade from history.", variant: "destructive"});
+    }
   };
 
 
@@ -217,7 +233,7 @@ export function ProfitCalculator() {
           </div>
         </div>
         <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-300 mb-3 font-headline">
-          VibeStr Wizard
+          VibeStr Profit Prophet
         </h1>
         <p className="text-lg text-purple-200 max-w-2xl mx-auto">
           Your magical calculator for{" "}
@@ -478,3 +494,5 @@ export function ProfitCalculator() {
     </div>
   );
 }
+
+    
