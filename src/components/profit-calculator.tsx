@@ -66,10 +66,13 @@ interface CalculationResult {
   breakEvenEth: number;
   breakEvenUsd: number;
   targetPriceEth: number;
+  targetPriceUsd: number;
+  targetValueEth: number;
   targetValueUsd: number;
   netProfitEth: number;
   netProfitUsd: number;
   displayMultiplier: number;
+  investmentUsd: number;
 }
 
 interface HistoryItem extends FormData {
@@ -90,17 +93,13 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: '' as unknown as number,
-      tokens: '' as unknown as number,
-      tokenPrice: '' as unknown as number,
+      investment: undefined,
+      tokens: undefined,
+      tokenPrice: undefined,
       multiplier: "2",
-      customMultiplier: '' as unknown as number,
+      customMultiplier: undefined,
     },
   });
-
-  const investmentValue = form.watch("investment");
-  const investmentUsd =
-    investmentValue && ethPrice ? (investmentValue * ethPrice).toFixed(2) : "0.00";
   
   const multiplierValue = form.watch("multiplier");
   const showCustomMultiplier = multiplierValue === "custom";
@@ -146,7 +145,7 @@ export function ProfitCalculator() {
     }
 
     const { investment, tokens, tokenPrice } = data;
-    const currentMultiplier = data.multiplier === 'custom' ? data.customMultiplier : Number(data.multiplier);
+    const currentMultiplier = data.multiplier === 'custom' && data.customMultiplier ? data.customMultiplier : Number(data.multiplier);
 
     if (!currentMultiplier || currentMultiplier <= 0) {
       toast({ title: "Invalid Multiplier", description: "Please enter a positive multiplier value.", variant: "destructive" });
@@ -158,8 +157,8 @@ export function ProfitCalculator() {
     const breakEvenPriceEth = investment / (tokens * (1 - FEE_RATE));
     const targetPriceEth = (investment * currentMultiplier) / (tokens * (1 - FEE_RATE));
     const netProfitEth = (investment * currentMultiplier) - investment;
-
     const breakEvenRatio = breakEvenPriceEth / buyPriceEth;
+    const targetRatio = targetPriceEth / buyPriceEth;
 
     const newResults: CalculationResult = {
       buyPriceEth,
@@ -167,10 +166,13 @@ export function ProfitCalculator() {
       breakEvenEth,
       breakEvenUsd: tokenPrice * breakEvenRatio,
       targetPriceEth,
+      targetPriceUsd: tokenPrice * targetRatio,
+      targetValueEth: investment * currentMultiplier,
       targetValueUsd: investment * currentMultiplier * ethPrice,
       netProfitEth,
       netProfitUsd: netProfitEth * ethPrice,
-      displayMultiplier: currentMultiplier
+      displayMultiplier: currentMultiplier,
+      investmentUsd: tokenPrice * tokens
     };
 
     setResults(newResults);
@@ -243,7 +245,7 @@ export function ProfitCalculator() {
             <Calculator className="w-5 h-5" /> Calculator
           </TabsTrigger>
           <TabsTrigger value="history" className="gap-2 data-[state=active]:bg-purple-900/30 data-[state=active]:text-purple-300">
-            <Clock className="w-5 h-5" /> History
+            <Clock className="w-5 h-5" /> History ({history.length})
           </TabsTrigger>
         </TabsList>
 
@@ -265,7 +267,7 @@ export function ProfitCalculator() {
                                <Input type="number" step="any" placeholder="0.00" className="pl-8 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} />
                             </div>
                           </FormControl>
-                          <p className="text-xs text-gray-400 mt-1 h-4">≈ ${investmentUsd} USD</p>
+                           {results && <p className="text-xs text-gray-400 mt-1 h-4">≈ ${results.investmentUsd.toFixed(2)} USD at purchase</p>}
                           <FormMessage />
                         </FormItem>
                       )}
@@ -347,7 +349,7 @@ export function ProfitCalculator() {
                   </div>
                   
                   <div className="flex justify-center gap-4">
-                    <Button type="submit" size="lg" className="px-10 py-4 h-auto bg-gradient-to-r from-purple-500 to-indigo-600 font-bold text-lg hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 glow-effect">Calculate Profit Targets</Button>
+                    <Button type="submit" size="lg" className="px-10 py-4 h-auto bg-gradient-to-r from-purple-500 to-indigo-600 font-bold text-lg hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 glow-effect">Calculate</Button>
                     <Button type="button" size="lg" onClick={saveTrade} disabled={!results} className="px-10 py-4 h-auto bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 glow-effect disabled:opacity-50 disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600">
                       <Save className="inline mr-2 w-5 h-5"/>
                       Save Trade
@@ -360,7 +362,7 @@ export function ProfitCalculator() {
                 <div className="mt-8 pt-8 border-t border-gray-700/50 space-y-6">
                    <div className="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 p-6 rounded-xl border border-purple-500/20">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-purple-300">Purchase Price</h3>
+                            <h3 className="text-lg font-semibold text-purple-300">Calculated Purchase Price</h3>
                             <div className="px-3 py-1 bg-purple-500/30 rounded-full text-xs font-medium">After 10% Fee</div>
                         </div>
                         <div className="grid md:grid-cols-2 gap-4 font-mono">
@@ -393,19 +395,24 @@ export function ProfitCalculator() {
                                 <h3 className="text-lg font-semibold text-green-300">Target Profit</h3>
                                 <div className="px-3 py-1 bg-green-500/30 rounded-full text-xs font-medium">{results.displayMultiplier}x</div>
                             </div>
-                            <div className="space-y-4 font-mono">
+                             <div className="space-y-3 font-mono">
                                 <div>
-                                    <p className="text-sm text-green-200 mb-1 font-sans">Target Price (ETH)</p>
+                                    <p className="text-sm text-green-200 mb-1 font-sans">Target Sell Price (ETH)</p>
                                     <p className="text-2xl font-bold">Ξ {results.targetPriceEth.toFixed(8)}</p>
                                 </div>
-                                <div className="pt-3 border-t border-green-500/20">
-                                    <p className="text-sm text-green-200 mb-1 font-sans">Total Value (USD)</p>
-                                    <p className="text-xl font-semibold">${results.targetValueUsd.toFixed(2)}</p>
-                                </div>
                                 <div>
+                                    <p className="text-sm text-green-200 mb-1 font-sans">Target Sell Price (USD)</p>
+                                    <p className="text-xl font-semibold">${results.targetPriceUsd.toFixed(6)}</p>
+                                </div>
+                                <div className="pt-2 border-t border-green-500/20">
+                                    <p className="text-sm text-green-200 mb-1 font-sans">Expected Total Value</p>
+                                    <p className="text-2xl font-bold">Ξ {results.targetValueEth.toFixed(6)}</p>
+                                    <p className="text-lg font-semibold">${results.targetValueUsd.toFixed(2)}</p>
+                                </div>
+                                <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Net Profit</p>
                                     <p className="text-2xl font-bold text-green-300">+Ξ {results.netProfitEth.toFixed(6)}</p>
-                                    <p className="text-lg font-semibold text-green-300">${results.netProfitUsd.toFixed(2)}</p>
+                                    <p className="text-lg font-semibold text-green-300">+${results.netProfitUsd.toFixed(2)}</p>
                                 </div>
                             </div>
                         </div>
@@ -418,7 +425,6 @@ export function ProfitCalculator() {
              <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle>Purchase History</CardTitle>
-                    <div className="px-3 py-1 bg-gray-700 rounded-full text-sm">{history.length} items</div>
                 </div>
              </CardHeader>
              <CardContent className="p-6 md:p-8 pt-0">
@@ -435,7 +441,7 @@ export function ProfitCalculator() {
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <h3 className="font-medium text-white">{item.date}</h3>
-                                        <p className="text-sm text-gray-400 font-mono">ID: {item.id}</p>
+                                        <p className="text-sm text-gray-400 font-mono">ETH Price: ${item.ethPrice.toFixed(2)}</p>
                                     </div>
                                     <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8" onClick={() => deletePurchase(item.id)}>
                                       <Trash2 className="w-4 h-4" />
@@ -445,7 +451,7 @@ export function ProfitCalculator() {
                                     <div>
                                         <p className="text-xs text-purple-300 font-sans">Investment</p>
                                         <p>Ξ {item.investment.toFixed(4)}</p>
-                                        <p className="text-xs">(${(item.investment * item.ethPrice).toFixed(2)})</p>
+                                        <p className="text-xs">(${(item.results.investmentUsd).toFixed(2)})</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-purple-300 font-sans">VIBESTR</p>
