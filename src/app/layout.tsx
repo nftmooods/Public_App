@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'VibeStr Profit Prophet',
+  title: 'VibeStr Profit',
   description: 'Your magical calculator for VIBESTR profit strategies',
 };
 

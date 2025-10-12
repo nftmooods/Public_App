@@ -431,7 +431,7 @@ export function ProfitCalculator() {
           </div>
         </div>
         <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-300 mb-3 font-headline">
-          VibeStr Profit Prophet
+          VibeStr Profit
         </h1>
         <p className="text-lg text-purple-200 max-w-2xl mx-auto">
           Your magical calculator for{" "}
@@ -478,7 +478,7 @@ export function ProfitCalculator() {
                           <FormControl>
                             <div className="relative">
                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 font-mono font-bold text-lg">Ξ</span>
-                               <Input type="number" step="any" placeholder="0.00" className="pl-8 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
+                               <Input type="number" step="any" placeholder="0.00" className="pl-8 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value || 0} />
                             </div>
                           </FormControl>
                            {results && <p className="text-xs text-gray-400 mt-1 h-4">≈ ${results.investmentUsd.toFixed(2)} USD at purchase</p>}
@@ -495,7 +495,7 @@ export function ProfitCalculator() {
                            <FormControl>
                             <div className="relative">
                               <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
-                              <Input type="number" step="any" placeholder="0.00" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
+                              <Input type="number" step="any" placeholder="0.00" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value || 0} />
                             </div>
                           </FormControl>
                           <FormMessage className="pt-1"/>
@@ -513,7 +513,7 @@ export function ProfitCalculator() {
                            <FormControl>
                             <div className="relative">
                               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
-                              <Input type="number" step="any" placeholder="0.000000" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
+                              <Input type="number" step="any" placeholder="0.000000" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value || 0} />
                             </div>
                           </FormControl>
                           <FormMessage className="pt-1"/>
@@ -550,7 +550,7 @@ export function ProfitCalculator() {
                               render={({ field }) => (
                                 <FormItem className="mt-2">
                                   <FormControl>
-                                    <Input type="number" step="any" placeholder="Enter custom multiplier" className="bg-gray-800/70 border-gray-700" {...field} value={field.value ?? ''}/>
+                                    <Input type="number" step="any" placeholder="Enter custom multiplier" className="bg-gray-800/70 border-gray-700" {...field} value={field.value || 0}/>
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -706,5 +706,3 @@ export function ProfitCalculator() {
     </div>
   );
 }
-
-    
