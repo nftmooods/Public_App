@@ -14,6 +14,7 @@ import {
   Target,
   Trash2,
   TrendingUp,
+  Coins
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -63,8 +64,8 @@ type FormData = z.infer<typeof formSchema>;
 interface CalculationResult {
   buyPriceEth: number;
   buyPriceUsd: number;
-  breakEvenEth: number;
-  breakEvenUsd: number;
+  breakEvenPriceEth: number;
+  breakEvenPriceUsd: number;
   targetPriceEth: number;
   targetPriceUsd: number;
   targetValueEth: number;
@@ -93,11 +94,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: '' as unknown as number,
-      tokens: '' as unknown as number,
-      tokenPrice: '' as unknown as number,
+      investment: "" as unknown as number,
+      tokens: "" as unknown as number,
+      tokenPrice: "" as unknown as number,
       multiplier: "2",
-      customMultiplier: '' as unknown as number,
+      customMultiplier: "" as unknown as number,
     },
   });
   
@@ -169,8 +170,8 @@ export function ProfitCalculator() {
     const newResults: CalculationResult = {
       buyPriceEth,
       buyPriceUsd: tokenPrice,
-      breakEvenEth,
-      breakEvenUsd: tokenPrice * breakEvenRatio,
+      breakEvenPriceEth,
+      breakEvenPriceUsd: tokenPrice * breakEvenRatio,
       targetPriceEth,
       targetPriceUsd: tokenPrice * targetRatio,
       targetValueEth: investment * currentMultiplier,
@@ -296,7 +297,7 @@ export function ProfitCalculator() {
                           <FormLabel className="text-purple-200">VIBESTR Tokens Received</FormLabel>
                            <FormControl>
                             <div className="relative">
-                              <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
+                              <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
                               <Input type="number" step="any" placeholder="0.00" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} />
                             </div>
                           </FormControl>
@@ -366,7 +367,7 @@ export function ProfitCalculator() {
                   
                   <div className="flex justify-center gap-4">
                     <Button type="submit" size="lg" className="px-10 py-4 h-auto bg-gradient-to-r from-purple-500 to-indigo-600 font-bold text-lg hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 glow-effect">Calculate</Button>
-                    <Button type="button" size="lg" onClick={saveTrade} disabled={!results} className="px-10 py-4 h-auto bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 glow-effect disabled:opacity-50 disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600">
+                    <Button type="button" size="lg" onClick={saveTrade} className="px-10 py-4 h-auto bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 glow-effect">
                       <Save className="inline mr-2 w-5 h-5"/>
                       Save Trade
                     </Button>
@@ -398,11 +399,11 @@ export function ProfitCalculator() {
                             <div className="space-y-3 font-mono">
                                 <div>
                                     <p className="text-sm text-blue-200 mb-1 font-sans">Sell Price (ETH)</p>
-                                    <p className="text-2xl font-bold">Ξ {results.breakEvenEth.toFixed(8)}</p>
+                                    <p className="text-2xl font-bold">Ξ {results.breakEvenPriceEth.toFixed(8)}</p>
                                 </div>
                                 <div>
                                     <p className="text-sm text-blue-200 mb-1 font-sans">Sell Price (USD)</p>
-                                    <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p>
+                                    <p className="text-xl font-semibold">${results.breakEvenPriceUsd.toFixed(6)}</p>
                                 </div>
                             </div>
                         </div>
@@ -476,7 +477,7 @@ export function ProfitCalculator() {
                                     </div>
                                     <div>
                                         <p className="text-xs text-blue-300 font-sans">Break-even</p>
-                                        <p>Ξ {item.results.breakEvenEth.toFixed(8)}</p>
+                                        <p>Ξ {item.results.breakEvenPriceEth.toFixed(8)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-green-300 font-sans">Multiplier</p>
@@ -494,5 +495,3 @@ export function ProfitCalculator() {
     </div>
   );
 }
-
-    
