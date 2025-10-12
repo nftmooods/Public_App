@@ -703,6 +703,9 @@ export function ProfitCalculator() {
           </TabsContent>
         </Card>
       </Tabs>
+      <footer className="text-center text-gray-500 text-xs mt-8">
+        created by @nftmooods
+      </footer>
     </div>
   );
 }
