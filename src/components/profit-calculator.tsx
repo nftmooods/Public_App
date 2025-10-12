@@ -709,6 +709,9 @@ export function ProfitCalculator() {
         <div>
           <a href="https://opensea.io/item/ethereum/0xb8ea78fcacef50d41375e44e6814ebba36bb33c4/3273" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Citizen of Vibetown #3273</a>
         </div>
+        <div>
+          made by a fan, no affiliation with the project
+        </div>
       </footer>
     </div>
   );
