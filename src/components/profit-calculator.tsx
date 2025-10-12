@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,7 +14,9 @@ import {
   Trash2,
   TrendingUp,
   Coins,
-  Pencil
+  Pencil,
+  Upload,
+  Download
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -95,11 +97,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: 0,
-      tokens: 0,
-      tokenPrice: 0,
+      investment: undefined,
+      tokens: undefined,
+      tokenPrice: undefined,
       multiplier: "2",
-      customMultiplier: 0,
+      customMultiplier: undefined,
     },
   });
   
@@ -143,7 +145,22 @@ export function ProfitCalculator() {
           investment: Number(item.investment),
           tokens: Number(item.tokens),
           tokenPrice: Number(item.tokenPrice),
-          customMultiplier: Number(item.customMultiplier)
+          customMultiplier: item.customMultiplier ? Number(item.customMultiplier) : undefined,
+          results: {
+            ...item.results,
+            buyPriceEth: Number(item.results.buyPriceEth),
+            buyPriceUsd: Number(item.results.buyPriceUsd),
+            breakEvenPriceEth: Number(item.results.breakEvenPriceEth),
+            breakEvenUsd: Number(item.results.breakEvenUsd),
+            targetPriceEth: Number(item.results.targetPriceEth),
+            targetPriceUsd: Number(item.results.targetPriceUsd),
+            targetValueEth: Number(item.results.targetValueEth),
+            targetValueUsd: Number(item.results.targetValueUsd),
+            netProfitEth: Number(item.results.netProfitEth),
+            netProfitUsd: Number(item.results.netProfitUsd),
+            displayMultiplier: Number(item.results.displayMultiplier),
+            investmentUsd: Number(item.results.investmentUsd)
+          }
         }));
         setHistory(correctedHistory);
       }
@@ -214,7 +231,7 @@ export function ProfitCalculator() {
             investment: Number(formValues.investment),
             tokens: Number(formValues.tokens),
             tokenPrice: Number(formValues.tokenPrice),
-            customMultiplier: Number(formValues.customMultiplier),
+            customMultiplier: formValues.customMultiplier ? Number(formValues.customMultiplier) : undefined,
             ethPrice: ethPrice,
             results,
           };
@@ -229,7 +246,7 @@ export function ProfitCalculator() {
         investment: Number(formValues.investment),
         tokens: Number(formValues.tokens),
         tokenPrice: Number(formValues.tokenPrice),
-        customMultiplier: Number(formValues.customMultiplier),
+        customMultiplier: formValues.customMultiplier ? Number(formValues.customMultiplier) : undefined,
         id: Date.now(),
         date: new Date().toLocaleString(),
         ethPrice: ethPrice,
@@ -241,6 +258,14 @@ export function ProfitCalculator() {
 
     setHistory(updatedHistory);
     setEditingId(null); // Reset editing mode
+    form.reset({
+      investment: undefined,
+      tokens: undefined,
+      tokenPrice: undefined,
+      multiplier: "2",
+      customMultiplier: undefined,
+    });
+    setResults(null);
     
     try {
       localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
@@ -275,6 +300,124 @@ export function ProfitCalculator() {
     setEditingId(item.id);
     setActiveTab("calculator");
   };
+
+  const exportToCSV = () => {
+    if (history.length === 0) {
+      toast({ title: "No Data", description: "There is no history to export.", variant: "destructive" });
+      return;
+    }
+
+    const headers = [
+      "id", "date", "ethPriceAtCalc", "investmentEth", "tokens", "tokenPriceUsd", "multiplier", "customMultiplier",
+      "buyPriceEth", "buyPriceUsd", "breakEvenPriceEth", "breakEvenUsd", "targetPriceEth", "targetPriceUsd",
+      "targetValueEth", "targetValueUsd", "netProfitEth", "netProfitUsd", "displayMultiplier", "investmentUsd"
+    ];
+
+    const rows = history.map(item => [
+      item.id,
+      `"${item.date}"`,
+      item.ethPrice,
+      item.investment,
+      item.tokens,
+      item.tokenPrice,
+      item.multiplier,
+      item.customMultiplier ?? '',
+      item.results.buyPriceEth,
+      item.results.buyPriceUsd,
+      item.results.breakEvenPriceEth,
+      item.results.breakEvenUsd,
+      item.results.targetPriceEth,
+      item.results.targetPriceUsd,
+      item.results.targetValueEth,
+      item.results.targetValueUsd,
+      item.results.netProfitEth,
+      item.results.netProfitUsd,
+      item.results.displayMultiplier,
+      item.results.investmentUsd
+    ].join(','));
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "vibestr_profit_history.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const handleImportCSV = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      try {
+        const rows = text.split('\n').filter(row => row.trim() !== '');
+        const headers = rows.shift()?.split(',').map(h => h.trim()) ?? [];
+        
+        const newHistoryItems: HistoryItem[] = rows.map(row => {
+          const values = row.split(',');
+          const entry: { [key: string]: any } = headers.reduce((obj, header, index) => {
+            obj[header] = values[index];
+            return obj;
+          }, {});
+
+          // Basic validation and type conversion
+          if (!entry.id || !entry.investmentEth || !entry.tokens) {
+            throw new Error(`Skipping invalid row: ${row}`);
+          }
+          
+          return {
+            id: Number(entry.id),
+            date: entry.date.replace(/"/g, ''),
+            ethPrice: Number(entry.ethPriceAtCalc),
+            investment: Number(entry.investmentEth),
+            tokens: Number(entry.tokens),
+            tokenPrice: Number(entry.tokenPriceUsd),
+            multiplier: entry.multiplier,
+            customMultiplier: entry.customMultiplier ? Number(entry.customMultiplier) : undefined,
+            results: {
+              buyPriceEth: Number(entry.buyPriceEth),
+              buyPriceUsd: Number(entry.buyPriceUsd),
+              breakEvenPriceEth: Number(entry.breakEvenPriceEth),
+              breakEvenUsd: Number(entry.breakEvenUsd),
+              targetPriceEth: Number(entry.targetPriceEth),
+              targetPriceUsd: Number(entry.targetPriceUsd),
+              targetValueEth: Number(entry.targetValueEth),
+              targetValueUsd: Number(entry.targetValueUsd),
+              netProfitEth: Number(entry.netProfitEth),
+              netProfitUsd: Number(entry.netProfitUsd),
+              displayMultiplier: Number(entry.displayMultiplier),
+              investmentUsd: Number(entry.investmentUsd),
+            }
+          };
+        });
+
+        // Combine and remove duplicates, new items take precedence
+        const combined = [...newHistoryItems, ...history];
+        const uniqueHistory = Array.from(new Map(combined.map(item => [item.id, item])).values());
+        
+        uniqueHistory.sort((a,b) => b.id - a.id);
+
+        setHistory(uniqueHistory);
+        localStorage.setItem("vibestrHistory", JSON.stringify(uniqueHistory));
+        toast({ title: "Success", description: "History imported successfully." });
+      } catch (error: any) {
+        console.error("Failed to import CSV", error);
+        toast({ title: "Import Failed", description: error.message || "Could not parse the CSV file. Please check the format.", variant: "destructive" });
+      } finally {
+        // Reset file input
+        event.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const triggerImport = () => {
+    document.getElementById('csv-importer')?.click();
+  }
 
 
   return (
@@ -384,7 +527,7 @@ export function ProfitCalculator() {
                           <FormLabel className="text-purple-200">Target Multiplier</FormLabel>
                           <div className="relative">
                             <Target className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4 pointer-events-none"/>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value} defaultValue={"2"}>
                               <FormControl>
                                 <SelectTrigger className="pl-10 bg-gray-800/70 border-gray-700 focus:ring-purple-500 h-auto py-3">
                                   <SelectValue placeholder="Select a multiplier" />
@@ -406,7 +549,7 @@ export function ProfitCalculator() {
                               render={({ field }) => (
                                 <FormItem className="mt-2">
                                   <FormControl>
-                                    <Input type="number" step="any" placeholder="Enter custom multiplier" className="bg-gray-800/70 border-gray-700" {...field} />
+                                    <Input type="number" step="any" placeholder="Enter custom multiplier" className="bg-gray-800/70 border-gray-700" {...field} value={field.value ?? ''}/>
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -456,7 +599,7 @@ export function ProfitCalculator() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-blue-200 mb-1 font-sans">Sell Price (USD)</p>
-                                    {results.breakEvenUsd && <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p>}
+                                    {results.breakEvenUsd ? <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p> : <p className="text-xl font-semibold">$0.000000</p>}
                                 </div>
                             </div>
                         </div>
@@ -472,17 +615,17 @@ export function ProfitCalculator() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-green-200 mb-1 font-sans">Target Sell Price (USD)</p>
-                                    {results.targetPriceUsd && <p className="text-xl font-semibold">${results.targetPriceUsd.toFixed(6)}</p>}
+                                    {results.targetPriceUsd ? <p className="text-xl font-semibold">${results.targetPriceUsd.toFixed(6)}</p> : <p className="text-xl font-semibold">$0.000000</p>}
                                 </div>
                                 <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Expected Total Value</p>
                                     <p className="text-2xl font-bold">Ξ {results.targetValueEth.toFixed(6)}</p>
-                                    {results.targetValueUsd && <p className="text-lg font-semibold">${results.targetValueUsd.toFixed(2)}</p>}
+                                    {results.targetValueUsd ? <p className="text-lg font-semibold">${results.targetValueUsd.toFixed(2)}</p> : <p className="text-lg font-semibold">$0.00</p>}
                                 </div>
                                 <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Net Profit</p>
                                     <p className="text-2xl font-bold text-green-300">+Ξ {results.netProfitEth.toFixed(6)}</p>
-                                    {results.netProfitUsd && <p className="text-lg font-semibold text-green-300">+${results.netProfitUsd.toFixed(2)}</p>}
+                                    {results.netProfitUsd ? <p className="text-lg font-semibold text-green-300">+${results.netProfitUsd.toFixed(2)}</p> : <p className="text-lg font-semibold text-green-300">+$0.00</p>}
                                 </div>
                             </div>
                         </div>
@@ -495,6 +638,15 @@ export function ProfitCalculator() {
              <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle>Purchase History</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <input type="file" id="csv-importer" accept=".csv" onChange={handleImportCSV} className="hidden" />
+                      <Button variant="outline" size="sm" onClick={triggerImport}>
+                          <Upload className="mr-2 h-4 w-4" /> Import CSV
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={exportToCSV}>
+                          <Download className="mr-2 h-4 w-4" /> Export CSV
+                      </Button>
+                    </div>
                 </div>
              </CardHeader>
              <CardContent className="p-6 md:p-8 pt-0">
@@ -553,3 +705,5 @@ export function ProfitCalculator() {
     </div>
   );
 }
+
+    
