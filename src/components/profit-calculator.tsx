@@ -429,7 +429,7 @@ export function ProfitCalculator() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-blue-200 mb-1 font-sans">Sell Price (USD)</p>
-                                    <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p>
+                                    {results.breakEvenUsd && <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p>}
                                 </div>
                             </div>
                         </div>
@@ -445,7 +445,7 @@ export function ProfitCalculator() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-green-200 mb-1 font-sans">Target Sell Price (USD)</p>
-                                    <p className="text-xl font-semibold">${results.targetPriceUsd.toFixed(6)}</p>
+                                    {results.targetPriceUsd && <p className="text-xl font-semibold">${results.targetPriceUsd.toFixed(6)}</p>}
                                 </div>
                                 <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Expected Total Value</p>
@@ -526,5 +526,3 @@ export function ProfitCalculator() {
     </div>
   );
 }
-
-    
