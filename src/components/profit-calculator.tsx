@@ -13,7 +13,8 @@ import {
   Target,
   Trash2,
   TrendingUp,
-  Coins
+  Coins,
+  Pencil
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -178,7 +179,7 @@ export function ProfitCalculator() {
     const newResults: CalculationResult = {
       buyPriceEth,
       buyPriceUsd: tokenPrice,
-      breakEvenPriceEth,
+      breakEvenPriceEth: breakEvenPriceEth,
       breakEvenUsd: tokenPrice * breakEvenRatio,
       targetPriceEth,
       targetPriceUsd: tokenPrice * targetRatio,
@@ -234,6 +235,18 @@ export function ProfitCalculator() {
       console.error("Failed to update history in localStorage", error);
       toast({ title: "Error", description: "Could not delete trade from history.", variant: "destructive"});
     }
+  };
+
+  const editPurchase = (item: HistoryItem) => {
+    form.reset({
+        investment: item.investment,
+        tokens: item.tokens,
+        tokenPrice: item.tokenPrice,
+        multiplier: item.multiplier,
+        customMultiplier: item.customMultiplier
+    });
+    setResults(item.results);
+    setActiveTab("calculator");
   };
 
 
@@ -473,9 +486,14 @@ export function ProfitCalculator() {
                                         <h3 className="font-medium text-white">{item.date}</h3>
                                         <p className="text-sm text-gray-400 font-mono">ETH Price: ${item.ethPrice.toFixed(2)}</p>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8" onClick={() => deletePurchase(item.id)}>
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
+                                    <div className="flex items-center">
+                                      <Button variant="ghost" size="icon" className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 h-8 w-8" onClick={() => editPurchase(item)}>
+                                        <Pencil className="w-4 h-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8" onClick={() => deletePurchase(item.id)}>
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
                                 </div>
                                 <div className="grid md:grid-cols-4 gap-4 mt-3 font-mono">
                                     <div>
@@ -508,3 +526,5 @@ export function ProfitCalculator() {
     </div>
   );
 }
+
+    
