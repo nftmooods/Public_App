@@ -89,6 +89,7 @@ export function ProfitCalculator() {
   const [results, setResults] = useState<CalculationResult | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeTab, setActiveTab] = useState("calculator");
+  const [editingId, setEditingId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -201,23 +202,48 @@ export function ProfitCalculator() {
     }
     const formValues = form.getValues();
 
-    const newHistoryItem: HistoryItem = {
-      ...formValues,
-      investment: Number(formValues.investment),
-      tokens: Number(formValues.tokens),
-      tokenPrice: Number(formValues.tokenPrice),
-      customMultiplier: Number(formValues.customMultiplier),
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      ethPrice: ethPrice,
-      results,
-    };
+    let updatedHistory: HistoryItem[];
 
-    const updatedHistory = [newHistoryItem, ...history];
+    if (editingId) {
+      // We are editing an existing item
+      updatedHistory = history.map(item => {
+        if (item.id === editingId) {
+          return {
+            ...item, // Keep original id and date
+            ...formValues,
+            investment: Number(formValues.investment),
+            tokens: Number(formValues.tokens),
+            tokenPrice: Number(formValues.tokenPrice),
+            customMultiplier: Number(formValues.customMultiplier),
+            ethPrice: ethPrice,
+            results,
+          };
+        }
+        return item;
+      });
+      toast({ title: "Success!", description: "Trade has been updated in your history." });
+    } else {
+      // We are creating a new item
+      const newHistoryItem: HistoryItem = {
+        ...formValues,
+        investment: Number(formValues.investment),
+        tokens: Number(formValues.tokens),
+        tokenPrice: Number(formValues.tokenPrice),
+        customMultiplier: Number(formValues.customMultiplier),
+        id: Date.now(),
+        date: new Date().toLocaleString(),
+        ethPrice: ethPrice,
+        results,
+      };
+      updatedHistory = [newHistoryItem, ...history];
+      toast({ title: "Success!", description: "Trade has been saved to your history." });
+    }
+
     setHistory(updatedHistory);
+    setEditingId(null); // Reset editing mode
+    
     try {
       localStorage.setItem("vibestrHistory", JSON.stringify(updatedHistory));
-      toast({ title: "Success!", description: "Trade has been saved to your history." });
       setActiveTab("history");
     } catch (error) {
       console.error("Failed to save history to localStorage", error);
@@ -246,6 +272,7 @@ export function ProfitCalculator() {
         customMultiplier: item.customMultiplier
     });
     setResults(item.results);
+    setEditingId(item.id);
     setActiveTab("calculator");
   };
 
@@ -395,7 +422,7 @@ export function ProfitCalculator() {
                     <Button type="submit" size="lg" className="px-10 py-4 h-auto bg-gradient-to-r from-purple-500 to-indigo-600 font-bold text-lg hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 glow-effect">Calculate</Button>
                     <Button type="button" size="lg" onClick={saveTrade} className="px-10 py-4 h-auto bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg hover:from-green-600 hover:to-emerald-700 transition-all transform hover:scale-105 glow-effect">
                       <Save className="inline mr-2 w-5 h-5"/>
-                      Save Trade
+                      {editingId ? 'Update Trade' : 'Save Trade'}
                     </Button>
                   </div>
                 </form>
@@ -450,12 +477,12 @@ export function ProfitCalculator() {
                                 <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Expected Total Value</p>
                                     <p className="text-2xl font-bold">Ξ {results.targetValueEth.toFixed(6)}</p>
-                                    <p className="text-lg font-semibold">${results.targetValueUsd.toFixed(2)}</p>
+                                    {results.targetValueUsd && <p className="text-lg font-semibold">${results.targetValueUsd.toFixed(2)}</p>}
                                 </div>
                                 <div className="pt-2 border-t border-green-500/20">
                                     <p className="text-sm text-green-200 mb-1 font-sans">Net Profit</p>
                                     <p className="text-2xl font-bold text-green-300">+Ξ {results.netProfitEth.toFixed(6)}</p>
-                                    <p className="text-lg font-semibold text-green-300">+${results.netProfitUsd.toFixed(2)}</p>
+                                    {results.netProfitUsd && <p className="text-lg font-semibold text-green-300">+${results.netProfitUsd.toFixed(2)}</p>}
                                 </div>
                             </div>
                         </div>
