@@ -447,7 +447,7 @@ export function ProfitCalculator() {
           ) : (
             <div className="flex items-center space-x-2">
                 <DollarSign className="w-4 h-4 text-green-300" />
-                <span className="text-green-300 font-mono text-sm">{ethPrice?.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+                <span className="text-green-300 font-mono text-sm">Eth = {ethPrice?.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
             </div>
           )}
         </div>
@@ -714,3 +714,5 @@ export function ProfitCalculator() {
     </div>
   );
 }
+
+    
