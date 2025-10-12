@@ -4,30 +4,29 @@
 
 body {
   font-family: 'Space Grotesk', sans-serif;
-  background: radial-gradient(circle at top right, #1a0933, #0d0421, #020008);
 }
 
 @layer base {
   :root {
-    --background: 270 75% 2%; /* #020008 */
-    --foreground: 210 40% 96.1%;
-    --card: 248 35% 12%;
-    --card-foreground: 210 40% 96.1%;
-    --popover: 270 75% 2%;
-    --popover-foreground: 210 40% 96.1%;
-    --primary: 276 93% 65%; /* #A855F7 */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 3.7% 15.9%;
+    --background: 0 0% 0%; /* black */
+    --foreground: 0 0% 98%; /* near white */
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 45 100% 51%; /* gold */
+    --primary-foreground: 45 100% 10%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 197 100% 72%; /* #72D4FF */
-    --accent-foreground: 240 5.9% 10%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 170 60% 70%; /* teal */
+    --accent-foreground: 170 60% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 35%;
-    --input: 240 3.7% 15.9%;
-    --ring: 197 100% 72%;
+    --border: 0 0% 25%;
+    --input: 0 0% 15%;
+    --ring: 45 100% 51%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -36,25 +35,25 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 270 75% 2%; /* #020008 */
-    --foreground: 210 40% 96.1%;
-    --card: 248 35% 12%;
-    --card-foreground: 210 40% 96.1%;
-    --popover: 270 75% 2%;
-    --popover-foreground: 210 40% 96.1%;
-    --primary: 276 93% 65%; /* #A855F7 */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 3.7% 15.9%;
+    --background: 0 0% 6%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 45 100% 51%; /* gold */
+    --primary-foreground: 45 100% 10%;
+    --secondary: 210 40% 96.1%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 197 100% 72%; /* #72D4FF */
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 62.8% 30.6%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 170 60% 70%; /* teal */
+    --accent-foreground: 170 60% 15%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 35%;
-    --input: 240 3.7% 15.9%;
-    --ring: 197 100% 72%;
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 45 100% 51%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
