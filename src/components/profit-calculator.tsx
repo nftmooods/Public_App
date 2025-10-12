@@ -704,8 +704,10 @@ export function ProfitCalculator() {
         </Card>
       </Tabs>
       <footer className="text-center text-gray-500 text-xs mt-8">
-        created by @nftmooods
+        created by <a href="https://x.com/nftmooods" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">@nftmooods</a>
       </footer>
     </div>
   );
 }
+
+    
