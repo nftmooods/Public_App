@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -97,11 +98,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: undefined,
-      tokens: undefined,
-      tokenPrice: undefined,
+      investment: 0,
+      tokens: 0,
+      tokenPrice: 0,
       multiplier: "2",
-      customMultiplier: undefined,
+      customMultiplier: 0,
     },
   });
   
@@ -259,11 +260,11 @@ export function ProfitCalculator() {
     setHistory(updatedHistory);
     setEditingId(null); // Reset editing mode
     form.reset({
-      investment: undefined,
-      tokens: undefined,
-      tokenPrice: undefined,
+      investment: 0,
+      tokens: 0,
+      tokenPrice: 0,
       multiplier: "2",
-      customMultiplier: undefined,
+      customMultiplier: 0,
     });
     setResults(null);
     
@@ -477,7 +478,7 @@ export function ProfitCalculator() {
                           <FormControl>
                             <div className="relative">
                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 font-mono font-bold text-lg">Ξ</span>
-                               <Input type="number" step="any" placeholder="0.00" className="pl-8 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} />
+                               <Input type="number" step="any" placeholder="0.00" className="pl-8 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
                             </div>
                           </FormControl>
                            {results && <p className="text-xs text-gray-400 mt-1 h-4">≈ ${results.investmentUsd.toFixed(2)} USD at purchase</p>}
@@ -494,7 +495,7 @@ export function ProfitCalculator() {
                            <FormControl>
                             <div className="relative">
                               <Coins className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
-                              <Input type="number" step="any" placeholder="0.00" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} />
+                              <Input type="number" step="any" placeholder="0.00" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
                             </div>
                           </FormControl>
                           <FormMessage className="pt-1"/>
@@ -512,7 +513,7 @@ export function ProfitCalculator() {
                            <FormControl>
                             <div className="relative">
                               <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-4 h-4"/>
-                              <Input type="number" step="any" placeholder="0.000000" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} />
+                              <Input type="number" step="any" placeholder="0.000000" className="pl-10 pr-4 py-3 h-auto bg-gray-800/70 border-gray-700 focus:ring-purple-500" {...field} value={field.value ?? ''} />
                             </div>
                           </FormControl>
                           <FormMessage className="pt-1"/>
