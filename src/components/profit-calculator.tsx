@@ -90,11 +90,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: undefined,
-      tokens: undefined,
-      tokenPrice: undefined,
+      investment: '' as unknown as number,
+      tokens: '' as unknown as number,
+      tokenPrice: '' as unknown as number,
       multiplier: "2",
-      customMultiplier: undefined,
+      customMultiplier: '' as unknown as number,
     },
   });
 
