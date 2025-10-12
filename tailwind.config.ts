@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
-        code: ['monospace'],
+        body: ["'Space Grotesk'", 'sans-serif'],
+        headline: ["'Space Grotesk'", 'sans-serif'],
+        code: ["'Space Grotesk'", 'monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -88,10 +88,21 @@ export default {
             height: '0',
           },
         },
+        tokenPulse: {
+          '0%': { boxShadow: '0 0 10px hsl(var(--primary) / 0.3)' },
+          '100%': { boxShadow: '0 0 20px hsl(var(--primary) / 0.7)' },
+        },
+        floating: {
+            '0%': { transform: 'translateY(0px)' },
+            '50%': { transform: 'translateY(-10px)' },
+            '100%': { transform: 'translateY(0px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'token-pulse': 'tokenPulse 3s infinite alternate',
+        'floating': 'floating 6s ease-in-out infinite',
       },
     },
   },
