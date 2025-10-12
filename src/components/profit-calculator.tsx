@@ -134,7 +134,16 @@ export function ProfitCalculator() {
     try {
       const savedHistory = localStorage.getItem("vibestrHistory");
       if (savedHistory) {
-        setHistory(JSON.parse(savedHistory));
+        const parsedHistory = JSON.parse(savedHistory);
+        // Ensure numeric fields are numbers for old data
+        const correctedHistory = parsedHistory.map((item: any) => ({
+          ...item,
+          investment: Number(item.investment),
+          tokens: Number(item.tokens),
+          tokenPrice: Number(item.tokenPrice),
+          customMultiplier: Number(item.customMultiplier)
+        }));
+        setHistory(correctedHistory);
       }
     } catch (error) {
       console.warn("Could not load history from localStorage:", error);
