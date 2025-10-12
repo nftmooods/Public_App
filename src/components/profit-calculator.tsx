@@ -9,7 +9,6 @@ import {
   Clock,
   Database,
   DollarSign,
-  Hash,
   Save,
   Target,
   Trash2,
@@ -65,7 +64,7 @@ interface CalculationResult {
   buyPriceEth: number;
   buyPriceUsd: number;
   breakEvenPriceEth: number;
-  breakEvenPriceUsd: number;
+  breakEvenUsd: number;
   targetPriceEth: number;
   targetPriceUsd: number;
   targetValueEth: number;
@@ -94,11 +93,11 @@ export function ProfitCalculator() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      investment: "" as unknown as number,
-      tokens: "" as unknown as number,
-      tokenPrice: "" as unknown as number,
+      investment: 0,
+      tokens: 0,
+      tokenPrice: 0,
       multiplier: "2",
-      customMultiplier: "" as unknown as number,
+      customMultiplier: 0,
     },
   });
   
@@ -171,7 +170,7 @@ export function ProfitCalculator() {
       buyPriceEth,
       buyPriceUsd: tokenPrice,
       breakEvenPriceEth,
-      breakEvenPriceUsd: tokenPrice * breakEvenRatio,
+      breakEvenUsd: tokenPrice * breakEvenRatio,
       targetPriceEth,
       targetPriceUsd: tokenPrice * targetRatio,
       targetValueEth: investment * currentMultiplier,
@@ -190,9 +189,14 @@ export function ProfitCalculator() {
        toast({ title: "Cannot Save", description: "Please calculate profit targets first.", variant: "destructive" });
        return;
     }
+    const formValues = form.getValues();
 
     const newHistoryItem: HistoryItem = {
-      ...form.getValues(),
+      ...formValues,
+      investment: Number(formValues.investment),
+      tokens: Number(formValues.tokens),
+      tokenPrice: Number(formValues.tokenPrice),
+      customMultiplier: Number(formValues.customMultiplier),
       id: Date.now(),
       date: new Date().toLocaleString(),
       ethPrice: ethPrice,
@@ -403,7 +407,7 @@ export function ProfitCalculator() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-blue-200 mb-1 font-sans">Sell Price (USD)</p>
-                                    <p className="text-xl font-semibold">${results.breakEvenPriceUsd.toFixed(6)}</p>
+                                    <p className="text-xl font-semibold">${results.breakEvenUsd.toFixed(6)}</p>
                                 </div>
                             </div>
                         </div>
