@@ -678,13 +678,13 @@ export function ProfitCalculator() {
                                 <div className="grid md:grid-cols-4 gap-4 mt-3 font-mono">
                                     <div>
                                         <p className="text-xs text-purple-300 font-sans">Investment</p>
-                                        <p>Ξ {item.investment.toFixed(4)}</p>
+                                        <p>Ξ {Number(item.investment).toFixed(4)}</p>
                                         <p className="text-xs">(${(item.results.investmentUsd).toFixed(2)})</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-purple-300 font-sans">VIBESTR</p>
-                                        <p>{item.tokens.toFixed(2)}</p>
-                                        <p className="text-xs">@ ${item.tokenPrice.toFixed(6)}</p>
+                                        <p>{Number(item.tokens).toFixed(2)}</p>
+                                        <p className="text-xs">@ ${Number(item.tokenPrice).toFixed(6)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-blue-300 font-sans">Break-even</p>
@@ -703,11 +703,14 @@ export function ProfitCalculator() {
           </TabsContent>
         </Card>
       </Tabs>
-      <footer className="text-center text-gray-500 text-xs mt-8">
-        created by <a href="https://x.com/nftmooods" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">@nftmooods</a>
+      <footer className="text-center text-gray-500 text-xs mt-8 space-y-1">
+        <div>
+          created by <a href="https://x.com/nftmooods" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">@nftmooods</a>
+        </div>
+        <div>
+          <a href="https://opensea.io/item/ethereum/0xb8ea78fcacef50d41375e44e6814ebba36bb33c4/3273" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">Citizen of Vibetown #3273</a>
+        </div>
       </footer>
     </div>
   );
 }
-
-    
