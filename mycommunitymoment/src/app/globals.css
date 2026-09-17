@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 232 41% 14%; /* #1a1a2e */
+    --foreground: 210 40% 98%;
+    --card: 210 100% 95%; /* GM Blue */
+    --card-foreground: 221 100% 27%; /* GN Blue */
+    --popover: 210 100% 95%;
+    --popover-foreground: 221 100% 27%;
+    --primary: 217 100% 49%; /* ApeCoin Blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 221 100% 75%; /* Lighter gray for better contrast */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 221 100% 18%; /* Darker blue for inputs */
+    --ring: 217 100% 49%; /* ApeCoin Blue */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 232 41% 14%; /* #1a1a2e */
+    --foreground: 210 40% 98%;
+    --card: 210 100% 95%; /* GM Blue */
+    --card-foreground: 221 100% 27%; /* GN Blue */
+    --popover: 210 100% 95%;
+    --popover-foreground: 221 100% 27%;
+    --primary: 217 100% 49%; /* ApeCoin Blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 221 100% 75%; /* Lighter gray for better contrast */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 221 100% 18%; /* Darker blue for inputs */
+    --ring: 217 100% 49%; /* ApeCoin Blue */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    min-height: 100vh;
+  }
+  :root {
+    color-scheme: dark; /* Force dark mode look and feel */
+  }
+  .dark {
+    color-scheme: dark;
+  }
+}
