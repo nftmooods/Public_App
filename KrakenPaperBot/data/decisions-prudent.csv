@@ -1,0 +1,5 @@
+date,paire,action,prix,raison,donnees
+25/09 01:38,XBTUSD,SKIP,84256.9,pas de tendance haussière (EMA20 84221.24 ≤ EMA50 84486.60); prix au-dessus de l'EMA rapide; RSI 49 dans la zone 45-70,"{""ema_fast"": 84221.2402549391, ""ema_slow"": 84486.59515246312, ""rsi"": 49.3671706926416, ""atr"": 562.1339935467465}"
+25/09 01:38,ETHUSD,SKIP,2684.7,pas de tendance haussière (EMA20 2679.61 ≤ EMA50 2690.03); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70,"{""ema_fast"": 2679.6056884747236, ""ema_slow"": 2690.0327199365984, ""rsi"": 51.10654592335992, ""atr"": 22.62819109259024}"
+25/09 01:38,SOLUSD,ENTER,117.23711999999999,"tendance haussière (EMA20 115.87 > EMA50 115.77); prix au-dessus de l'EMA rapide; RSI 56 dans la zone 45-70 → achat de 0.213243 à 117.24 (25.10 USD frais compris), stop 114.91, objectif 120.73","{""qty"": 0.2132430411118936, ""stop"": 114.91135714761843, ""tp"": 120.72576427857233, ""ema_fast"": 115.87423261876019, ""ema_slow"": 115.77101321268199, ""rsi"": 55.87162156308122, ""atr"": 1.1628814261907812}"
+25/09 01:38,-,EQUITY,49.9,capital simulé 49.90 USD dont 24.90 USD de cash,{}
