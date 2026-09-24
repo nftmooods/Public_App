@@ -64,10 +64,23 @@ def run():
         j.log(p["pair"], "HOLD", bid,
               f"position gardée : stop {p['stop']:.2f}, objectif {p['tp']:.2f}, latent {latent:+.2f} {C.QUOTE}", now)
 
-    # 2. Paires sans position : faut-il entrer ?
+    # 2. Coupe-circuit : au-delà d'un recul trop marqué depuis le sommet du capital, on arrête de
+    #    miser (les positions déjà ouvertes restent gérées par l'étape 1) jusqu'à ce que le capital
+    #    remonte. Le sommet ne redescend jamais, donc le recul se réduit tout seul si le capital repart.
+    eq_now = broker.equity(j, marks)
+    peak = max(float(j.get("peak_equity", C.START_CAPITAL)), eq_now)
+    j.set("peak_equity", peak)
+    drawdown = (peak - eq_now) / peak if peak > 0 else 0
+    halted = drawdown >= C.MAX_DRAWDOWN_STOP
+
+    # 3. Paires sans position : faut-il entrer ?
     held = {p["pair"] for p in j.open_positions()}
+    if halted:
+        j.log("-", "HALT", eq_now,
+              f"recul de {drawdown:.0%} depuis le sommet ({peak:.2f} {C.QUOTE}) ≥ seuil {C.MAX_DRAWDOWN_STOP:.0%} "
+              f"→ aucune nouvelle entrée ce cycle", now)
     for pair in C.PAIRS:
-        if pair in held:
+        if pair in held or halted:
             continue
         sig = strategy.evaluate(kraken.ohlc(pair, C.SIGNAL_INTERVAL))
         if not sig["enter"]:
@@ -89,9 +102,12 @@ def backtest():
     times = sorted(set.intersection(*(set(ix) for ix in index.values())))
     warmup = C.EMA_SLOW + C.ATR_PERIOD + 5
     every = max(1, C.CHECK_EVERY_MIN // C.SIGNAL_INTERVAL)
-    pending = {}
+    pending, peak, halted = {}, C.START_CAPITAL, False
 
     for k, t in enumerate(times):
+        if k >= warmup and k % every == 0:
+            peak = max(peak, broker.equity(j))  # même coupe-circuit qu'en direct (bot.py run)
+            halted = (peak - broker.equity(j)) / peak >= C.MAX_DRAWDOWN_STOP if peak > 0 else False
         for pair in C.PAIRS:
             i = index[pair][t]
             c = data[pair][i]
@@ -101,6 +117,8 @@ def backtest():
             if pos:
                 broker.apply_candle(j, pos, c)
             elif k >= warmup and k % every == 0:
+                if halted:
+                    continue
                 sig = strategy.evaluate(data[pair][: i + 1])
                 if sig["enter"]:
                     pending[pair] = sig

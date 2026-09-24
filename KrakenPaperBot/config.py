@@ -10,7 +10,13 @@ RISK_PER_TRADE = 0.02         # part du capital perdue si le stop est touché
 MAX_POSITION_FRACTION = 0.5   # une position ne dépasse jamais 50 % du capital
 
 CHECK_EVERY_MIN = 30          # un cycle toutes les 30 min (GitHub Actions) : rattrape et gère les sorties
-SIGNAL_INTERVAL = 240         # bougies de 4 h pour décider d'une entrée : moins de faux départs qu'en 1 h
+SIGNAL_INTERVAL = 60          # bougies de 1 h pour décider d'une entrée
+# Testé en 4h (24/09) : résultat pire (-32 %/-36 % sur 110 jours) qu'en 1h (-24 %/-30 % sur 30 jours),
+# comparé à un marché qui montait davantage sur la période 4h (+56 % contre +11 %). Revenu au signal 1h.
+
+MAX_DRAWDOWN_STOP = 0.30      # au-delà de ce recul depuis le sommet du capital, plus aucune nouvelle
+                               # entrée : les positions ouvertes continuent d'être gérées (stop/objectif),
+                               # mais le bot arrête de miser tant que le capital n'est pas remonté
 
 # Indicateurs
 EMA_FAST = 20

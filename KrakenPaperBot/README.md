@@ -21,13 +21,29 @@ Hypothèses pessimistes, pour ne pas se raconter d'histoires :
 
 ## Les règles de décision
 
-- **Entrée** : EMA 20 > EMA 50 (tendance haussière), prix au-dessus de l'EMA 20, RSI entre 45 et 70.
+- **Entrée** : EMA 20 au moins 0,1 % au-dessus de l'EMA 50 et encore montante (pas un simple croisement),
+  prix au-dessus de l'EMA 20, RSI entre 45 et 70.
 - **Stop loss** : 2 ATR sous le prix d'achat. **Objectif** : 3 ATR au-dessus.
 - **Sécurisation** : dès que le prix monte de 1,5 ATR, le stop remonte au prix d'achat, frais compris.
   La position ne peut alors plus perdre (sauf chute brutale en gap).
 - **Taille** : une perte au stop coûte au maximum 2 % du capital ; une position ne dépasse jamais 50 % du capital.
+- **Coupe-circuit** : recul de 30 % depuis le sommet du capital → plus aucune nouvelle entrée tant que le
+  capital n'est pas remonté (les positions déjà ouvertes restent gérées normalement).
 
 Tous les réglages sont dans `config.py`.
+
+## Résultat des backtests (24/09/2026)
+
+Les deux profils sont nettement perdants sur les vrais prix Kraken, dans les deux réglages testés :
+- 30 jours, signal 1h : prudent -24 %, agressif -30 % (marché +11 % sur la période) ;
+- 110 jours, signal 4h : prudent -32 %, agressif -36 % (marché +56 % sur la période).
+
+Taux de gain 15 à 26 %, loin des ~40 % nécessaires pour un objectif à 3 ATR et un stop à 2 ATR. Le signal
+d'entrée (EMA/RSI) rentre trop souvent en fin de mouvement plutôt qu'au début. Le filtre de tendance
+nette + pente EMA a légèrement aidé sans changer le constat. **Les règles d'entrée ont besoin d'être
+repensées, pas seulement réglées, avant d'envisager de l'argent réel.** Le coupe-circuit à -30 % limite
+les dégâts en attendant, sans changer les règles d'entrée elles-mêmes — cette révision reste à faire, en
+concertation avec Martin.
 
 ## Deux profils en parallèle
 
