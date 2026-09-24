@@ -1,0 +1,27 @@
+# KrakenPaperBot : rejoue les 30 derniers jours de prix Kraken avec les règles actuelles, pour chaque profil.
+# Lancement manuel uniquement ; le résultat est dans le log du job, rien n'est committé.
+name: KrakenPaperBot backtest
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: KrakenPaperBot
+    env:
+      KPB_DATA_DIR: /tmp
+      TZ: Europe/Brussels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python bot.py backtest
