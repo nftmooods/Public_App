@@ -18,6 +18,8 @@ EMA_SLOW = 50
 RSI_PERIOD = 14
 RSI_MIN, RSI_MAX = 45, 70
 ATR_PERIOD = 14
+EMA_GAP_MIN = 0.001      # tendance nette : EMA rapide au moins 0,1 % au-dessus de l'EMA lente
+EMA_SLOPE_LOOKBACK = 3   # l'EMA rapide doit être plus haute qu'il y a 3 bougies (encore montante)
 
 # Sorties, en multiples d'ATR (volatilité moyenne d'une bougie)
 STOP_ATR = 2.0

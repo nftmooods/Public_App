@@ -32,19 +32,26 @@ def atr(candles, n):
 
 
 def evaluate(candles):
-    """Achète seulement dans une tendance haussière, sans poursuivre un marché déjà surchauffé."""
+    """Achète seulement dans une tendance haussière nette et encore montante, sans poursuivre un marché
+    déjà surchauffé. Backtest du 24/09 : sans filtre de force ni de pente, 48 % des sorties étaient des
+    stop loss secs (faux départs sur des croisements EMA marginaux) — d'où ces deux filtres en plus."""
     price = candles[-1]["c"] if candles else None
-    if len(candles) < C.EMA_SLOW + C.ATR_PERIOD + 1:
+    if len(candles) < C.EMA_SLOW + C.ATR_PERIOD + C.EMA_SLOPE_LOOKBACK + 1:
         return {"enter": False, "price": price, "reason": "historique insuffisant", "indicators": {}}
 
     closes = [c["c"] for c in candles]
-    fast, slow = ema(closes, C.EMA_FAST)[-1], ema(closes, C.EMA_SLOW)[-1]
+    fast_series = ema(closes, C.EMA_FAST)
+    fast, slow = fast_series[-1], ema(closes, C.EMA_SLOW)[-1]
+    fast_prev = fast_series[-1 - C.EMA_SLOPE_LOOKBACK]
     r, a = rsi(closes, C.RSI_PERIOD), atr(candles, C.ATR_PERIOD)
 
     checks = [
-        (fast > slow,
-         f"tendance haussière (EMA{C.EMA_FAST} {fast:.2f} > EMA{C.EMA_SLOW} {slow:.2f})",
-         f"pas de tendance haussière (EMA{C.EMA_FAST} {fast:.2f} ≤ EMA{C.EMA_SLOW} {slow:.2f})"),
+        (fast > slow * (1 + C.EMA_GAP_MIN),
+         f"tendance nette (EMA{C.EMA_FAST} {fast:.2f} > EMA{C.EMA_SLOW} {slow:.2f} de {C.EMA_GAP_MIN:.1%}+)",
+         f"tendance trop faible ou baissière (EMA{C.EMA_FAST} {fast:.2f}, EMA{C.EMA_SLOW} {slow:.2f})"),
+        (fast > fast_prev,
+         f"EMA{C.EMA_FAST} encore montante (+{fast - fast_prev:.2f} sur {C.EMA_SLOPE_LOOKBACK} bougies)",
+         f"EMA{C.EMA_FAST} qui s'essouffle ({fast - fast_prev:+.2f} sur {C.EMA_SLOPE_LOOKBACK} bougies)"),
         (price > fast,
          "prix au-dessus de l'EMA rapide",
          "prix sous l'EMA rapide"),
