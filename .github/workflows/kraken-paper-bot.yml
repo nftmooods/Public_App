@@ -1,0 +1,45 @@
+# KrakenPaperBot : un cycle de simulation toutes les heures, journaux committés dans KrakenPaperBot/data/.
+# Claude lit ces journaux toutes les 2 h pour son analyse (routine Claude Code, 20 min après).
+name: KrakenPaperBot
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # GitHub peut démarrer avec 5 à 30 min de retard ; le bot rattrape les bougies manquées
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kraken-paper-bot
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: KrakenPaperBot
+    env:
+      KPB_DATA_DIR: data
+      TZ: Europe/Brussels
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python bot.py run && python bot.py export
+      - name: Enregistrer les journaux
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898728+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet && exit 0
+          git commit -q -m "KrakenPaperBot: cycle $(date '+%d/%m %H:%M')"
+          for i in 1 2 3 4; do
+            git pull -q --rebase origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((2 ** i))
+          done
+          exit 1

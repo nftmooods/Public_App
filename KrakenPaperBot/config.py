@@ -9,7 +9,7 @@ TARGET_MULTIPLE = 100         # objectif : x100 la mise de départ
 RISK_PER_TRADE = 0.02         # part du capital perdue si le stop est touché
 MAX_POSITION_FRACTION = 0.5   # une position ne dépasse jamais 50 % du capital
 
-CHECK_EVERY_MIN = 120         # un cycle d'analyse toutes les 2 h
+CHECK_EVERY_MIN = 60          # un cycle d'analyse toutes les heures (GitHub Actions)
 SIGNAL_INTERVAL = 60          # bougies de 1 h pour décider
 
 # Indicateurs

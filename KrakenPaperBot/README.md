@@ -1,6 +1,6 @@
 # KrakenPaperBot — trading simulé sur Kraken, sans argent réel
 
-Toutes les 2 h, le bot analyse BTC, ETH et SOL en dollars sur Kraken, avec une mise de départ de 50 USD. S'il décide d'acheter, il pose un stop loss
+Toutes les heures, le bot analyse BTC, ETH et SOL en dollars sur Kraken, avec une mise de départ de 50 USD. S'il décide d'acheter, il pose un stop loss
 et un objectif (take profit). **Chaque décision est enregistrée avec sa raison et ses chiffres**, y compris les
 décisions de ne rien faire.
 
@@ -66,10 +66,17 @@ Le run planifié écrit dans `data/` (variable `KPB_DATA_DIR`) et le committe su
 - `ANALYSE.md` : les observations de Claude après chaque cycle ;
 - `sim-<profil>.db` : l'état complet (positions, cash), nécessaire au cycle suivant.
 
-## Le faire tourner toutes les 2 h
+## Le faire tourner automatiquement
 
-En place : une routine Claude Code lance `bot.py run` toutes les 2 h, committe `data/` et note ses
-observations dans `data/ANALYSE.md`. Autres options :
+En place, deux étages :
+- **GitHub Actions** (`.github/workflows/kraken-paper-bot.yml`) lance `bot.py run` puis `bot.py export`
+  toutes les heures et committe `data/`. Gratuit, accès internet libre. Lancement manuel possible depuis
+  l'onglet Actions du dépôt (« Run workflow »). GitHub peut démarrer avec 5 à 30 min de retard : sans
+  conséquence, le bot rattrape les bougies manquées.
+- **Une routine Claude** (Sonnet 5), toutes les 2 h, 20 min après : elle lit `RAPPORT.md` et les CSV,
+  vérifie que le dernier cycle est récent, et ajoute son analyse dans `data/ANALYSE.md`.
+
+Autres options :
 
 Sur un serveur Linux (ton VPS par exemple), ajoute cette ligne avec `crontab -e` :
 
