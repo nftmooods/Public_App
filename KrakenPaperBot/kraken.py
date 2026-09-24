@@ -1,4 +1,5 @@
 """Données publiques Kraken : aucune clé API, aucun accès au compte."""
+import functools
 import time
 
 import requests
@@ -6,6 +7,7 @@ import requests
 BASE = "https://api.kraken.com/0/public"
 
 
+@functools.lru_cache(maxsize=None)  # tous les profils d'un même cycle voient les mêmes prix
 def _get(path, **params):
     for attempt in range(3):
         try:

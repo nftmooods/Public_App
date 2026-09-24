@@ -1,6 +1,6 @@
 # KrakenPaperBot — trading simulé sur Kraken, sans argent réel
 
-Toutes les 2 h, le bot analyse BTC, ETH et SOL en euros sur Kraken. S'il décide d'acheter, il pose un stop loss
+Toutes les 2 h, le bot analyse BTC, ETH et SOL en dollars sur Kraken, avec une mise de départ de 50 USD. S'il décide d'acheter, il pose un stop loss
 et un objectif (take profit). **Chaque décision est enregistrée avec sa raison et ses chiffres**, y compris les
 décisions de ne rien faire.
 
@@ -29,6 +29,17 @@ Hypothèses pessimistes, pour ne pas se raconter d'histoires :
 
 Tous les réglages sont dans `config.py`.
 
+## Deux profils en parallèle
+
+Chaque cycle fait tourner deux portefeuilles simulés de 50 USD sur les mêmes prix, pour comparer sur la durée :
+- **prudent** : les règles ci-dessus ;
+- **agressif** : vise le x100, avec 10 % du capital risqué par trade, tout le capital mobilisable,
+  un objectif à 5 ATR et une sécurisation à 2 ATR.
+
+Un x100 demande d'enchaîner beaucoup de trades gagnants avec des mises fortes : le profil agressif a
+beaucoup plus de chances de fondre que de multiplier la mise. C'est précisément ce que la simulation doit
+mesurer avant de risquer de l'argent réel.
+
 ## Installation
 
 ```bash
@@ -42,9 +53,23 @@ python bot.py run            # un cycle : rattrape le marché, puis décide
 python bot.py journal        # les 30 dernières décisions
 python bot.py report         # bilan et critères de validation
 python bot.py backtest       # rejoue les 30 derniers jours avec les mêmes règles
+python bot.py export         # écrit RAPPORT.md et les CSV de décisions
 ```
 
+Chaque commande porte sur les deux profils, ou sur un seul : `python bot.py report agressif`.
+
+## Où sont les journaux
+
+Le run planifié écrit dans `data/` (variable `KPB_DATA_DIR`) et le committe sur la branche Git :
+- `RAPPORT.md` : bilan de chaque profil, progression vers le x100, 20 dernières décisions ;
+- `decisions-<profil>.csv` : toutes les décisions, lisibles dans un tableur ;
+- `ANALYSE.md` : les observations de Claude après chaque cycle ;
+- `sim-<profil>.db` : l'état complet (positions, cash), nécessaire au cycle suivant.
+
 ## Le faire tourner toutes les 2 h
+
+En place : une routine Claude Code lance `bot.py run` toutes les 2 h, committe `data/` et note ses
+observations dans `data/ANALYSE.md`. Autres options :
 
 Sur un serveur Linux (ton VPS par exemple), ajoute cette ligne avec `crontab -e` :
 

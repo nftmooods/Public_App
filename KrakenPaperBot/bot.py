@@ -1,10 +1,17 @@
 """Simulateur de trading Kraken, sans argent réel.
 
-    python bot.py run        un cycle : rejoue le marché depuis le dernier passage, puis décide
-    python bot.py backtest   rejoue les 30 derniers jours avec les mêmes règles
-    python bot.py report     bilan de la simulation   (report backtest : bilan du backtest)
-    python bot.py journal    30 dernières décisions   (journal 100 : les 100 dernières)
+Chaque commande s'applique à tous les profils de config.py, ou à celui donné en argument.
+
+    python bot.py run [profil]              un cycle : rejoue le marché depuis le dernier passage, puis décide
+    python bot.py backtest [profil]         rejoue les 30 derniers jours avec les mêmes règles
+    python bot.py report [profil]           bilan de la simulation   (report backtest : bilan du backtest)
+    python bot.py journal [profil] [n]      n dernières décisions (30 par défaut)
+    python bot.py export                    écrit RAPPORT.md et un CSV des décisions par profil dans KPB_DATA_DIR
 """
+import contextlib
+import csv
+import io
+import os
 import sys
 import time
 from datetime import datetime
@@ -55,7 +62,7 @@ def run():
         bid = marks[p["pair"]] = kraken.ticker(p["pair"])["bid"]
         latent = p["qty"] * bid * (1 - C.TAKER_FEE) - p["cost"]
         j.log(p["pair"], "HOLD", bid,
-              f"position gardée : stop {p['stop']:.2f}, objectif {p['tp']:.2f}, latent {latent:+.2f} EUR", now)
+              f"position gardée : stop {p['stop']:.2f}, objectif {p['tp']:.2f}, latent {latent:+.2f} {C.QUOTE}", now)
 
     # 2. Paires sans position : faut-il entrer ?
     held = {p["pair"] for p in j.open_positions()}
@@ -70,7 +77,7 @@ def run():
         broker.open_position(j, pair, fill, sig, kraken.pair_rules(pair), now)
 
     eq = broker.equity(j, marks)
-    j.log("-", "EQUITY", eq, f"capital simulé {eq:.2f} EUR dont {broker.cash(j):.2f} EUR de cash", now)
+    j.log("-", "EQUITY", eq, f"capital simulé {eq:.2f} {C.QUOTE} dont {broker.cash(j):.2f} {C.QUOTE} de cash", now)
     print_decisions(j.decisions(since=now - 1))
 
 
@@ -108,8 +115,8 @@ def backtest():
     report(C.BACKTEST_DB_PATH, marks=last)
 
 
-def report(path=C.DB_PATH, marks=None):
-    j = Journal(path)
+def report(path=None, marks=None):
+    j = Journal(path or C.DB_PATH)
     closed, still_open = j.closed_positions(), j.open_positions()
     pnls = [p["pnl"] for p in closed]
     total = sum(pnls)
@@ -131,12 +138,14 @@ def report(path=C.DB_PATH, marks=None):
         reasons[p["exit_reason"]] = reasons.get(p["exit_reason"], 0) + 1
 
     eq = broker.equity(j, marks)
-    print(f"Capital : {C.START_CAPITAL:.2f} → {eq:.2f} EUR ({eq / C.START_CAPITAL - 1:+.1%})")
+    print(f"Capital : {C.START_CAPITAL:.2f} → {eq:.2f} {C.QUOTE} ({eq / C.START_CAPITAL - 1:+.1%})")
+    target = C.START_CAPITAL * C.TARGET_MULTIPLE
+    print(f"Objectif x{C.TARGET_MULTIPLE} : {target:.0f} {C.QUOTE}, atteint à {eq / target:.1%}")
     print(f"Trades clos : {len(closed)}   ouverts : {len(still_open)}")
     if closed:
         print(f"Gagnants : {len(wins)}/{len(closed)} ({len(wins) / len(closed):.0%})")
-        print(f"Résultat des trades clos : {total:+.2f} EUR, dont {fees:.2f} EUR de frais payés")
-        print(f"Sans les 2 meilleurs trades : {without_top2:+.2f} EUR")
+        print(f"Résultat des trades clos : {total:+.2f} {C.QUOTE}, dont {fees:.2f} {C.QUOTE} de frais payés")
+        print(f"Sans les 2 meilleurs trades : {without_top2:+.2f} {C.QUOTE}")
         print(f"Pire recul du capital : {drawdown:.1%}")
         print("Sorties : " + ", ".join(f"{k} {v}" for k, v in sorted(reasons.items())))
     print("\nCritères pour envisager de l'argent réel :")
@@ -149,16 +158,45 @@ def report(path=C.DB_PATH, marks=None):
         print(f"  [{'x' if ok else ' '}] {label}")
 
 
+def export():
+    """Rapport lisible et CSV des décisions, pour relire l'historique sans Python."""
+    lines = [f"# KrakenPaperBot — simulation\n\nMis à jour le {datetime.now():%d/%m/%Y %H:%M}\n"]
+    for profile in C.PROFILES:
+        C.use(profile)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            report()
+            print("\nDernières décisions :")
+            print_decisions(Journal(C.DB_PATH).decisions(limit=20))
+        lines.append(f"## Profil {profile}\n\n```\n{buf.getvalue()}```\n")
+        with open(os.path.join(C.DATA_DIR, f"decisions-{profile}.csv"), "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["date", "paire", "action", "prix", "raison", "donnees"])
+            for d in Journal(C.DB_PATH).decisions():
+                w.writerow([fmt_ts(d["ts"]), d["pair"], d["action"], d["price"], d["reason"], d["data"]])
+    with open(os.path.join(C.DATA_DIR, "RAPPORT.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "run"
-    if cmd == "run":
-        run()
-    elif cmd == "backtest":
-        backtest()
-    elif cmd == "report":
-        report(C.BACKTEST_DB_PATH if sys.argv[2:] == ["backtest"] else C.DB_PATH)
-    elif cmd == "journal":
-        n = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-        print_decisions(Journal(C.DB_PATH).decisions(limit=n))
-    else:
+    args = sys.argv[2:]
+    profiles = [a for a in args if a in C.PROFILES] or list(C.PROFILES)
+    args = [a for a in args if a not in C.PROFILES]
+    if cmd == "export":
+        export()
+        sys.exit()
+    if cmd not in ("run", "backtest", "report", "journal"):
         print(__doc__)
+        sys.exit()
+    for profile in profiles:
+        C.use(profile)
+        print(f"\n===== Profil {profile} =====")
+        if cmd == "run":
+            run()
+        elif cmd == "backtest":
+            backtest()
+        elif cmd == "report":
+            report(C.BACKTEST_DB_PATH if args == ["backtest"] else C.DB_PATH)
+        else:
+            print_decisions(Journal(C.DB_PATH).decisions(limit=int(args[0]) if args else 30))

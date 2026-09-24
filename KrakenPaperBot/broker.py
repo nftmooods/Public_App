@@ -32,10 +32,14 @@ def open_position(j, pair, fill, sig, rules, ts):
         eq * C.MAX_POSITION_FRACTION / fill,
         available / (fill * (1 + C.TAKER_FEE)),
     )
+    if available < rules["costmin"] or available < rules["ordermin"] * fill:
+        j.log(pair, "SKIP", fill, f"signal valide mais plus assez de cash ({available:.2f} {C.QUOTE}), "
+              f"déjà investi dans les positions ouvertes", ts)
+        return None
     if qty < rules["ordermin"] or qty * fill < rules["costmin"]:
         j.log(pair, "SKIP", fill,
               f"signal valide mais montant trop petit pour Kraken "
-              f"({qty:.8f} < minimum {rules['ordermin']} ou {qty * fill:.2f} EUR < {rules['costmin']} EUR)", ts)
+              f"({qty:.8f} < minimum {rules['ordermin']} ou {qty * fill:.2f} {C.QUOTE} < {rules['costmin']} {C.QUOTE})", ts)
         return None
 
     cost = qty * fill * (1 + C.TAKER_FEE)
@@ -47,7 +51,7 @@ def open_position(j, pair, fill, sig, rules, ts):
     )
     j.db.commit()
     j.log(pair, "ENTER", fill,
-          f"{sig['reason']} → achat de {qty:.6f} à {fill:.2f} ({cost:.2f} EUR frais compris), "
+          f"{sig['reason']} → achat de {qty:.6f} à {fill:.2f} ({cost:.2f} {C.QUOTE} frais compris), "
           f"stop {stop:.2f}, objectif {tp:.2f}", ts, qty=qty, stop=stop, tp=tp, **sig["indicators"])
 
 
@@ -61,7 +65,7 @@ def close(j, p, price, reason, ts, detail):
         (ts, price, reason, pnl, p["id"]),
     )
     j.db.commit()
-    j.log(p["pair"], reason, price, f"{detail} → vente à {price:.2f}, résultat {pnl:+.2f} EUR",
+    j.log(p["pair"], reason, price, f"{detail} → vente à {price:.2f}, résultat {pnl:+.2f} {C.QUOTE}",
           ts, position=p["id"], pnl=pnl)
     return True
 
