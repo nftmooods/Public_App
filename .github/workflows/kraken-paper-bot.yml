@@ -1,10 +1,15 @@
 # KrakenPaperBot : un cycle de simulation toutes les 30 min, journaux committés dans KrakenPaperBot/data/.
 # Claude lit ces journaux toutes les 2 h pour son analyse (routine Claude Code, 20 min après).
+#
+# Le cron GitHub n'est pas fiable pour ce dépôt : plus de 2h sans un seul déclenchement automatique
+# (25/09, malgré des commits fréquents dans l'intervalle) avant qu'une surveillance Claude ne le
+# déclenche à la main via workflow_dispatch. C'est ce déclenchement manuel, en routine toutes les
+# ~45-60 min, qui assure la cadence réelle tant que le cron GitHub ne se stabilise pas.
 name: KrakenPaperBot
 
 on:
   schedule:
-    - cron: "7,37 * * * *"   # GitHub peut démarrer avec 5 à 30 min de retard ; le bot rattrape les bougies manquées
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
