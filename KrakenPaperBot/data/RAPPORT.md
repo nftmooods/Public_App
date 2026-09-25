@@ -1,6 +1,6 @@
 # KrakenPaperBot — simulation
 
-Mis à jour le 25/09/2026 06:37
+Mis à jour le 25/09/2026 07:39
 
 ## Profil prudent
 
@@ -16,10 +16,6 @@ Critères pour envisager de l'argent réel :
   [x] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-25/09 02:28  SOLUSD  HOLD              117.44  position gardée : stop 114.91, objectif 120.73, latent -0.16 USD
-25/09 02:28  XBTUSD  SKIP            84380.00  tendance trop faible ou baissière (EMA20 84236.36, EMA50 84482.41); EMA20 encore montante (+29.73 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70
-25/09 02:28  ETHUSD  SKIP             2687.24  tendance trop faible ou baissière (EMA20 2680.33, EMA50 2689.92); EMA20 encore montante (+2.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 52 dans la zone 45-70
-25/09 02:28  -       EQUITY             49.94  capital simulé 49.94 USD dont 24.90 USD de cash
 25/09 03:31  SOLUSD  HOLD              117.25  position gardée : stop 114.91, objectif 120.73, latent -0.20 USD
 25/09 03:31  XBTUSD  SKIP            84566.50  tendance trop faible ou baissière (EMA20 84267.80, EMA50 84485.71); EMA20 encore montante (+50.32 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 54 dans la zone 45-70
 25/09 03:31  ETHUSD  SKIP             2689.40  tendance trop faible ou baissière (EMA20 2681.20, EMA50 2689.90); EMA20 encore montante (+2.13 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 53 dans la zone 45-70
@@ -36,6 +32,10 @@ Dernières décisions :
 25/09 06:37  XBTUSD  SKIP            84211.20  tendance trop faible ou baissière (EMA20 84281.54, EMA50 84467.89); EMA20 encore montante (+13.74 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
 25/09 06:37  ETHUSD  SKIP             2678.10  tendance trop faible ou baissière (EMA20 2681.03, EMA50 2688.87); EMA20 qui s'essouffle (-0.16 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
 25/09 06:37  -       EQUITY             49.83  capital simulé 49.83 USD dont 24.90 USD de cash
+25/09 07:39  SOLUSD  HOLD              116.62  position gardée : stop 114.91, objectif 120.73, latent -0.33 USD
+25/09 07:39  XBTUSD  SKIP            84192.70  tendance trop faible ou baissière (EMA20 84273.08, EMA50 84457.10); EMA20 qui s'essouffle (-25.39 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
+25/09 07:39  ETHUSD  SKIP             2679.59  tendance trop faible ou baissière (EMA20 2680.90, EMA50 2688.51); EMA20 qui s'essouffle (-1.02 sur 3 bougies); prix sous l'EMA rapide; RSI 49 dans la zone 45-70
+25/09 07:39  -       EQUITY             49.77  capital simulé 49.77 USD dont 24.90 USD de cash
 ```
 
 ## Profil agressif
@@ -52,10 +52,6 @@ Critères pour envisager de l'argent réel :
   [x] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-25/09 02:28  SOLUSD  HOLD              117.44  position gardée : stop 114.91, objectif 123.05, latent -0.31 USD
-25/09 02:28  XBTUSD  SKIP            84380.00  tendance trop faible ou baissière (EMA20 84236.36, EMA50 84482.41); EMA20 encore montante (+29.73 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70
-25/09 02:28  ETHUSD  SKIP             2687.24  tendance trop faible ou baissière (EMA20 2680.33, EMA50 2689.92); EMA20 encore montante (+2.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 52 dans la zone 45-70
-25/09 02:28  -       EQUITY             49.89  capital simulé 49.89 USD dont 0.00 USD de cash
 25/09 03:31  SOLUSD  HOLD              117.25  position gardée : stop 114.91, objectif 123.05, latent -0.39 USD
 25/09 03:31  XBTUSD  SKIP            84566.50  tendance trop faible ou baissière (EMA20 84267.80, EMA50 84485.71); EMA20 encore montante (+50.32 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 54 dans la zone 45-70
 25/09 03:31  ETHUSD  SKIP             2689.40  tendance trop faible ou baissière (EMA20 2681.20, EMA50 2689.90); EMA20 encore montante (+2.13 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 53 dans la zone 45-70
@@ -72,4 +68,8 @@ Dernières décisions :
 25/09 06:37  XBTUSD  SKIP            84211.20  tendance trop faible ou baissière (EMA20 84281.54, EMA50 84467.89); EMA20 encore montante (+13.74 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
 25/09 06:37  ETHUSD  SKIP             2678.10  tendance trop faible ou baissière (EMA20 2681.03, EMA50 2688.87); EMA20 qui s'essouffle (-0.16 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
 25/09 06:37  -       EQUITY             49.65  capital simulé 49.65 USD dont 0.00 USD de cash
+25/09 07:39  SOLUSD  HOLD              116.62  position gardée : stop 114.91, objectif 123.05, latent -0.66 USD
+25/09 07:39  XBTUSD  SKIP            84192.70  tendance trop faible ou baissière (EMA20 84273.08, EMA50 84457.10); EMA20 qui s'essouffle (-25.39 sur 3 bougies); prix sous l'EMA rapide; RSI 48 dans la zone 45-70
+25/09 07:39  ETHUSD  SKIP             2679.59  tendance trop faible ou baissière (EMA20 2680.90, EMA50 2688.51); EMA20 qui s'essouffle (-1.02 sur 3 bougies); prix sous l'EMA rapide; RSI 49 dans la zone 45-70
+25/09 07:39  -       EQUITY             49.54  capital simulé 49.54 USD dont 0.00 USD de cash
 ```
