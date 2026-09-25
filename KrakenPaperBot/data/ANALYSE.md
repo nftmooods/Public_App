@@ -40,3 +40,11 @@ le bot ne tournerait pas.
 un mécanisme de planification hors GitHub Actions (ex. la routine Claude elle-même déclenche le workflow
 à heure fixe, ou un service cron externe qui appelle l'API GitHub). Ne pas re-changer l'expression cron
 une 3e fois sans piste concrète : ce n'est probablement pas le format qui pose problème.
+
+## Mise à jour 25/09 19:30 — le cron GitHub s'améliore
+
+Sur les 20 runs à date, 3 se sont déclenchés seuls en `event: schedule` (run #9, #15, #20), le dernier
+il y a quelques minutes. Ce n'est toujours pas fiable à 100 % (les 17 autres runs restent des
+`workflow_dispatch` manuels de la surveillance Claude), mais ce n'est plus jamais 0/N comme au début.
+Pas encore assez de signal pour conclure que le cron `*/30 * * * *` est devenu fiable — à continuer
+d'observer sans re-changer la config.
