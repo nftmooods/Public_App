@@ -2,3 +2,4 @@
 !data/*.db
 *.log
 __pycache__/
+data/dashboard.json
