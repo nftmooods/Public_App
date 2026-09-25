@@ -116,3 +116,11 @@ Tous obligatoires, affichés par `python bot.py report` :
 - Clé API Kraken avec **uniquement** le droit de trader : jamais le droit de retrait.
 - Le stop et l'objectif sont posés **chez Kraken** au moment de l'achat : ils se déclenchent même si le bot est
   arrêté. Le cycle de 2 h ne sert plus qu'à décider des nouvelles entrées.
+
+## Tableau de bord visuel
+
+Une page dédiée affiche la courbe de capital, la position ouverte et les trades clôturés
+(gagnants ou perdants) des deux profils : lien dans `data/dashboard-url.txt`.
+
+Elle lit `data/dashboard.json`, régénéré par `python dashboard_data.py` à partir des CSV de
+décisions, puis republié par Claude vers la page à chaque vérification qui trouve du nouveau.
