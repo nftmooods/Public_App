@@ -23,3 +23,20 @@ nouvelle entrée tant que le capital n'est pas remonté.
 **À valider par Martin** : une vraie révision des règles d'entrée (pas un réglage de plus) — par exemple
 entrer sur un repli dans la tendance plutôt que sur la confirmation du croisement, qui arrive souvent
 trop tard. Détails dans `README.md`.
+
+## 25/09 05:34 — le cron GitHub Actions ne se déclenche jamais tout seul (confirmé)
+
+Depuis la mise en place (23h38 UTC), 4 cycles ont tourné avec succès, tous les 4 déclenchés à la main
+(workflow_dispatch) par la surveillance Claude. Le cron programmé n'a jamais fired, ni en `7,37 * * * *`
+(2h de recul) ni en `*/30 * * * *` (2h de recul, 4 échéances manquées). Ce n'est pas un problème de
+syntaxe (vérifiée deux fois) ni d'inactivité du dépôt (commits fréquents dans l'intervalle) : c'est une
+fiabilité insuffisante du planificateur GitHub Actions sur ce dépôt.
+
+**Conséquence pratique** : la cadence de ~30-60 min tient uniquement grâce au déclenchement manuel de
+la surveillance Claude, pas grâce à GitHub. Tant que Claude surveille, ça marche ; sans surveillance,
+le bot ne tournerait pas.
+
+**À valider par Martin** : soit accepter ce fonctionnement (Claude déclenche à la main), soit passer à
+un mécanisme de planification hors GitHub Actions (ex. la routine Claude elle-même déclenche le workflow
+à heure fixe, ou un service cron externe qui appelle l'API GitHub). Ne pas re-changer l'expression cron
+une 3e fois sans piste concrète : ce n'est probablement pas le format qui pose problème.
