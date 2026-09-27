@@ -80,8 +80,10 @@ def apply_candle(j, p, c):
     if c["h"] >= p["tp"]:
         return close(j, p, p["tp"], "TAKE_PROFIT", c["t"], "objectif atteint")
 
-    if not p["secured"] and c["h"] >= p["entry"] + C.BREAKEVEN_ATR * p["atr"]:
-        p["stop"], p["secured"] = breakeven_price(p["entry"]), 1
+    be = breakeven_price(p["entry"])
+    trigger = max(p["entry"] + C.BREAKEVEN_ATR * p["atr"], be)
+    if not p["secured"] and c["h"] >= trigger:
+        p["stop"], p["secured"] = be, 1
         j.db.execute("UPDATE positions SET stop=?, secured=1 WHERE id=?", (p["stop"], p["id"]))
         j.db.commit()
         j.log(p["pair"], "SECURE", c["h"],
