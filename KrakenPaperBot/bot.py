@@ -16,23 +16,14 @@ import sys
 import time
 from datetime import datetime
 
+import accumulate
 import broker
 import config as C
 import kraken
 import strategy
-from journal import Journal
+from journal import Journal, fmt_ts, print_decisions
 
 sys.stdout.reconfigure(encoding="utf-8")
-
-
-def fmt_ts(ts):
-    return datetime.fromtimestamp(ts).strftime("%d/%m %H:%M")
-
-
-def print_decisions(rows):
-    for d in rows:
-        price = f"{d['price']:.2f}" if d["price"] is not None else "-"
-        print(f"{fmt_ts(d['ts'])}  {d['pair']:<7} {d['action']:<13} {price:>10}  {d['reason']}")
 
 
 def replay_interval(gap_s):
@@ -44,6 +35,8 @@ def replay_interval(gap_s):
 
 
 def run():
+    if C.PROFILE == "accumulation":
+        return accumulate.run()
     j, now = Journal(C.DB_PATH), int(time.time())
     marks = {}
 
@@ -95,6 +88,8 @@ def run():
 
 
 def backtest():
+    if C.PROFILE == "accumulation":
+        return accumulate.backtest()
     j = Journal(C.BACKTEST_DB_PATH, reset=True)
     data = {pair: kraken.ohlc(pair, C.SIGNAL_INTERVAL) for pair in C.PAIRS}
     rules = {pair: kraken.pair_rules(pair) for pair in C.PAIRS}
@@ -134,6 +129,9 @@ def backtest():
 
 
 def report(path=None, marks=None):
+    if C.PROFILE == "accumulation":
+        mark = (marks or {}).get(C.ACCUM_PAIR)
+        return accumulate.report(path, mark=mark)
     j = Journal(path or C.DB_PATH)
     closed, still_open = j.closed_positions(), j.open_positions()
     pnls = [p["pnl"] for p in closed]
@@ -182,10 +180,15 @@ def export():
     for profile in C.PROFILES:
         C.use(profile)
         buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            report()
-            print("\nDernières décisions :")
-            print_decisions(Journal(C.DB_PATH).decisions(limit=20))
+        try:
+            with contextlib.redirect_stdout(buf):
+                report()
+                print("\nDernières décisions :")
+                print_decisions(Journal(C.DB_PATH).decisions(limit=20))
+        except Exception as e:
+            # Un profil en échec ne doit jamais empêcher le rapport et le CSV des autres d'être écrits.
+            print(f"ERREUR export du profil {profile} : {e!r}", file=sys.stderr)
+            buf.write(f"Erreur lors de la génération du rapport : {e!r}\n")
         lines.append(f"## Profil {profile}\n\n```\n{buf.getvalue()}```\n")
         with open(os.path.join(C.DATA_DIR, f"decisions-{profile}.csv"), "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
@@ -207,14 +210,27 @@ if __name__ == "__main__":
     if cmd not in ("run", "backtest", "report", "journal"):
         print(__doc__)
         sys.exit()
+    failures = []
     for profile in profiles:
         C.use(profile)
         print(f"\n===== Profil {profile} =====")
-        if cmd == "run":
-            run()
-        elif cmd == "backtest":
-            backtest()
-        elif cmd == "report":
-            report(C.BACKTEST_DB_PATH if args == ["backtest"] else C.DB_PATH)
-        else:
-            print_decisions(Journal(C.DB_PATH).decisions(limit=int(args[0]) if args else 30))
+        try:
+            if cmd == "run":
+                run()
+            elif cmd == "backtest":
+                backtest()
+            elif cmd == "report":
+                report(C.BACKTEST_DB_PATH if args == ["backtest"] else C.DB_PATH)
+            else:
+                print_decisions(Journal(C.DB_PATH).decisions(limit=int(args[0]) if args else 30))
+        except Exception as e:
+            # Un profil qui plante (bug, aléa réseau Kraken) ne doit jamais empêcher les autres de
+            # tourner, ni bloquer l'export de leurs données : chacun a son propre portefeuille et
+            # journal, indépendant des autres. On ne sort en erreur que si tous ont échoué (rien à
+            # exporter de toute façon), pour ne jamais couper `bot.py run && bot.py export` en amont.
+            failures.append(profile)
+            print(f"ERREUR sur le profil {profile} : {e!r}")
+    if failures:
+        print(f"Profils en échec : {', '.join(failures)}")
+        if len(failures) == len(profiles):
+            sys.exit(1)

@@ -37,6 +37,18 @@ TAKER_FEE = 0.0040
 MAKER_FEE = 0.0025
 SLIPPAGE = 0.001
 
+# Profil "accumulation" (voir accumulate.py) : objectif = maximiser la quantité d'ETH détenue avant
+# la fin du cycle haussier, pas le $ à court terme. Achète par paliers sur les replis d'une tendance
+# de fond haussière (EMA journalières), ne revend tout qu'à la détection d'un retournement structurel.
+ACCUM_PAIR = "ETHUSD"
+ACCUM_DAILY_INTERVAL = 1440       # bougies journalières pour juger la tendance de fond
+ACCUM_EMA_FAST = 50               # golden/death cross journalier
+ACCUM_EMA_SLOW = 200
+ACCUM_PULLBACK_LOOKBACK_H = 48    # sommet local calculé sur les 48 dernières heures
+ACCUM_MIN_PULLBACK = 0.02         # repli mini de 2 % depuis ce sommet pour parler de "repli"
+ACCUM_DIP_RSI_MAX = 45            # repli réel, pas un marché encore euphorique
+ACCUM_BUY_FRACTION = 0.25         # part du cash dispo engagée à chaque repli (accumulation par paliers)
+
 # Profils simulés en parallèle sur les mêmes prix, chacun avec son propre portefeuille et son journal.
 # Un profil ne liste que ce qu'il change par rapport aux valeurs ci-dessus.
 PROFILES = {
@@ -44,6 +56,8 @@ PROFILES = {
     # Vise le x100 : risque 5x plus gros par trade, tout le capital mobilisable, objectifs plus lointains.
     "agressif": {"RISK_PER_TRADE": 0.10, "MAX_POSITION_FRACTION": 1.0,
                  "TAKE_PROFIT_ATR": 5.0, "BREAKEVEN_ATR": 2.0},
+    # Accumulation d'ETH : voir accumulate.py, ne suit pas le schéma stop/objectif des deux profils ci-dessus.
+    "accumulation": {},
 }
 
 DATA_DIR = os.environ.get("KPB_DATA_DIR", ".")

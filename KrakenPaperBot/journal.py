@@ -3,6 +3,17 @@ import json
 import os
 import sqlite3
 import time
+from datetime import datetime
+
+
+def fmt_ts(ts):
+    return datetime.fromtimestamp(ts).strftime("%d/%m %H:%M")
+
+
+def print_decisions(rows):
+    for d in rows:
+        price = f"{d['price']:.2f}" if d["price"] is not None else "-"
+        print(f"{fmt_ts(d['ts'])}  {d['pair']:<7} {d['action']:<13} {price:>10}  {d['reason']}")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS decisions (
