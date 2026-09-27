@@ -32,7 +32,8 @@ def ohlc(pair, interval, since=None):
     rows = res[next(k for k in res if k != "last")]
     now = time.time()
     return [
-        {"t": int(c[0]), "o": float(c[1]), "h": float(c[2]), "l": float(c[3]), "c": float(c[4])}
+        {"t": int(c[0]), "o": float(c[1]), "h": float(c[2]), "l": float(c[3]), "c": float(c[4]),
+         "v": float(c[6])}
         for c in rows
         if int(c[0]) + interval * 60 <= now
     ]

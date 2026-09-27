@@ -1,8 +1,12 @@
 """Paramètres de la simulation. Tout ce qui influence une décision est ici."""
 import os
 
+import kraken
+import okx
+
 PAIRS = ["XBTUSD", "ETHUSD", "SOLUSD"]
 QUOTE = "USD"
+EXCHANGE = kraken  # module qui fournit ohlc()/ticker()/pair_rules() ; voir profil "memecoin" pour OKX
 
 START_CAPITAL = 50.0          # USD
 TARGET_MULTIPLE = 100         # objectif : x100 la mise de départ
@@ -32,6 +36,9 @@ STOP_ATR = 2.0
 TAKE_PROFIT_ATR = 3.0
 BREAKEVEN_ATR = 1.5   # à +1,5 ATR, le stop remonte au prix d'entrée, frais compris
 
+VOLUME_MIN_RATIO = None   # si défini : la dernière bougie doit peser au moins ce multiple du volume
+                           # moyen récent pour valider une entrée (voir profil "memecoin")
+
 # Frais Kraken Pro au palier de volume le plus bas (à revérifier sur kraken.com)
 TAKER_FEE = 0.0040
 MAKER_FEE = 0.0025
@@ -58,6 +65,18 @@ PROFILES = {
                  "TAKE_PROFIT_ATR": 5.0, "BREAKEVEN_ATR": 2.0},
     # Accumulation d'ETH : voir accumulate.py, ne suit pas le schéma stop/objectif des deux profils ci-dessus.
     "accumulation": {},
+    # Test OKX sur des meme coins (DOGE/SHIB/PEPE/WIF) : même moteur trend-following que prudent/agressif,
+    # mais réglages resserrés pour leur volatilité erratique — position plus petite, tendance et volume
+    # confirmés plus strictement, RSI plafonné plus bas pour ne pas acheter un pump déjà bien avancé.
+    # Purement simulé, comme les autres : aucune clé API OKX utilisée ici (marché public uniquement).
+    "memecoin": {
+        "EXCHANGE": okx,
+        "PAIRS": ["DOGE-USDT", "SHIB-USDT", "PEPE-USDT", "WIF-USDT"],
+        "RISK_PER_TRADE": 0.01, "MAX_POSITION_FRACTION": 0.25,
+        "EMA_GAP_MIN": 0.005, "RSI_MIN": 45, "RSI_MAX": 60,
+        "STOP_ATR": 2.5, "TAKE_PROFIT_ATR": 4.0, "BREAKEVEN_ATR": 1.8,
+        "VOLUME_MIN_RATIO": 1.3,
+    },
 }
 
 DATA_DIR = os.environ.get("KPB_DATA_DIR", ".")

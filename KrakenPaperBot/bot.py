@@ -1,4 +1,4 @@
-"""Simulateur de trading Kraken, sans argent réel.
+"""Simulateur de trading (Kraken ou OKX selon le profil, voir config.EXCHANGE), sans argent réel.
 
 Chaque commande s'applique à tous les profils de config.py, ou à celui donné en argument.
 
@@ -19,7 +19,6 @@ from datetime import datetime
 import accumulate
 import broker
 import config as C
-import kraken
 import strategy
 from journal import Journal, fmt_ts, print_decisions
 
@@ -44,7 +43,7 @@ def run():
     #    pour que le stop et l'objectif s'appliquent comme s'ils étaient posés chez Kraken.
     for p in j.open_positions():
         interval = replay_interval(now - p["checked_ts"])
-        candles = [c for c in kraken.ohlc(p["pair"], interval, since=p["checked_ts"] - interval * 60)
+        candles = [c for c in C.EXCHANGE.ohlc(p["pair"], interval, since=p["checked_ts"] - interval * 60)
                    if c["t"] >= p["checked_ts"]]
         if any(broker.apply_candle(j, p, c) for c in candles):
             continue
@@ -52,7 +51,7 @@ def run():
             p["checked_ts"] = candles[-1]["t"] + interval * 60
             j.db.execute("UPDATE positions SET checked_ts=? WHERE id=?", (p["checked_ts"], p["id"]))
             j.db.commit()
-        bid = marks[p["pair"]] = kraken.ticker(p["pair"])["bid"]
+        bid = marks[p["pair"]] = C.EXCHANGE.ticker(p["pair"])["bid"]
         latent = p["qty"] * bid * (1 - C.TAKER_FEE) - p["cost"]
         j.log(p["pair"], "HOLD", bid,
               f"position gardée : stop {p['stop']:.2f}, objectif {p['tp']:.2f}, latent {latent:+.2f} {C.QUOTE}", now)
@@ -75,12 +74,12 @@ def run():
     for pair in C.PAIRS:
         if pair in held or halted:
             continue
-        sig = strategy.evaluate(kraken.ohlc(pair, C.SIGNAL_INTERVAL))
+        sig = strategy.evaluate(C.EXCHANGE.ohlc(pair, C.SIGNAL_INTERVAL))
         if not sig["enter"]:
             j.log(pair, "SKIP", sig["price"], sig["reason"], now, **sig["indicators"])
             continue
-        fill = kraken.ticker(pair)["ask"] * (1 + C.SLIPPAGE)
-        broker.open_position(j, pair, fill, sig, kraken.pair_rules(pair), now)
+        fill = C.EXCHANGE.ticker(pair)["ask"] * (1 + C.SLIPPAGE)
+        broker.open_position(j, pair, fill, sig, C.EXCHANGE.pair_rules(pair), now)
 
     eq = broker.equity(j, marks)
     j.log("-", "EQUITY", eq, f"capital simulé {eq:.2f} {C.QUOTE} dont {broker.cash(j):.2f} {C.QUOTE} de cash", now)
@@ -91,8 +90,8 @@ def backtest():
     if C.PROFILE == "accumulation":
         return accumulate.backtest()
     j = Journal(C.BACKTEST_DB_PATH, reset=True)
-    data = {pair: kraken.ohlc(pair, C.SIGNAL_INTERVAL) for pair in C.PAIRS}
-    rules = {pair: kraken.pair_rules(pair) for pair in C.PAIRS}
+    data = {pair: C.EXCHANGE.ohlc(pair, C.SIGNAL_INTERVAL) for pair in C.PAIRS}
+    rules = {pair: C.EXCHANGE.pair_rules(pair) for pair in C.PAIRS}
     index = {pair: {c["t"]: i for i, c in enumerate(cs)} for pair, cs in data.items()}
     times = sorted(set.intersection(*(set(ix) for ix in index.values())))
     warmup = C.EMA_SLOW + C.ATR_PERIOD + 5

@@ -34,7 +34,11 @@ def atr(candles, n):
 def evaluate(candles):
     """Achète seulement dans une tendance haussière nette et encore montante, sans poursuivre un marché
     déjà surchauffé. Backtest du 24/09 : sans filtre de force ni de pente, 48 % des sorties étaient des
-    stop loss secs (faux départs sur des croisements EMA marginaux) — d'où ces deux filtres en plus."""
+    stop loss secs (faux départs sur des croisements EMA marginaux) — d'où ces deux filtres en plus.
+
+    C.VOLUME_MIN_RATIO (None par défaut) ajoute un filtre de volume : la dernière bougie doit peser au
+    moins ce multiple du volume moyen récent, pour écarter un "signal" qui n'est qu'une dérive illiquide
+    plutôt qu'un vrai mouvement de marché — utile sur des actifs à volume erratique (meme coins)."""
     price = candles[-1]["c"] if candles else None
     if len(candles) < C.EMA_SLOW + C.ATR_PERIOD + C.EMA_SLOPE_LOOKBACK + 1:
         return {"enter": False, "price": price, "reason": "historique insuffisant", "indicators": {}}
@@ -59,6 +63,18 @@ def evaluate(candles):
          f"RSI {r:.0f} dans la zone {C.RSI_MIN}-{C.RSI_MAX}",
          f"RSI {r:.0f} hors zone {C.RSI_MIN}-{C.RSI_MAX}"),
     ]
+    if getattr(C, "VOLUME_MIN_RATIO", None):
+        vols = [c["v"] for c in candles[-C.EMA_SLOW - 1:-1]]
+        avg_vol = sum(vols) / len(vols) if vols else 0
+        vol_now = candles[-1]["v"]
+        ratio = vol_now / avg_vol if avg_vol else 0
+        checks.append((
+            ratio >= C.VOLUME_MIN_RATIO,
+            f"volume {ratio:.1f}x la moyenne (seuil {C.VOLUME_MIN_RATIO}x)",
+            f"volume trop faible ({ratio:.1f}x la moyenne, seuil {C.VOLUME_MIN_RATIO}x) : "
+            f"dérive illiquide plutôt qu'un vrai mouvement",
+        ))
+
     return {
         "enter": all(ok for ok, _, _ in checks),
         "price": price,
