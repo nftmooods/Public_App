@@ -5,3 +5,5 @@ date,paire,action,prix,raison,donnees
 27/09 17:42,-,EQUITY,50.0,capital simulé 50.00 USD dont 0.000000 ETH et 50.00 USD de cash,{}
 27/09 18:54,ETHUSD,SKIP,2689.3,"pas de repli significatif (sommet 48h 2722.39, repli 1.2%)",{}
 27/09 18:54,-,EQUITY,50.0,capital simulé 50.00 USD dont 0.000000 ETH et 50.00 USD de cash,{}
+27/09 21:23,ETHUSD,SKIP,2697.64,"pas de repli significatif (sommet 48h 2722.39, repli 0.9%)",{}
+27/09 21:23,-,EQUITY,50.0,capital simulé 50.00 USD dont 0.000000 ETH et 50.00 USD de cash,{}
