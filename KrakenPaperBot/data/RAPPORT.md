@@ -1,6 +1,6 @@
 # KrakenPaperBot — simulation
 
-Mis à jour le 27/09/2026 13:12
+Mis à jour le 27/09/2026 14:35
 
 ## Profil prudent
 
@@ -21,10 +21,6 @@ Critères pour envisager de l'argent réel :
   [x] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-27/09 07:20  -       EQUITY             49.52  capital simulé 49.52 USD dont 24.85 USD de cash
-27/09 07:56  SOLUSD  HOLD              121.11  position gardée : stop 119.03, objectif 126.35, latent -0.37 USD
-27/09 07:56  XBTUSD  SKIP            84317.40  tendance trop faible ou baissière (EMA20 84215.06, EMA50 84188.92); EMA20 encore montante (+55.76 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 55 dans la zone 45-70
-27/09 07:56  ETHUSD  SKIP             2691.64  tendance trop faible ou baissière (EMA20 2690.87, EMA50 2689.92); EMA20 encore montante (+1.39 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70
 27/09 07:56  -       EQUITY             49.62  capital simulé 49.62 USD dont 24.85 USD de cash
 27/09 09:23  SOLUSD  HOLD              121.48  position gardée : stop 119.03, objectif 126.35, latent -0.30 USD
 27/09 09:23  XBTUSD  SKIP            84505.30  tendance trop faible ou baissière (EMA20 84264.78, EMA50 84211.96); EMA20 encore montante (+60.48 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 61 dans la zone 45-70
@@ -41,6 +37,10 @@ Dernières décisions :
 27/09 13:12  XBTUSD  ENTER           84985.70  tendance nette (EMA20 84455.30 > EMA50 84304.68 de 0.1%+); EMA20 encore montante (+142.61 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 68 dans la zone 45-70 → achat de 0.000289 à 84985.70 (24.70 USD frais compris), stop 84515.70, objectif 85690.71
 27/09 13:12  ETHUSD  SKIP             2712.85  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
 27/09 13:12  -       EQUITY             49.98  capital simulé 49.98 USD dont 0.00 USD de cash
+27/09 14:35  SOLUSD  HOLD              124.11  position gardée : stop 123.06, objectif 126.35, latent +0.24 USD
+27/09 14:35  XBTUSD  HOLD            84972.60  position gardée : stop 84515.70, objectif 85690.71, latent -0.20 USD
+27/09 14:35  ETHUSD  SKIP             2717.06  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
+27/09 14:35  -       EQUITY             49.99  capital simulé 49.99 USD dont 0.00 USD de cash
 ```
 
 ## Profil agressif
@@ -62,10 +62,6 @@ Critères pour envisager de l'argent réel :
   [x] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-27/09 07:20  XBTUSD  SKIP            84317.40  tendance trop faible ou baissière (EMA20 84215.06, EMA50 84188.92); EMA20 encore montante (+55.76 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 55 dans la zone 45-70
-27/09 07:20  ETHUSD  SKIP             2691.64  tendance trop faible ou baissière (EMA20 2690.87, EMA50 2689.92); EMA20 encore montante (+1.39 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70
-27/09 07:20  -       EQUITY             49.88  capital simulé 49.88 USD dont 0.00 USD de cash
-27/09 07:57  SOLUSD  HOLD              121.11  position gardée : stop 117.60, objectif 127.54, latent -0.12 USD
 27/09 07:57  XBTUSD  SKIP            84317.40  tendance trop faible ou baissière (EMA20 84215.06, EMA50 84188.92); EMA20 encore montante (+55.76 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 55 dans la zone 45-70
 27/09 07:57  ETHUSD  SKIP             2691.64  tendance trop faible ou baissière (EMA20 2690.87, EMA50 2689.92); EMA20 encore montante (+1.39 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 51 dans la zone 45-70
 27/09 07:57  -       EQUITY             50.08  capital simulé 50.08 USD dont 0.00 USD de cash
@@ -82,4 +78,21 @@ Dernières décisions :
 27/09 13:12  XBTUSD  SKIP            84985.70  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
 27/09 13:12  ETHUSD  SKIP             2712.85  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
 27/09 13:12  -       EQUITY             51.30  capital simulé 51.30 USD dont 0.00 USD de cash
+27/09 14:35  SOLUSD  HOLD              124.11  position gardée : stop 121.53, objectif 127.54, latent +1.11 USD
+27/09 14:35  XBTUSD  SKIP            85057.67  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
+27/09 14:35  ETHUSD  SKIP             2717.06  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
+27/09 14:35  -       EQUITY             51.32  capital simulé 51.32 USD dont 0.00 USD de cash
+```
+
+## Profil accumulation
+
+```
+Capital : 50.00 → 50.00 USD (+0.0%)
+ETH détenu : 0.000000 (coût moyen 0.00 USD/ETH, cours actuel 2714.34)
+Cash disponible : 50.00 USD
+Achats faits : 0   liquidations totales : 0
+
+Dernières décisions :
+27/09 14:35  ETHUSD  SKIP             2709.31  pas de repli significatif (sommet 48h 2723.60, repli 0.5%)
+27/09 14:35  -       EQUITY             50.00  capital simulé 50.00 USD dont 0.000000 ETH et 50.00 USD de cash
 ```
