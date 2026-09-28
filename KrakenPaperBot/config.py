@@ -79,6 +79,11 @@ PROFILES = {
     },
 }
 
+# Type de profil pour le tableau de bord visuel (dashboard_data.py) : "trading" (stop/objectif par
+# position, le cas par défaut) ou "accumulation" (aucun stop/objectif, une seule sortie = liquidation
+# totale). Les profils absents de ce dict sont "trading".
+PROFILE_KIND = {"accumulation": "accumulation"}
+
 DATA_DIR = os.environ.get("KPB_DATA_DIR", ".")
 _DEFAULTS = {k: globals()[k] for p in PROFILES.values() for k in p}
 

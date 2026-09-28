@@ -27,6 +27,48 @@ def load(path):
         return list(csv.DictReader(f))
 
 
+def build_accumulation(rows):
+    equity, lots, liquidations, last_skip = [], [], [], {}
+    buys_total = liquidations_total = 0
+
+    for r in rows:
+        ts = parse_ts(r["date"])
+        pair, action = r["paire"], r["action"]
+        data = json.loads(r["donnees"]) if r["donnees"] else {}
+        price = float(r["prix"]) if r["prix"] not in ("", None) else None
+
+        if action == "EQUITY":
+            equity.append({"t": ts, "equity": round(price, 4)})
+        elif action == "ENTER":
+            qty = data.get("qty") or 0
+            lots.append({"pair": pair, "ts": ts, "price": price, "qty": qty, "cost": qty * price})
+            buys_total += 1
+        elif action == "MACRO_EXIT":
+            liquidations.append({"ts": ts, "price": price,
+                                  "qty": round(sum(l["qty"] for l in lots), 6), "reason": r["raison"]})
+            liquidations_total += 1
+            lots = []
+        elif action == "SKIP":
+            last_skip[pair] = {"ts": ts, "reason": r["raison"]}
+
+    held_qty = sum(l["qty"] for l in lots)
+    cost_basis = sum(l["cost"] for l in lots)
+    avg_cost = cost_basis / held_qty if held_qty else 0
+    eq_now = equity[-1]["equity"] if equity else START_CAPITAL
+
+    return {
+        "equity": equity,
+        "lots": sorted(lots, key=lambda l: l["ts"]),
+        "liquidations": sorted(liquidations, key=lambda e: e["ts"], reverse=True),
+        "lastSkip": last_skip,
+        "summary": {
+            "capitalNow": round(eq_now, 2), "capitalStart": START_CAPITAL,
+            "heldQty": round(held_qty, 6), "avgCost": round(avg_cost, 2),
+            "buysTotal": buys_total, "liquidationsTotal": liquidations_total,
+        },
+    }
+
+
 def build_profile(rows):
     equity, open_positions, closed_trades, events, last_skip = [], {}, [], [], {}
 
@@ -93,10 +135,17 @@ def build_profile(rows):
     }
 
 
+def build_for(profile, rows):
+    kind = C.PROFILE_KIND.get(profile, "trading")
+    data = build_accumulation(rows) if kind == "accumulation" else build_profile(rows)
+    data["kind"] = kind
+    return data
+
+
 def main():
     out = {
         "generatedAt": datetime.now().isoformat(),
-        "profiles": {p: build_profile(load(os.path.join(C.DATA_DIR, f"decisions-{p}.csv")))
+        "profiles": {p: build_for(p, load(os.path.join(C.DATA_DIR, f"decisions-{p}.csv")))
                      for p in C.PROFILES},
     }
     with open(os.path.join(C.DATA_DIR, "dashboard.json"), "w", encoding="utf-8") as f:
