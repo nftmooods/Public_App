@@ -48,3 +48,20 @@ il y a quelques minutes. Ce n'est toujours pas fiable à 100 % (les 17 autres ru
 `workflow_dispatch` manuels de la surveillance Claude), mais ce n'est plus jamais 0/N comme au début.
 Pas encore assez de signal pour conclure que le cron `*/30 * * * *` est devenu fiable — à continuer
 d'observer sans re-changer la config.
+
+## Mise à jour 28/09 16:57 — le cron tourne seul mais avec de gros écarts, pas juste en manuel
+
+Depuis l'ajout du profil memecoin (27/09 soir), plusieurs cycles récents se sont bien déclenchés en
+`event: schedule` sans intervention (runs #66, #67 notamment), donc le cron programmé fonctionne belle
+et bien de façon autonome maintenant — contrairement au 25/09 où il ne se déclenchait jamais seul.
+Mais l'intervalle entre deux `schedule` consécutifs a été très irrégulier sur cette fenêtre : 3h16 puis
+8h15 entre deux cycles auto, au lieu des 30 min configurées. Le déclenchement manuel de la surveillance
+Claude reste donc nécessaire pour tenir la cadence annoncée de ~30-60 min, mais pour une raison différente
+du 25/09 : ce n'est plus "le cron ne se déclenche jamais", c'est "le cron se déclenche, mais GitHub
+espace les exécutions bien plus que l'intervalle demandé" — un throttling côté plateforme (dépôt à faible
+priorité, file d'attente des schedules chargée) plutôt qu'un souci de config ou de dépôt inactif.
+
+**Constat pratique inchangé** : la surveillance Claude reste la garantie de cadence réelle, pas GitHub
+seul. Pas de nouvelle piste à valider par Martin pour l'instant — ce comportement (cron autonome mais
+espacé) semble être une caractéristique du planificateur GitHub Actions gratuit, pas un bug à corriger
+côté dépôt.
