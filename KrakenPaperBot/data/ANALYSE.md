@@ -65,3 +65,38 @@ priorité, file d'attente des schedules chargée) plutôt qu'un souci de config 
 seul. Pas de nouvelle piste à valider par Martin pour l'instant — ce comportement (cron autonome mais
 espacé) semble être une caractéristique du planificateur GitHub Actions gratuit, pas un bug à corriger
 côté dépôt.
+
+## 29/09 22:16 — filtre ADX testé : réduit nettement les faux départs en range (pas encore rentable)
+
+Martin a demandé pourquoi les trades sont perdants en ce moment. Diagnostic : BTC/ETH/SOL sont en range
+serré depuis plusieurs cycles (EMA20/EMA50 collées, RSI 40-50), l'environnement le pire pour une entrée
+sur confirmation de croisement EMA (le signal arrive juste avant que le marché reparte en sens inverse).
+C'est le même problème documenté le 25/09, pas une nouvelle dérive.
+
+Deux hypothèses testées par backtest réel (28j, branche `test-adx-hypothesis`, non mergée), à partir des
+réglages "prudent" :
+1. **Filtre ADX** (force de tendance de Wilder, nouvelle fonction `strategy.adx()`, gardée derrière
+   `C.ADX_MIN` inactif par défaut comme `VOLUME_MIN_RATIO`) : n'entre que si le marché est assez
+   directionnel, pas en range.
+2. **RSI resserré** (45-70 → 45-60) : filtre plus strict sur la zone d'entrée.
+
+| Profil | Résultat | Trades clos | Taux de gain | Recul max |
+|---|---|---|---|---|
+| Baseline (prudent) | -22,9 % | 52 | 21 % | 22,9 % |
+| ADX ≥ 15 | -20,0 % | 48 | 25 % | 20,0 % |
+| ADX ≥ 20 | -16,2 % | 40 | 25 % | 16,5 % |
+| **ADX ≥ 25** | **-13,8 %** | 30 | **27 %** | **14,2 %** |
+| RSI resserré seul | -21,3 % | 38 | 11 % | 21,3 % |
+| ADX ≥ 20 + RSI resserré | -14,5 % | 29 | 14 % | 14,8 % |
+
+**Conclusion** : le filtre ADX seul améliore toutes les métriques de façon monotone avec le seuil — à
+ADX ≥ 25, la perte est quasi divisée par deux et le taux de gain passe de 21 % à 27 %, tout en gardant
+30 trades clos (le minimum pour juger). Le RSI resserré, lui, ne marche pas : il fait chuter le taux de
+gain à 11 % (pire que sans filtre) et dilue même le bénéfice de l'ADX quand on le combine. Écarté.
+
+**Limite honnête** : même à ADX ≥ 25, le profil reste perdant (-13,8 %), pas encore rentable après frais.
+Ce n'est pas un remède au problème de fond (taux de gain encore loin des ~40 % nécessaires), juste une
+réduction significative du bruit de range qui aggravait ce problème.
+
+**À valider par Martin** : proposé de déployer `ADX_MIN=25` sur prudent et agressif en production — en
+attente de sa confirmation avant de toucher aux profils live.
