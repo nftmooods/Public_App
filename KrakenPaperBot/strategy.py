@@ -31,6 +31,37 @@ def atr(candles, n):
     return a
 
 
+def adx(candles, n):
+    """Force de la tendance (Wilder), indépendante de son sens : 0 = marché plat/range, 25+ = tendance
+    nette. Sert à écarter les entrées en range, où le croisement EMA n'est que du bruit."""
+    trs, plus_dm, minus_dm = [], [], []
+    for p, c in zip(candles, candles[1:]):
+        up, down = c["h"] - p["h"], p["l"] - c["l"]
+        plus_dm.append(up if (up > down and up > 0) else 0.0)
+        minus_dm.append(down if (down > up and down > 0) else 0.0)
+        trs.append(max(c["h"] - c["l"], abs(c["h"] - p["c"]), abs(c["l"] - p["c"])))
+
+    def smooth(vals):
+        s, out = sum(vals[:n]), []
+        for v in vals[n:]:
+            s = s - s / n + v
+            out.append(s)
+        return out
+
+    tr_s, pdm_s, mdm_s = smooth(trs), smooth(plus_dm), smooth(minus_dm)
+    dx = []
+    for tr, pdm, mdm in zip(tr_s, pdm_s, mdm_s):
+        pdi = 100 * pdm / tr if tr else 0
+        mdi = 100 * mdm / tr if tr else 0
+        dx.append(100 * abs(pdi - mdi) / (pdi + mdi) if (pdi + mdi) else 0)
+    if len(dx) < n:
+        return 0.0
+    val = sum(dx[:n]) / n
+    for d in dx[n:]:
+        val = (val * (n - 1) + d) / n
+    return val
+
+
 def evaluate(candles):
     """Achète seulement dans une tendance haussière nette et encore montante, sans poursuivre un marché
     déjà surchauffé. Backtest du 24/09 : sans filtre de force ni de pente, 48 % des sorties étaient des
@@ -73,6 +104,13 @@ def evaluate(candles):
             f"volume {ratio:.1f}x la moyenne (seuil {C.VOLUME_MIN_RATIO}x)",
             f"volume trop faible ({ratio:.1f}x la moyenne, seuil {C.VOLUME_MIN_RATIO}x) : "
             f"dérive illiquide plutôt qu'un vrai mouvement",
+        ))
+    if getattr(C, "ADX_MIN", None):
+        adx_val = adx(candles, getattr(C, "ADX_PERIOD", 14))
+        checks.append((
+            adx_val >= C.ADX_MIN,
+            f"ADX {adx_val:.0f} ≥ {C.ADX_MIN} (tendance assez marquée)",
+            f"ADX {adx_val:.0f} < {C.ADX_MIN} : marché en range, pas assez directionnel",
         ))
 
     return {

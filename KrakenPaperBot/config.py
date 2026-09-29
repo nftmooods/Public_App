@@ -38,6 +38,9 @@ BREAKEVEN_ATR = 1.5   # à +1,5 ATR, le stop remonte au prix d'entrée, frais co
 
 VOLUME_MIN_RATIO = None   # si défini : la dernière bougie doit peser au moins ce multiple du volume
                            # moyen récent pour valider une entrée (voir profil "memecoin")
+ADX_MIN = None             # si défini : n'entre que si l'ADX (force de tendance) dépasse ce seuil,
+                           # pour écarter les faux départs en marché plat (voir strategy.adx)
+ADX_PERIOD = 14
 
 # Frais Kraken Pro au palier de volume le plus bas (à revérifier sur kraken.com)
 TAKER_FEE = 0.0040
@@ -77,6 +80,13 @@ PROFILES = {
         "STOP_ATR": 2.5, "TAKE_PROFIT_ATR": 4.0, "BREAKEVEN_ATR": 1.8,
         "VOLUME_MIN_RATIO": 1.3,
     },
+    # --- Profils de test temporaires (branche test-adx-hypothesis, jamais mergés tels quels) ---
+    # Comparent des pistes pour réduire les faux départs en range, à partir des réglages "prudent".
+    "test_adx15": {"ADX_MIN": 15},
+    "test_adx20": {"ADX_MIN": 20},
+    "test_adx25": {"ADX_MIN": 25},
+    "test_rsi_tight": {"RSI_MIN": 45, "RSI_MAX": 60},
+    "test_adx20_rsi_tight": {"ADX_MIN": 20, "RSI_MIN": 45, "RSI_MAX": 60},
 }
 
 # Type de profil pour le tableau de bord visuel (dashboard_data.py) : "trading" (stop/objectif par
