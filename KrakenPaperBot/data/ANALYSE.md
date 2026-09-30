@@ -100,3 +100,14 @@ réduction significative du bruit de range qui aggravait ce problème.
 
 **À valider par Martin** : proposé de déployer `ADX_MIN=25` sur prudent et agressif en production — en
 attente de sa confirmation avant de toucher aux profils live.
+
+## 29/09 22:45 — un déclenchement manuel + un cron quasi simultanés font échouer le push (sans perte)
+
+Le déclenchement manuel de la surveillance (22:44:39) et un cron autonome (22:44:45) sont arrivés à
+6 secondes d'écart. Le groupe de concurrence a bien sérialisé leur exécution (le 2e n'a démarré qu'après
+la fin du 1er), mais le 2e avait "gelé" son point de départ git au moment de sa mise en file, donc son
+rebase a buté sur un vrai conflit de contenu (fichiers .db binaires, non fusionnables) une fois le 1er
+déjà poussé. Le run a échoué proprement à l'étape git, sans rien casser : l'étape `run && export` avait
+déjà réussi, et le cycle du 1er run contient les mêmes données de marché — rien n'est perdu, un cycle est
+juste resté sans commit. Pas d'action à prendre : cas rare (deux déclenchements à quelques secondes
+d'écart), impact nul en pratique.
