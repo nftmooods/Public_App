@@ -561,3 +561,7 @@ date,paire,action,prix,raison,donnees
 02/10 13:26,ETHUSD,SKIP,2749.747,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 02/10 13:26,SOLUSD,SKIP,122.17204999999998,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 02/10 13:26,-,EQUITY,45.85470248186834,capital simulé 45.85 USD dont 0.00 USD de cash,{}
+02/10 14:43,XBTUSD,HOLD,86505.1,"position gardée : stop 85684.18, objectif 87461.58, latent +0.48 USD",{}
+02/10 14:43,ETHUSD,SKIP,2747.02428,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+02/10 14:43,SOLUSD,SKIP,121.90177999999999,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+02/10 14:43,-,EQUITY,45.89247533276029,capital simulé 45.89 USD dont 0.00 USD de cash,{}
