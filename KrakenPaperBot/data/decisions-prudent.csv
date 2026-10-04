@@ -759,3 +759,7 @@ date,paire,action,prix,raison,donnees
 04/10 20:16,XBTUSD,HOLD,85328.7,"position gardée : stop 85015.77, objectif 85883.04, latent -0.19 USD",{}
 04/10 20:16,ETHUSD,SKIP,2704.5818799999997,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 04/10 20:16,-,EQUITY,44.273855093921476,capital simulé 44.27 USD dont 0.00 USD de cash,{}
+04/10 22:16,SOLUSD,HOLD,120.9,"position gardée : stop 120.43, objectif 122.93, latent -0.27 USD",{}
+04/10 22:16,XBTUSD,HOLD,85424.3,"position gardée : stop 85015.77, objectif 85883.04, latent -0.16 USD",{}
+04/10 22:16,ETHUSD,SKIP,2703.0703699999995,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+04/10 22:16,-,EQUITY,44.19969987628317,capital simulé 44.20 USD dont 0.00 USD de cash,{}
