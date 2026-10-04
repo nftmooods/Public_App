@@ -739,3 +739,7 @@ date,paire,action,prix,raison,donnees
 04/10 14:33,XBTUSD,HOLD,85269.5,"position gardée : stop 85015.77, objectif 85883.04, latent -0.20 USD",{}
 04/10 14:33,ETHUSD,SKIP,2699.85,"tendance trop faible ou baissière (EMA20 2694.06, EMA50 2692.22); EMA20 encore montante (+2.31 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 59 dans la zone 45-70","{""ema_fast"": 2694.0558050864515, ""ema_slow"": 2692.2201667190684, ""rsi"": 59.18319904572828, ""atr"": 7.208267916785827}"
 04/10 14:33,-,EQUITY,44.26588416279999,capital simulé 44.27 USD dont 0.00 USD de cash,{}
+04/10 15:51,SOLUSD,HOLD,121.73,"position gardée : stop 120.43, objectif 122.93, latent -0.12 USD",{}
+04/10 15:51,XBTUSD,HOLD,85262.3,"position gardée : stop 85015.77, objectif 85883.04, latent -0.20 USD",{}
+04/10 15:51,ETHUSD,SKIP,2694.86,"tendance trop faible ou baissière (EMA20 2694.13, EMA50 2692.32); EMA20 encore montante (+1.51 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 52 dans la zone 45-70","{""ema_fast"": 2694.132395078218, ""ema_slow"": 2692.3236895928308, ""rsi"": 52.330279585148084, ""atr"": 7.301963065586838}"
+04/10 15:51,-,EQUITY,44.30978889531742,capital simulé 44.31 USD dont 0.00 USD de cash,{}
