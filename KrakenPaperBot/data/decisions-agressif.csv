@@ -772,3 +772,8 @@ date,paire,action,prix,raison,donnees
 05/10 04:43,XBTUSD,SKIP,86595.8,tendance nette (EMA20 85696.27 > EMA50 85268.71 de 0.1%+); EMA20 encore montante (+310.01 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 85 hors zone 45-70,"{""ema_fast"": 85696.26621138451, ""ema_slow"": 85268.71185763428, ""rsi"": 84.80251147823185, ""atr"": 295.84969638409126}"
 05/10 04:43,ETHUSD,SKIP,2738.9261899999997,"signal valide mais plus assez de cash (-0.00 USD), déjà investi dans les positions ouvertes",{}
 05/10 04:43,-,EQUITY,45.00556366241279,capital simulé 45.01 USD dont -0.00 USD de cash,{}
+05/10 05:55,SOLUSD,STOP_LOSS,120.31376220843053,"stop touché → vente à 120.31, résultat -0.77 USD","{""position"": 10, ""pnl"": -0.7724607758639124}"
+05/10 06:00,XBTUSD,ENTER,86180.6946,"tendance nette (EMA20 85800.57 > EMA50 85346.33 de 0.1%+); EMA20 encore montante (+198.99 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 61 dans la zone 45-70 → achat de 0.000513 à 86180.69 (44.41 USD frais compris), stop 85551.06, objectif 87754.79","{""qty"": 0.0005132153401242092, ""stop"": 85551.05685827641, ""tp"": 87754.78895430897, ""ema_fast"": 85800.56757893381, ""ema_slow"": 85346.33039991537, ""rsi"": 61.27825003113266, ""atr"": 314.8188708617934}"
+05/10 06:00,ETHUSD,SKIP,2718.73602,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+05/10 06:00,SOLUSD,SKIP,120.38,tendance nette (EMA20 121.11 > EMA50 120.64 de 0.1%+); EMA20 qui s'essouffle (-0.08 sur 3 bougies); prix sous l'EMA rapide; RSI 40 hors zone 45-70,"{""ema_fast"": 121.10722422856828, ""ema_slow"": 120.63639566002229, ""rsi"": 40.04405095099976, ""atr"": 0.6183522521476293}"
+05/10 06:00,-,EQUITY,44.2292544912796,capital simulé 44.23 USD dont 0.00 USD de cash,{}
