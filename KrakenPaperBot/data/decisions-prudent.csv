@@ -889,3 +889,9 @@ date,paire,action,prix,raison,donnees
 06/10 07:55,XBTUSD,HOLD,85520.6,"position gardée : stop 85294.46, objectif 87222.76, latent -0.29 USD",{}
 06/10 07:55,SOLUSD,SKIP,120.06,"tendance trop faible ou baissière (EMA20 120.46, EMA50 120.51); EMA20 qui s'essouffle (-0.14 sur 3 bougies); prix sous l'EMA rapide; RSI 44 hors zone 45-70","{""ema_fast"": 120.45876908459925, ""ema_slow"": 120.51241460864112, ""rsi"": 44.02581045306343, ""atr"": 0.6388760869064133}"
 06/10 07:55,-,EQUITY,41.13098332817604,capital simulé 41.13 USD dont 0.00 USD de cash,{}
+06/10 08:05,ETHUSD,STOP_LOSS,2688.906241110502,"stop touché → vente à 2688.91, résultat -0.38 USD","{""position"": 33, ""pnl"": -0.37697678391414513}"
+06/10 08:05,XBTUSD,STOP_LOSS,85209.1650341288,"stop touché → vente à 85209.17, résultat -0.37 USD","{""position"": 34, ""pnl"": -0.36921594727686013}"
+06/10 09:15,XBTUSD,SKIP,85287.6,"tendance trop faible ou baissière (EMA20 85663.88, EMA50 85593.11); EMA20 qui s'essouffle (-73.36 sur 3 bougies); prix sous l'EMA rapide; RSI 41 hors zone 45-70","{""ema_fast"": 85663.88436938809, ""ema_slow"": 85593.11250525016, ""rsi"": 41.100624953557556, ""atr"": 339.5243431748598}"
+06/10 09:15,ETHUSD,SKIP,2696.97,"tendance trop faible ou baissière (EMA20 2706.58, EMA50 2706.00); EMA20 qui s'essouffle (-2.67 sur 3 bougies); prix sous l'EMA rapide; RSI 43 hors zone 45-70","{""ema_fast"": 2706.5756387133624, ""ema_slow"": 2706.0044167832593, ""rsi"": 42.58353097933228, ""atr"": 10.77285682216807}"
+06/10 09:15,SOLUSD,SKIP,119.78,"tendance trop faible ou baissière (EMA20 120.34, EMA50 120.46); EMA20 qui s'essouffle (-0.17 sur 3 bougies); prix sous l'EMA rapide; RSI 41 hors zone 45-70","{""ema_fast"": 120.33563637083975, ""ema_slow"": 120.45609668410093, ""rsi"": 40.95933940654415, ""atr"": 0.6372962177917543}"
+06/10 09:15,-,EQUITY,40.80766602577002,capital simulé 40.81 USD dont 40.81 USD de cash,{}
