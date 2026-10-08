@@ -883,3 +883,8 @@ date,paire,action,prix,raison,donnees
 08/10 14:52,ETHUSD,HOLD,2525.83,"conservé : latent -0.50 USD, en attente d'un repli ou d'un retournement",{}
 08/10 14:52,ETHUSD,SKIP,2535.5,repli déjà acheté depuis ce sommet (2724.02),{}
 08/10 14:52,-,EQUITY,48.285039485671845,capital simulé 48.29 USD dont 0.010765 ETH et 21.09 USD de cash,{}
+08/10 16:21,ETHUSD,HOLD,2531.57,"conservé : latent -0.69 USD, en attente d'un repli ou d'un retournement",{}
+08/10 16:21,ETHUSD,HOLD,2531.57,"conservé : latent -0.59 USD, en attente d'un repli ou d'un retournement",{}
+08/10 16:21,ETHUSD,HOLD,2531.57,"conservé : latent -0.48 USD, en attente d'un repli ou d'un retournement",{}
+08/10 16:21,ETHUSD,SKIP,2520.48,repli déjà acheté depuis ce sommet (2724.02),{}
+08/10 16:21,-,EQUITY,48.34683224355648,capital simulé 48.35 USD dont 0.010765 ETH et 21.09 USD de cash,{}
