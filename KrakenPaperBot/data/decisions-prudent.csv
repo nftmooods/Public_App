@@ -1373,3 +1373,8 @@ date,paire,action,prix,raison,donnees
 12/10 13:08,ETHUSD,HOLD,2549.25,"position gardée : stop 2529.06, objectif 2598.31, latent -0.21 USD",{}
 12/10 13:08,SOLUSD,SKIP,111.26114999999999,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 12/10 13:08,-,EQUITY,38.712493260348964,capital simulé 38.71 USD dont 0.00 USD de cash,{}
+12/10 14:20,XBTUSD,STOP_LOSS,83070.15330421043,"stop touché → vente à 83070.15, résultat -0.28 USD","{""position"": 40, ""pnl"": -0.28451351218099674}"
+12/10 14:28,ETHUSD,HOLD,2538.96,"position gardée : stop 2529.06, objectif 2598.31, latent -0.29 USD",{}
+12/10 14:28,XBTUSD,SKIP,83315.5,tendance nette (EMA20 83556.97 > EMA50 83320.41 de 0.1%+); EMA20 qui s'essouffle (-56.71 sur 3 bougies); prix sous l'EMA rapide; RSI 46 dans la zone 45-70,"{""ema_fast"": 83556.9676810916, ""ema_slow"": 83320.4113719048, ""rsi"": 45.78228808428226, ""atr"": 313.20306741865426}"
+12/10 14:28,SOLUSD,SKIP,110.92,tendance nette (EMA20 111.48 > EMA50 111.01 de 0.1%+); EMA20 qui s'essouffle (-0.05 sur 3 bougies); prix sous l'EMA rapide; RSI 46 dans la zone 45-70,"{""ema_fast"": 111.47849298177283, ""ema_slow"": 111.0064089057542, ""rsi"": 46.06192860443778, ""atr"": 0.802074298827254}"
+12/10 14:28,-,EQUITY,38.493593765186034,capital simulé 38.49 USD dont 19.52 USD de cash,{}
