@@ -1,6 +1,6 @@
 # KrakenPaperBot — simulation
 
-Mis à jour le 21/10/2026 21:45
+Mis à jour le 22/10/2026 00:52
 
 ## Profil prudent
 
@@ -21,10 +21,6 @@ Critères pour envisager de l'argent réel :
   [ ] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-21/10 07:30  SOLUSD  SKIP              105.78  tendance nette (EMA20 105.89 > EMA50 105.25 de 0.1%+); EMA20 encore montante (+0.00 sur 3 bougies); prix sous l'EMA rapide; RSI 51 dans la zone 45-70
-21/10 07:30  -       EQUITY             37.38  capital simulé 37.38 USD dont 0.00 USD de cash
-21/10 09:50  XBTUSD  SECURE          83150.00  +1.5 ATR atteint → stop remonté à 83138.85 (position sans risque de perte)
-21/10 09:55  XBTUSD  STOP_SECURISE   82999.02  ouverture en gap sous le stop → vente à 82999.02, résultat -0.01 USD
 21/10 12:46  ETHUSD  HOLD             2454.25  position gardée : stop 2418.76, objectif 2508.85, latent -0.15 USD
 21/10 12:46  XBTUSD  ENTER           83421.14  tendance nette (EMA20 82719.97 > EMA50 82368.21 de 0.1%+); EMA20 encore montante (+163.87 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 66 dans la zone 45-70 → achat de 0.000224 à 83421.14 (18.78 USD frais compris), stop 82665.92, objectif 84553.97
 21/10 12:46  SOLUSD  SKIP              106.62  signal valide mais plus assez de cash (0.03 USD), déjà investi dans les positions ouvertes
@@ -41,6 +37,10 @@ Dernières décisions :
 21/10 21:45  XBTUSD  SKIP            84341.80  tendance nette (EMA20 83562.92 > EMA50 82883.73 de 0.1%+); EMA20 encore montante (+320.23 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 71 hors zone 45-70
 21/10 21:45  ETHUSD  ENTER            2495.03  tendance nette (EMA20 2470.28 > EMA50 2445.14 de 0.1%+); EMA20 encore montante (+12.19 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 65 dans la zone 45-70 → achat de 0.007449 à 2495.03 (18.66 USD frais compris), stop 2457.41, objectif 2551.47
 21/10 21:45  -       EQUITY             37.24  capital simulé 37.24 USD dont 0.00 USD de cash
+22/10 00:52  SOLUSD  HOLD              107.38  position gardée : stop 106.90, objectif 111.22, latent -0.36 USD
+22/10 00:52  ETHUSD  HOLD             2483.78  position gardée : stop 2457.41, objectif 2551.47, latent -0.23 USD
+22/10 00:52  XBTUSD  SKIP            84784.10  tendance nette (EMA20 83839.45 > EMA50 83080.36 de 0.1%+); EMA20 encore montante (+276.53 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 76 hors zone 45-70
+22/10 00:52  -       EQUITY             37.02  capital simulé 37.02 USD dont 0.00 USD de cash
 ```
 
 ## Profil agressif
@@ -62,9 +62,6 @@ Critères pour envisager de l'argent réel :
   [ ] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-21/10 07:30  XBTUSD  HOLD            82814.60  position gardée : stop 81464.47, objectif 84717.52, latent -0.11 USD
-21/10 07:30  ETHUSD  SKIP             2448.71  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
-21/10 07:30  SOLUSD  SKIP              105.78  tendance nette (EMA20 105.89 > EMA50 105.25 de 0.1%+); EMA20 encore montante (+0.00 sur 3 bougies); prix sous l'EMA rapide; RSI 51 dans la zone 45-70
 21/10 07:30  -       EQUITY             36.51  capital simulé 36.51 USD dont 0.00 USD de cash
 21/10 10:45  XBTUSD  SECURE          83499.90  +2.0 ATR atteint → stop remonté à 83138.85 (position sans risque de perte)
 21/10 11:00  XBTUSD  STOP_SECURISE   83055.71  stop touché → vente à 83055.71, résultat +0.00 USD
@@ -82,22 +79,20 @@ Dernières décisions :
 21/10 21:45  XBTUSD  SKIP            84341.80  tendance nette (EMA20 83562.92 > EMA50 82883.73 de 0.1%+); EMA20 encore montante (+320.23 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 71 hors zone 45-70
 21/10 21:45  ETHUSD  SKIP             2495.03  signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes
 21/10 21:45  -       EQUITY             36.16  capital simulé 36.16 USD dont 0.00 USD de cash
+22/10 00:52  SOLUSD  HOLD              107.38  position gardée : stop 106.90, objectif 112.95, latent -0.71 USD
+22/10 00:52  -       HALT               35.89  recul de 30% depuis le sommet (51.42 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle
+22/10 00:52  -       EQUITY             35.89  capital simulé 35.89 USD dont 0.00 USD de cash
 ```
 
 ## Profil accumulation
 
 ```
-Capital : 50.00 → 47.92 USD (-4.2%)
-ETH détenu : 0.010765 (coût moyen 2685.13 USD/ETH, cours actuel 2492.03)
+Capital : 50.00 → 47.83 USD (-4.3%)
+ETH détenu : 0.010765 (coût moyen 2685.13 USD/ETH, cours actuel 2483.78)
 Cash disponible : 21.09 USD
 Achats faits : 3   liquidations totales : 0
 
 Dernières décisions :
-21/10 07:30  ETHUSD  HOLD             2446.25  conservé : latent -1.09 USD, en attente d'un repli ou d'un retournement
-21/10 07:30  ETHUSD  HOLD             2446.25  conservé : latent -0.89 USD, en attente d'un repli ou d'un retournement
-21/10 07:30  ETHUSD  HOLD             2446.25  conservé : latent -0.70 USD, en attente d'un repli ou d'un retournement
-21/10 07:30  ETHUSD  SKIP             2442.19  repli déjà acheté depuis ce sommet (2475.00)
-21/10 07:30  -       EQUITY             47.43  capital simulé 47.43 USD dont 0.010765 ETH et 21.09 USD de cash
 21/10 12:46  ETHUSD  HOLD             2454.25  conservé : latent -1.05 USD, en attente d'un repli ou d'un retournement
 21/10 12:46  ETHUSD  HOLD             2454.25  conservé : latent -0.86 USD, en attente d'un repli ou d'un retournement
 21/10 12:46  ETHUSD  HOLD             2454.25  conservé : latent -0.68 USD, en attente d'un repli ou d'un retournement
@@ -113,6 +108,11 @@ Dernières décisions :
 21/10 21:45  ETHUSD  HOLD             2492.53  conservé : latent -0.58 USD, en attente d'un repli ou d'un retournement
 21/10 21:45  ETHUSD  SKIP             2495.35  repli déjà acheté depuis ce sommet (2524.58)
 21/10 21:45  -       EQUITY             47.93  capital simulé 47.93 USD dont 0.010765 ETH et 21.09 USD de cash
+22/10 00:52  ETHUSD  HOLD             2483.78  conservé : latent -0.91 USD, en attente d'un repli ou d'un retournement
+22/10 00:52  ETHUSD  HOLD             2483.78  conservé : latent -0.76 USD, en attente d'un repli ou d'un retournement
+22/10 00:52  ETHUSD  HOLD             2483.78  conservé : latent -0.61 USD, en attente d'un repli ou d'un retournement
+22/10 00:52  ETHUSD  SKIP             2497.48  repli déjà acheté depuis ce sommet (2524.58)
+22/10 00:52  -       EQUITY             47.83  capital simulé 47.83 USD dont 0.010765 ETH et 21.09 USD de cash
 ```
 
 ## Profil memecoin
@@ -134,11 +134,6 @@ Critères pour envisager de l'argent réel :
   [x] recul maximal du capital inférieur à 20 %
 
 Dernières décisions :
-21/10 07:30  DOGE-USDT SKIP                0.08  tendance nette (EMA20 0.08 > EMA50 0.08 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 58 dans la zone 45-60; volume trop faible (0.4x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
-21/10 07:30  SHIB-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 60 hors zone 45-60; volume trop faible (1.2x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
-21/10 07:30  PEPE-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 63 hors zone 45-60; volume trop faible (0.3x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
-21/10 07:30  WIF-USDT SKIP                0.21  tendance nette (EMA20 0.20 > EMA50 0.20 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 60 hors zone 45-60; volume 1.7x la moyenne (seuil 1.3x)
-21/10 07:30  -       EQUITY             47.90  capital simulé 47.90 USD dont 47.90 USD de cash
 21/10 12:46  DOGE-USDT SKIP                0.08  tendance nette (EMA20 0.08 > EMA50 0.08 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 60 dans la zone 45-60; volume trop faible (0.7x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
 21/10 12:46  SHIB-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 64 hors zone 45-60; volume trop faible (0.5x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
 21/10 12:46  PEPE-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 66 hors zone 45-60; volume trop faible (0.6x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
@@ -154,4 +149,9 @@ Dernières décisions :
 21/10 21:45  PEPE-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 66 hors zone 45-60; volume trop faible (0.8x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
 21/10 21:45  WIF-USDT SKIP                0.21  tendance nette (EMA20 0.21 > EMA50 0.21 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 64 hors zone 45-60; volume trop faible (0.9x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
 21/10 21:45  -       EQUITY             47.90  capital simulé 47.90 USD dont 47.90 USD de cash
+22/10 00:52  DOGE-USDT SKIP                0.08  tendance nette (EMA20 0.08 > EMA50 0.08 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 62 hors zone 45-60; volume trop faible (0.3x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
+22/10 00:52  SHIB-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 57 dans la zone 45-60; volume trop faible (0.3x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
+22/10 00:52  PEPE-USDT SKIP                0.00  tendance nette (EMA20 0.00 > EMA50 0.00 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 69 hors zone 45-60; volume trop faible (0.4x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
+22/10 00:52  WIF-USDT SKIP                0.21  tendance nette (EMA20 0.21 > EMA50 0.21 de 0.5%+); EMA20 encore montante (+0.00 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 67 hors zone 45-60; volume trop faible (1.0x la moyenne, seuil 1.3x) : dérive illiquide plutôt qu'un vrai mouvement
+22/10 00:52  -       EQUITY             47.90  capital simulé 47.90 USD dont 47.90 USD de cash
 ```
