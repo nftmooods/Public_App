@@ -1715,3 +1715,8 @@ date,paire,action,prix,raison,donnees
 21/10 00:27,ETHUSD,HOLD,2458.06,"position gardée : stop 2448.29, objectif 2487.79, latent +0.09 USD",{}
 21/10 00:27,SOLUSD,SKIP,106.98687999999999,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 21/10 00:27,-,EQUITY,37.722244645706695,capital simulé 37.72 USD dont 0.00 USD de cash,{}
+21/10 02:44,XBTUSD,HOLD,83043.2,"position gardée : stop 81464.47, objectif 83788.07, latent -0.00 USD",{}
+21/10 01:05,ETHUSD,STOP_SECURISE,2445.842716586345,"stop touché → vente à 2445.84, résultat +0.00 USD","{""position"": 51, ""pnl"": 0.0}"
+21/10 02:44,ETHUSD,ENTER,2454.79234,"tendance nette (EMA20 2428.57 > EMA50 2416.57 de 0.1%+); EMA20 encore montante (+8.01 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 59 dans la zone 45-70 → achat de 0.007576 à 2454.79 (18.67 USD frais compris), stop 2418.76, objectif 2508.85","{""qty"": 0.007576165074629186, ""stop"": 2418.755348811564, ""tp"": 2508.847826782654, ""ema_fast"": 2428.5652963829893, ""ema_slow"": 2416.5690251717433, ""rsi"": 59.13728646058969, ""atr"": 18.018495594218003}"
+21/10 02:44,SOLUSD,SKIP,106.80669999999999,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+21/10 02:44,-,EQUITY,37.492939016579086,capital simulé 37.49 USD dont 0.00 USD de cash,{}
