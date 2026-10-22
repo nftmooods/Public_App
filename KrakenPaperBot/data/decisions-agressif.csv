@@ -1708,3 +1708,6 @@ date,paire,action,prix,raison,donnees
 22/10 00:52,SOLUSD,HOLD,107.38,"position gardée : stop 106.90, objectif 112.95, latent -0.71 USD",{}
 22/10 00:52,-,HALT,35.88893638165171,recul de 30% depuis le sommet (51.42 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
 22/10 00:52,-,EQUITY,35.88893638165171,capital simulé 35.89 USD dont 0.00 USD de cash,{}
+22/10 01:25,SOLUSD,STOP_LOSS,106.79238792180587,"stop touché → vente à 106.79, résultat -0.90 USD","{""position"": 27, ""pnl"": -0.9016738348049103}"
+22/10 03:04,-,HALT,35.54977235337754,recul de 31% depuis le sommet (51.42 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
+22/10 03:04,-,EQUITY,35.54977235337754,capital simulé 35.55 USD dont 35.55 USD de cash,{}
