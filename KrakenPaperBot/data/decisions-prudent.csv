@@ -1897,3 +1897,11 @@ date,paire,action,prix,raison,donnees
 28/10 03:27,ETHUSD,HOLD,2354.67,"position gardée : stop 2317.84, objectif 2393.48, latent -0.09 USD",{}
 28/10 03:27,SOLUSD,SKIP,101.54,"tendance trop faible ou baissière (EMA20 100.83, EMA50 100.86); EMA20 encore montante (+0.17 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 61 dans la zone 45-70","{""ema_fast"": 100.83225642205781, ""ema_slow"": 100.85568463422969, ""rsi"": 61.2246622044047, ""atr"": 0.6293524997642075}"
 28/10 03:27,-,EQUITY,36.13345287124554,capital simulé 36.13 USD dont 0.00 USD de cash,{}
+28/10 09:35,XBTUSD,SECURE,81688.0,+1.5 ATR atteint → stop remonté à 81577.61 (position sans risque de perte),"{""position"": 57}"
+28/10 09:40,XBTUSD,STOP_SECURISE,81447.5709,"ouverture en gap sous le stop → vente à 81447.57, résultat -0.01 USD","{""position"": 57, ""pnl"": -0.010813870487204724}"
+28/10 09:25,ETHUSD,SECURE,2375.21,+1.5 ATR atteint → stop remonté à 2369.33 (position sans risque de perte),"{""position"": 58}"
+28/10 09:30,ETHUSD,STOP_SECURISE,2366.955956827309,"stop touché → vente à 2366.96, résultat +0.00 USD","{""position"": 58, ""pnl"": 0.0}"
+28/10 09:49,XBTUSD,ENTER,81504.423,"tendance nette (EMA20 80624.49 > EMA50 80403.64 de 0.1%+); EMA20 encore montante (+74.01 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 62 dans la zone 45-70 → achat de 0.000222 à 81504.42 (18.18 USD frais compris), stop 80910.47, objectif 82395.35","{""qty"": 0.000222145545746961, ""stop"": 80910.47139960826, ""tp"": 82395.3504005876, ""ema_fast"": 80624.49386555696, ""ema_slow"": 80403.64279749521, ""rsi"": 61.851676833000475, ""atr"": 296.9758001958667}"
+28/10 09:49,ETHUSD,ENTER,2374.372,"tendance nette (EMA20 2343.71 > EMA50 2336.10 de 0.1%+); EMA20 encore montante (+2.83 sur 3 bougies); prix au-dessus de l'EMA rapide; RSI 63 dans la zone 45-70 → achat de 0.007565 à 2374.37 (18.03 USD frais compris), stop 2349.41, objectif 2411.81","{""qty"": 0.007564768642239384, ""stop"": 2349.410684994808, ""tp"": 2411.8139725077876, ""ema_fast"": 2343.7082734682276, ""ema_slow"": 2336.10177443325, ""rsi"": 63.1632192579682, ""atr"": 12.480657502595914}"
+28/10 09:49,SOLUSD,SKIP,102.78268,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
+28/10 09:49,-,EQUITY,36.06741937873737,capital simulé 36.07 USD dont 0.00 USD de cash,{}
