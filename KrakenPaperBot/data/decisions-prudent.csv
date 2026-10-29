@@ -1923,3 +1923,5 @@ date,paire,action,prix,raison,donnees
 29/10 02:45,ETHUSD,STOP_LOSS,2318.8752946814257,"stop touché → vente à 2318.88, résultat -0.39 USD","{""position"": 62, ""pnl"": -0.3909692437774943}"
 29/10 07:36,-,HALT,34.849707019790074,recul de 31% depuis le sommet (50.58 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
 29/10 07:36,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
+29/10 14:48,-,HALT,34.849707019790074,recul de 31% depuis le sommet (50.58 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
+29/10 14:48,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
