@@ -1919,3 +1919,7 @@ date,paire,action,prix,raison,donnees
 29/10 01:30,ETHUSD,HOLD,2354.01,"position gardée : stop 2321.20, objectif 2399.01, latent -0.13 USD",{}
 29/10 01:30,SOLUSD,SKIP,102.22211999999999,"signal valide mais plus assez de cash (0.00 USD), déjà investi dans les positions ouvertes",{}
 29/10 01:30,-,EQUITY,35.42884476556654,capital simulé 35.43 USD dont 0.00 USD de cash,{}
+29/10 02:45,XBTUSD,STOP_LOSS,80303.68608453145,"stop touché → vente à 80303.69, résultat -0.33 USD","{""position"": 61, ""pnl"": -0.3273825808130759}"
+29/10 02:45,ETHUSD,STOP_LOSS,2318.8752946814257,"stop touché → vente à 2318.88, résultat -0.39 USD","{""position"": 62, ""pnl"": -0.3909692437774943}"
+29/10 07:36,-,HALT,34.849707019790074,recul de 31% depuis le sommet (50.58 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
+29/10 07:36,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
