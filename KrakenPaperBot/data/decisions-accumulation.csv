@@ -2253,3 +2253,5 @@ date,paire,action,prix,raison,donnees
 15/11 21:01,ETHUSD,HOLD,1820.09,"conservé : latent -2.32 USD, en attente d'un repli ou d'un retournement",{}
 15/11 21:01,ETHUSD,SKIP,1823.25,repli déjà acheté depuis ce sommet (1954.17),{}
 15/11 21:01,-,EQUITY,40.68754454673373,capital simulé 40.69 USD dont 0.010765 ETH et 21.09 USD de cash,{}
+16/11 01:04,ETHUSD,MACRO_EXIT,1832.9552099999999,"tendance de fond retournée : EMA50 journalière (2276.39) repassée sous l'EMA200 (2288.56) → vente de 0.010765 ETH, 19.65 USD récupérés",{}
+16/11 01:04,-,EQUITY,40.74711307925034,capital simulé 40.75 USD dont 0.000000 ETH et 40.75 USD de cash,{}
