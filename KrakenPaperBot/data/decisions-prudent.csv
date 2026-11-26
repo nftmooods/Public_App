@@ -2133,3 +2133,5 @@ date,paire,action,prix,raison,donnees
 26/11 03:56,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
 26/11 12:45,-,HALT,34.849707019790074,recul de 31% depuis le sommet (50.58 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
 26/11 12:45,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
+26/11 21:39,-,HALT,34.849707019790074,recul de 31% depuis le sommet (50.58 USD) ≥ seuil 30% → aucune nouvelle entrée ce cycle,{}
+26/11 21:39,-,EQUITY,34.849707019790074,capital simulé 34.85 USD dont 34.85 USD de cash,{}
